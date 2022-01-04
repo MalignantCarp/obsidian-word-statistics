@@ -1,6 +1,8 @@
+(_**This plugin doesn't actually do anything yet.**_)
+
 # Obsidian Word Statistics
 
-This is a plugin for Obsidian (https://obsidian.md) that tracks word count statistics.
+This will be a plugin for Obsidian (https://obsidian.md) that tracks word count statistics.
 
 `/((?:\p{L}\.)+)|(?:\p{N}+(?:[\.,]\p{N}{3})+(?:[\.,]\p{N}+)?)|((?:\p{N}+[\.,])+\p{N}+?)|(\p{N}+(?:\p{Ps}\S+\p{Pe})*)|((?:(?:[\p{L}\p{N}]|(?:(?<=[\p{L}\p{N}])['\u2019](?=[\p{L}\p{N}])))+)(?:(?:-|\u2011)(?:[\p{L}\p{N}]|(?:(?<=[\p{L}\p{N}])['\u2019](?<=[\p{L}\p{N}])))+)*)/gmu`
 
