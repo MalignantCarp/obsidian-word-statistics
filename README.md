@@ -42,6 +42,8 @@ One caveat to note is that the word counts stored for a particular document will
 - [ ] Statistic tables
 - [ ] Per-project statistics tables
 - [ ] Statistic table embeds (for home pages, indices, and the like) through code blocks
+- [ ] Clipboard-related word count deferrals
+    - We may need to add words moved in and words moved out if it's possible to monitor clipboard-related activity that changes word counts. This would be ideal to ensure moved content does not count as words added or deleted, as it is simply being moved around.
 
 ## Future Possibilities
 - [ ] Statistics graphs
