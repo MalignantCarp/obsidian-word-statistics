@@ -35,11 +35,11 @@ const SanitizeText = (text: string): string => {
     text = text.replace(RE_FOOTNOTE, "");
 
     // we now need to match [[link|alt]] and [alt](link) bits and replace them with alt
-    console.log(text);
+    // console.log(text);
     text = text.replace(RE_WIKILINK, "$2"); // [[link|alt text]]
-    console.log("-->", text);
+    // console.log("-->", text);
     text = text.replace(RE_MDLINK, "$2"); // [alt text](link)
-    console.log("-->", text);
+    // console.log("-->", text);
     // remove anything inside a ` - [\S]` bit since we don't want the [x] in a checkbox to register as a word
     text = text.replace(RE_TASK_START, "");
 
@@ -100,4 +100,10 @@ Things become even more complicated if you consider the use of undo and redo, as
 
 */
 
-export {CollectText, CountWords};
+const WordCountForText = (text: string): number => {
+    let [wordText, embedContent] = CollectText(text);
+    let words = CountWords(wordText);
+    return (words);
+}
+
+export {CollectText, CountWords, WordCountForText};
