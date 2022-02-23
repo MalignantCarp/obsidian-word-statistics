@@ -1,3 +1,11 @@
+2022-02-22
+ - Finished data collector. Now updates status bar when there has been a change behind the scenes in the collector.
+
+2022-02-04
+ - Added words.ts functions for getting character counts of both countable text (i.e., without comments, embeds, links, etc.) and raw text.
+ - Added data collector.
+ - No commit.
+
 2022-02-01
  - Word counting for current active Markdown editor is complete. Haven't fully tested with editor/source/legacy, but it should theoretically work.
  - NEXT TODO:

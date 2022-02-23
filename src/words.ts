@@ -106,4 +106,13 @@ const WordCountForText = (text: string): number => {
     return (words);
 }
 
-export {CollectText, CountWords, WordCountForText};
+const CharacterCountForText = (text: string): number => {
+    let [wordText, embedContent] = CollectText(text);
+    return wordText.length;
+}
+
+const CharacterCountForTextRaw = (text: string): number => {
+    return text.length;
+}
+
+export {CollectText, CountWords, WordCountForText, CharacterCountForText, CharacterCountForTextRaw};

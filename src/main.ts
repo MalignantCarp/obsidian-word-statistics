@@ -1,4 +1,5 @@
 import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault } from 'obsidian';
+import { Collector } from './data';
 import WordStatsSettingTab from './settings';
 import { PluginSettings } from './types';
 import { WordCountForText } from './words';
@@ -13,6 +14,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	public debouncerWC: Debouncer<[file: TFile, data: string]>;
 	public wordsPerMS: number[] = [];
 	private statusBar: HTMLElement;
+	private collector: Collector;
+	private hudLastUpdate: number = 0;
 
 	async onload() {
 		console.log("Obsidian Word Statistics.onload()");
@@ -20,6 +23,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
+		this.collector = new Collector(this.app.vault, this.app.metadataCache);
+		this.collector.ScanVault();
 
 		this.debouncerWC = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
@@ -31,7 +36,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
-		
+
+		this.registerInterval(window.setInterval(this.onInterval.bind(this), 1000));
+
 		// in order to track selection and offer word counting for selection, will need to extend code mirror and look out for relevant state changes
 		// for now, the code works as far as counting words in the current context.
 
@@ -57,11 +64,34 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.wordsPerMS.push(wordsCounted / duration);
 		}
 
-		console.log("Current average words/ms: ", this.wordsPerMS.reduce((a, v, i) => (a * i + v) / (i + 1)));
+		if (this.wordsPerMS.length > 0) {
+			console.log("Current average words/ms: ", this.wordsPerMS.reduce((a, v, i) => (a * i + v) / (i + 1)));
+		}
+	}
+
+	async onInterval() {
+		await this.collector.ProcessQueuedItems();
+		if (this.hudLastUpdate < this.collector.getLastUpdate()) {
+			this.updateStatusBar();
+		}
+	}
+
+	updateStatusBar() {
+		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+		let path = view.file.path;
+		let words = this.collector.GetWords(path);
+		let totalWords = this.collector.getTotalWords();
+
+		// **Is this valid for mobile?**
+		let wordStr = Intl.NumberFormat().format(words) + "/" + Intl.NumberFormat().format(totalWords);
+		this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words"));
+		this.hudLastUpdate = Date.now();
 	}
 
 	onFileRename(file: TFile, data: string) {
 		console.log("'%s' renamed to '%s'", data, file.path);
+		this.collector.onRename(file, data);
 	}
 
 	onLeafChange(leaf: WorkspaceLeaf) {
@@ -92,11 +122,8 @@ export default class WordStatisticsPlugin extends Plugin {
 		let words = WordCountForText(data);
 		let endTime = Date.now();
 		this.logSpeed(words, startTime, endTime);
+		this.collector.LogWords(file.path, words);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
-		
-		// **Is this valid for mobile?**
-		
-		let wordStr = Intl.NumberFormat().format(words);
-		this.statusBar.setText(wordStr + " " + (words == 1 ? "word" : "words"));
+		this.updateStatusBar();
 	}
 }
