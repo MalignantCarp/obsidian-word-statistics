@@ -1,24 +1,28 @@
 import { Vault, MetadataCache, TFile } from 'obsidian';
-import { QIType, QueuedItem, WCFileRef } from './types';
+import { QIType, QueuedItem, WSFileRef, WSProject } from './types';
 import { WordCountForText } from './words';
 
 export class Collector {
     private vault: Vault;
     private mdCache: MetadataCache;
-    private fileMap: Map<string, WCFileRef>;
-    private idMap: Map<number, WCFileRef>;
-    private files: WCFileRef[];
+    private fileMap: Map<string, WSFileRef>;
+    private idMap: Map<number, WSFileRef>;
+    private files: WSFileRef[];
     private queue: QueuedItem[];
     private totalWords: number = 0;
     private lastUpdate: number = 0;
+    private projects: Map<string, WSProject>;
+    private projectMap: Map<string, WSProject[]>;
 
     constructor(vault: Vault, metadataCache: MetadataCache) {
         this.vault = vault;
         this.mdCache = metadataCache; // we will eventually use this to obtain content of embeds
-        this.fileMap = new Map<string, WCFileRef>();
-        this.idMap = new Map<number, WCFileRef>();
+        this.fileMap = new Map<string, WSFileRef>();
+        this.idMap = new Map<number, WSFileRef>();
         this.files = [];
         this.queue = [];
+        this.projects = new Map<string, WSProject>();
+        this.projectMap = new Map<string, WSProject[]>();
         this.totalWords = 0;
         this.lastUpdate = 0;
     }
@@ -29,6 +33,31 @@ export class Collector {
 
     getTotalFileCount() {
         return this.vault.getMarkdownFiles().length;
+    }
+
+    getProject(name: string) {
+        if (this.projects.has(name)) {
+            return (this.projects.get(name));
+        }
+        let project = new WSProject(name);
+        this.projects.set(name, project);
+        return project;
+    }
+
+    getProjectsFromPath(path: string) {
+        if (this.projectMap.has(path)) {
+            return this.projectMap.get(path);
+        }
+        let frontmatter = this.mdCache.getCache(path).frontmatter;
+        /*
+        
+        TODO: We need a means of building up the projectMap so we can quickly lookup a project for a given
+        path. We can technically have multiple projects per path in the event multiple project index files
+        contain a link to it, so we will need to keep a list of projects for each path, so the map is for an
+        array.
+        
+        */
+        // console.log(frontmatter);
     }
 
     onRename(file: TFile, oldName: string) {
@@ -43,23 +72,49 @@ export class Collector {
         this.update();
     }
 
+    UpdateFile(file: TFile) {
+        let fi = this.getFile(file.path);
+        let frontMatter = this.mdCache.getCache(file.path).frontmatter;
+        let links = this.mdCache.getCache(file.path).links;
+        if (frontMatter != undefined) {
+            let project = frontMatter['word-stats-project'];
+            let isIndex = frontMatter['word-stats-project-is-index'];
+            let exclude = frontMatter['word-stats-project-exclude'];
+            let title = frontMatter['title'];
+            if (title != undefined) {
+                fi.setTitle(title);
+            }
+            if (project != undefined) {
+                fi.setProjectName(project);
+                if (isIndex != undefined) {
+                    // check to see if project is currently an index; if so, will need to check to see if the linked files
+                    // are still to be included; iterate over all current files in the project map?
+                    fi.setProjectIndex(isIndex);
+                }
+                if (exclude != undefined) {
+                    fi.setProjectExclusion(exclude);
+                }
+            }
+        }
+    }
+
     update() {
         this.lastUpdate = Date.now();
     }
 
     newFile(path: string) {
-        console.log("newFile(%d)", this.files.length);
-        let file = new WCFileRef(this.files.length, path);
+        // console.log("newFile(%d)", this.files.length);
+        let file = new WSFileRef(this.files.length, path);
         this.files.push(file);
         this.fileMap.set(path, file);
         this.idMap.set(file.getID(), file);
-        console.log("newFile(%d):", this.files.length, file);
+        // console.log("newFile(%d):", this.files.length, file);
         this.update();
         return file;
     }
 
     queuePush(item: QueuedItem) {
-        console.log("Pushing queued item.", this.queue, item)
+        // console.log("Pushing queued item.", this.queue, item)
         this.queue.push(item);
     }
 
@@ -71,7 +126,7 @@ export class Collector {
         let startTime = Date.now();
         let items = 0;
         while (this.queue.length > 0 && Date.now() - startTime < 1000) {
-            items ++;
+            items++;
             let item = this.queue.pop();
             let fi = this.idMap.get(item.getID());
             if (item.getType() == QIType.Log) {
@@ -93,7 +148,7 @@ export class Collector {
 
     GetWords(path: string): number {
         let fi = this.fileMap.get(path);
-        console.log("GetWords(%s) = %s", path, fi.getWords());
+        // console.log("GetWords(%s) = %s", path, fi.getWords());
         return fi.getWords() || 0;
     }
 
@@ -121,8 +176,8 @@ export class Collector {
         this.queuePush(new QueuedItem(QIType.Delta, id, path, words));
     }
 
-    getFile(path: string): WCFileRef {
-        let fi: WCFileRef;
+    getFile(path: string): WSFileRef {
+        let fi: WSFileRef;
         if (this.fileMap.has(path)) {
             fi = this.fileMap.get(path);
         } else {
@@ -138,9 +193,12 @@ export class Collector {
         for (const i in files) {
             const file = files[i];
             let fi = this.getFile(file.path);
+            this.UpdateFile(file);
             let words = WordCountForText(await this.vault.cachedRead(file));
             fi.setWords(words);
             this.totalWords += words;
+
+            //console.log(frontMatter.wordStatsProject);
             this.update();
         }
     }

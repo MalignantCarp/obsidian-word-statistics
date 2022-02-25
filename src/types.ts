@@ -1,27 +1,85 @@
-import { TFile } from "obsidian";
-
 export interface PluginSettings {
 	mySetting: string;
 }
 
-// export interface WCFileRef {
-// 	id: number;
-// 	path: string;
-// 	words: number;
-// 	lastUpdate: number;
-// }
+export class WSProject {
+	private name: string;
+	private files: string[];
 
-export class WCFileRef {
+	constructor(name: string) {
+		this.name = name;
+		this.files = [];
+	}
+
+	addFile(path: string) {
+		if (!this.files.contains(path)) {
+			this.files.push(path);
+		} else {
+			console.log("Tried to add path '%s' to project '%s', but it was already in path list.", path, this.name);
+		}
+	}
+
+	hasFile(path: string) {
+		return (this.files.contains(path));
+	}
+
+	deleteFile(path: string) {
+		if (this.files.contains(path)) {
+			this.files.remove(path);
+		} else {
+			console.log("Tried to remove path '%s' from project '%s', but it was not there.", path, this.name);
+		}
+	}
+}
+
+
+export class WSFileRef {
 	private id: number;
 	private path: string;
 	private words: number;
 	private lastUpdate: number;
+	private title: string;
+	private projectName: string;
+	private projectIndex: boolean = false;
+	private projectExcludeCount: boolean = false;
 
 	constructor(id: number, path: string) {
 		this.id = id;
 		this.path = path;
 		this.words = 0;
 		this.lastUpdate = Date.now();
+	}
+
+	setTitle(newTitle: string) {
+		this.title = newTitle;
+	}
+
+	getTitle() {
+		return this.title;
+	}
+
+	setProjectName(newName: string) {
+		this.projectName = newName;
+	}
+
+	getProjectName() {
+		return this.projectName;
+	}
+
+	setProjectIndex(isIndex: boolean) {
+		this.projectIndex = isIndex;
+	}
+
+	isProjectIndex() {
+		return this.projectIndex;
+	}
+
+	setProjectExclusion(exclude: boolean) {
+		this.projectExcludeCount = exclude
+	}
+
+	isCountExcludedFromProject() {
+		return this.projectExcludeCount;
 	}
 
 	setPath(newPath: string) {

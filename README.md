@@ -1,5 +1,3 @@
-(_**This plugin doesn't actually do anything yet.**_)
-
 # Obsidian Word Statistics
 
 This will be a plugin for Obsidian (https://obsidian.md) that tracks word count statistics.
@@ -32,16 +30,20 @@ Short of determining an adequate means of pre-rendering the content, any YAML bl
 One caveat to note is that the word counts stored for a particular document will not include the embed. It will be for display purposes only, as the original file that is referenced will be the one storing its own word count.
 
 ## Features
-- [ ] Basic word counting
-- [ ] Custom status bar for display stats
-- [ ] Historical word counts stored on a per file basis (with rename and relocation tracking)
+- [x] Basic word counting
+- [x] Custom status bar for word counts - currently shows current note words/total words
+- [ ] Project-based counting
+- [ ] Per-project statistics tables via code blocks
+- [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
+- [ ] Per-project word goals
+    - [ ] Macro (i.e., project word goal)
+    - [ ] Micro (i.e., individual note word goals, overridable on a per note basis)
+    - [ ] Progress indicators (status bar)
+    - [ ] Progress indicators (tables)
 
 ## Planned Features
-- [ ] Project-based counting and progress indicators (including progress bars)
+- [ ] Historical word counts stored on a per file basis (with rename and relocation tracking)
 - [ ] Non-English language support
-- [ ] Statistic tables
-- [ ] Per-project statistics tables
-- [ ] Statistic table embeds (for home pages, indices, and the like) through code blocks
 - [ ] Clipboard-related word count deferrals
     - We may need to add words moved in and words moved out if it's possible to monitor clipboard-related activity that changes word counts. This would be ideal to ensure moved content does not count as words added or deleted, as it is simply being moved around.
 

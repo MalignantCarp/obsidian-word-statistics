@@ -1,3 +1,11 @@
+2022-02-24
+ - There is now a means of determining word count for rendered text in a preview window currently commented out in WordStatisticsPlugin.onLeafChange().
+ - Added YAML tag determination. Now need to build the project map.
+
+2022-02-23
+ - Laid groundwork for project system. We are going to utilize three YAML tags initially. We may amend this to being able to include folders, etc from settings, but for now we are going to go ahead and just move forward with this.
+ - Renamed WCFileRef to WSFileRec (WS for Word Stats)
+
 2022-02-22
  - Finished data collector. Now updates status bar when there has been a change behind the scenes in the collector.
 

@@ -1,7 +1,8 @@
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault } from 'obsidian';
+import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView } from 'obsidian';
 import { Collector } from './data';
 import WordStatsSettingTab from './settings';
 import { PluginSettings } from './types';
+import { FindRawText } from './util';
 import { WordCountForText } from './words';
 
 
@@ -80,11 +81,12 @@ export default class WordStatisticsPlugin extends Plugin {
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
 		let path = view.file.path;
+		let projects = this.collector.getProjectsFromPath(path);
 		let words = this.collector.GetWords(path);
 		let totalWords = this.collector.getTotalWords();
 
 		// **Is this valid for mobile?**
-		let wordStr = Intl.NumberFormat().format(words) + "/" + Intl.NumberFormat().format(totalWords);
+		let wordStr = Intl.NumberFormat().format(words) + " / " + Intl.NumberFormat().format(totalWords);
 		this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words"));
 		this.hudLastUpdate = Date.now();
 	}
@@ -95,9 +97,21 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	onLeafChange(leaf: WorkspaceLeaf) {
-		//console.log("onLeafChange()");
+		console.log("onLeafChange(%s)", leaf.view.getViewType());
 		if (leaf.view.getViewType() === "markdown") {
 			//console.log(leaf);
+			/*
+			let state = leaf.getViewState().state;
+			if (state != undefined && state != null) {
+				if (state.mode == 'preview') {
+					//console.log(leaf.view.containerEl);
+					let elements = leaf.view.containerEl.getElementsByClassName("markdown-preview-view");
+					let text = FindRawText(elements[0]);
+					let words = WordCountForText(text);
+					// we now have the words for the rendered text
+				}
+			}
+			*/
 		}
 	}
 
@@ -122,6 +136,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		let words = WordCountForText(data);
 		let endTime = Date.now();
 		this.logSpeed(words, startTime, endTime);
+		this.collector.UpdateFile(file);
 		this.collector.LogWords(file.path, words);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
 		this.updateStatusBar();
