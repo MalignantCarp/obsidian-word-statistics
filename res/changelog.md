@@ -1,3 +1,8 @@
+2022-02-26
+ - Fixed a bug in WordStatisticsPlugin.onInterval() that resulted in an exception when the view object had no file or when the view object itself was null. The interval update will not indicate total words in the vault when there is no active view and/or file.
+ - Data collector now handles file deletion.
+ - Data collector now can retrieve total project word count and project file list
+
 2022-02-25
  - Project map will now use ID number to avoid having to change any path string keys. ID will remain constant for the life of the plugin.
  - Project map builds automatically based on updates to files. Will need to determine when the update function should be run for a given TFile. Right now it is only run once upon vault sync, but it should ideally be run whenever front matter or links change on a file. Need to determine if there is a way to keep an eye out for that particular kind of change.

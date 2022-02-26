@@ -1,3 +1,5 @@
+import { timeStamp } from "console";
+
 export interface PluginSettings {
 	mySetting: string;
 }
@@ -29,6 +31,10 @@ export class WSProject {
 		} else {
 			console.log("Tried to remove WSFileRef(%d)[%s] from project '%s', but it was not there.", file.getID(), file.getPath(), this.name);
 		}
+	}
+
+	getFileList() {
+		return this.files;
 	}
 }
 
@@ -122,7 +128,11 @@ export class WSFileRef {
 	}
 
 	setProject(proj: WSProject) {
+		if (this.hasProject() && this.project != proj) {
+			this.project.deleteFile(this);
+		}
 		this.project = proj;
+		this.project.addFile(this);
 	}
 
 	getProject() {

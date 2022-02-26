@@ -1,4 +1,4 @@
-import { Vault, MetadataCache, TFile } from 'obsidian';
+import { Vault, MetadataCache, TFile, TAbstractFile } from 'obsidian';
 import { QIType, QueuedItem, WSFileRef, WSProject } from './types';
 import { WordCountForText } from './words';
 
@@ -50,7 +50,7 @@ export class Collector {
     getProjectsFromPath(path: string) {
         let ref = this.fileMap.get(path);
         let projects: WSProject[] = [];
-        if (ref.hasProject) {
+        if (ref.hasProject()) {
             projects.push(ref.getProject());
         }
         if (ref.hasBacklinks()) {
@@ -62,19 +62,36 @@ export class Collector {
         return projects;
     }
 
-    onRename(file: TFile, oldName: string) {
-        // this returns undefined
-        let fi = this.fileMap.get(oldName);
-        if (!(this.fileMap.has(oldName) || this.fileMap.has(file.path))) {
-            fi = this.newFile(file.path);
+    onRename(file: TAbstractFile, oldName: string) {
+        if (this.fileMap.has(oldName)) {
+            let fi = this.fileMap.get(oldName);
+            this.fileMap.delete(oldName);
+            if (this.fileMap.has(file.path)) {
+                console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldName, file.path);
+                throw Error("Cannot rename file reference as new file path already in use.");
+            }
+            this.fileMap.set(file.path, fi);
+            fi.setPath(file.path);
+        } else {
+            console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldName, file.path);
+            let fi = this.getFile(file.path);
         }
-        fi.setPath(file.path);
-        this.fileMap.delete(oldName);
-        this.fileMap.set(file.path, fi);
         this.update();
     }
 
+    onDelete(file: TAbstractFile) {
+        console.log(file);
+        if (this.fileMap.has(file.path)) {
+            let fi = this.fileMap.get(file.path);
+            this.fileMap.delete(file.path);
+            this.idMap.delete(fi.getID());
+        } else {
+            console.log("!!! onDelete('%s'): File does not exist. Nothing to delete.", file.path);
+        }
+    }
+
     UpdateFile(file: TFile) {
+        // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFile(file.path);
         let id = fi.getID();
         let frontMatter = this.mdCache.getCache(file.path).frontmatter;
@@ -87,8 +104,9 @@ export class Collector {
                 fi.setTitle(title);
             }
             if (project != null) {
-                fi.setProject(project);
-                project.addFile(fi);
+                if (fi.getProject() != project) {
+                    fi.setProject(project);
+                }
                 if (isIndex != undefined) {
                     // check to see if project is currently an index; if so, will need to check to see if the linked files
                     // are still to be included; iterate over all current files in the project map?
@@ -104,10 +122,12 @@ export class Collector {
                 fi.clearLinks(); // clear the old links
                 let newLinks: WSFileRef[] = [];
                 let links = this.mdCache.getCache(file.path).links;
-                for (let i = 0; i < links.length; i++) {
-                    let linkName = links[i].link;
-                    let dest = this.mdCache.getFirstLinkpathDest(linkName, file.path);
-                    newLinks.push(this.getFile(dest.path));
+                if (links != undefined) {
+                    for (let i = 0; i < links.length; i++) {
+                        let linkName = links[i].link;
+                        let dest = this.mdCache.getFirstLinkpathDest(linkName, file.path);
+                        newLinks.push(this.getFile(dest.path));
+                    }
                 }
                 for (let i = 0; i < newLinks.length; i++) {
                     let link = newLinks[i];
@@ -248,4 +268,46 @@ export class Collector {
             this.update();
         }
     }
+
+    async getProjectWordsTotal(project: WSProject) {
+        let refs = project.getFileList();
+        let words = 0;
+        for (let i = 0; i < refs.length; i++) {
+            let fi = refs[i];
+            if (!fi.isCountExcludedFromProject()) {
+                words += fi.getWords();
+            }
+            if (fi.hasLinks()) {
+                let links = fi.getLinks();
+                for (let j = 0; j < links.length; j++) {
+                    let link = links[j];
+                    if (!link.isCountExcludedFromProject()) {
+                        words += link.getWords();
+                    }
+                }
+            }
+        }
+    }
+
+    getProjectFiles(project: WSProject, ignoreExclusions: boolean) {
+        let fileList = project.getFileList();
+        let files: WSFileRef[] = [];
+        for (let i = 0; i < fileList.length; i++) {
+            let fi = fileList[i];
+            if (!fi.isCountExcludedFromProject() || ignoreExclusions) {
+                files.push(fi);
+            }
+            if (fi.hasLinks()) {
+                let links = fi.getLinks();
+                for (let j = 0; j < links.length; j++) {
+                    let link = links[j];
+                    if (!link.isCountExcludedFromProject() || ignoreExclusions) {
+                        files.push(link);
+                    }
+                }
+            }
+        }
+    }
+
+
 }  

@@ -1,4 +1,5 @@
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView } from 'obsidian';
+import { setDefaultResultOrder } from 'dns';
+import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile } from 'obsidian';
 import { Collector } from './data';
 import WordStatsSettingTab from './settings';
 import { PluginSettings } from './types';
@@ -12,7 +13,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
 
 export default class WordStatisticsPlugin extends Plugin {
 	public settings: PluginSettings;
-	public debouncerWC: Debouncer<[file: TFile, data: string]>;
+	public debounceRunCount: Debouncer<[file: TFile, data: string]>;
 	public wordsPerMS: number[] = [];
 	private statusBar: HTMLElement;
 	private collector: Collector;
@@ -27,7 +28,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.collector = new Collector(this.app.vault, this.app.metadataCache);
 		await this.collector.ScanVault();
 
-		this.debouncerWC = debounce(
+		this.debounceRunCount = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
 			200,
 			false
@@ -36,6 +37,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("quick-preview", this.onQuickPreview.bind(this)));
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
+		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
 
 		this.registerInterval(window.setInterval(this.onInterval.bind(this), 500));
@@ -80,24 +82,40 @@ export default class WordStatisticsPlugin extends Plugin {
 	updateStatusBar() {
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
-		let path = view.file.path;
-		let projects = this.collector.getProjectsFromPath(path);
-		let words = this.collector.GetWords(path);
-		let totalWords = this.collector.getTotalWords();
+		if (view != null && view.file != null) {
+			let path = view.file.path;
+			// let projects = this.collector.getProjectsFromPath(path);
+			// console.log(projects);
+			let words = this.collector.GetWords(path);
+			let totalWords = this.collector.getTotalWords();
 
-		// **Is this valid for mobile?**
-		let wordStr = Intl.NumberFormat().format(words) + " / " + Intl.NumberFormat().format(totalWords);
-		this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words"));
+			// **Is this valid for mobile?**
+			let wordStr = Intl.NumberFormat().format(words) + " / " + Intl.NumberFormat().format(totalWords);
+			this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words"));
+		} else {
+			let totalWords = this.collector.getTotalWords();
+			let wordStr = Intl.NumberFormat().format(totalWords);
+			this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words") + " in vault.");
+		}
 		this.hudLastUpdate = Date.now();
 	}
 
-	onFileRename(file: TFile, data: string) {
-		console.log("'%s' renamed to '%s'", data, file.path);
-		this.collector.onRename(file, data);
+	onFileRename(file: TAbstractFile, data: string) {
+		// console.log("'%s' renamed to '%s'", data, file.path);
+		if (file.path.search(/(.*)(\.md)/) >= 0) {
+			this.collector.onRename(file, data);
+		}
+	}
+
+	onFileDelete(file: TAbstractFile, data: string) {
+		// console.log("'%s' deleted.", file.path);
+		if (file.path.search(/(.*)(\.md)/) >= 0) {
+			this.collector.onDelete(file);
+		}
 	}
 
 	onLeafChange(leaf: WorkspaceLeaf) {
-		console.log("onLeafChange(%s)", leaf.view.getViewType());
+		// console.log("onLeafChange(%s)", leaf.view.getViewType());
 		if (leaf.view.getViewType() === "markdown") {
 			//console.log(leaf);
 			/*
@@ -119,14 +137,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		//console.log("onFileOpen()");
 		//console.log(file);
 		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
-			this.debouncerWC(file, await this.app.vault.cachedRead(file));
+			this.debounceRunCount(file, await this.app.vault.cachedRead(file));
 		}
 	}
 
 	onQuickPreview(file: TFile, data: string) {
 		//console.log("onQuickPreview()");
 		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
-			this.debouncerWC(file, data);
+			this.debounceRunCount(file, data);
 		}
 	}
 
