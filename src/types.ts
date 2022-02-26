@@ -4,30 +4,30 @@ export interface PluginSettings {
 
 export class WSProject {
 	private name: string;
-	private files: string[];
+	private files: WSFileRef[];
 
 	constructor(name: string) {
 		this.name = name;
 		this.files = [];
 	}
 
-	addFile(path: string) {
-		if (!this.files.contains(path)) {
-			this.files.push(path);
+	addFile(file: WSFileRef) {
+		if (!this.files.contains(file)) {
+			this.files.push(file);
 		} else {
-			console.log("Tried to add path '%s' to project '%s', but it was already in path list.", path, this.name);
+			console.log("Tried to add WSFileRef(%d)[%s] to project '%s', but it was already in file list.", file.getID(), file.getPath(), this.name);
 		}
 	}
 
-	hasFile(path: string) {
-		return (this.files.contains(path));
+	hasFile(file: WSFileRef) {
+		return (this.files.contains(file));
 	}
 
-	deleteFile(path: string) {
-		if (this.files.contains(path)) {
-			this.files.remove(path);
+	deleteFile(file: WSFileRef) {
+		if (this.files.contains(file)) {
+			this.files.remove(file);
 		} else {
-			console.log("Tried to remove path '%s' from project '%s', but it was not there.", path, this.name);
+			console.log("Tried to remove WSFileRef(%d)[%s] from project '%s', but it was not there.", file.getID(), file.getPath(), this.name);
 		}
 	}
 }
@@ -39,15 +39,78 @@ export class WSFileRef {
 	private words: number;
 	private lastUpdate: number;
 	private title: string;
-	private projectName: string;
+	private project: WSProject;
 	private projectIndex: boolean = false;
 	private projectExcludeCount: boolean = false;
+	private backlinks: Map<number, WSProject>;
+	private links: WSFileRef[];
 
 	constructor(id: number, path: string) {
 		this.id = id;
 		this.path = path;
 		this.words = 0;
 		this.lastUpdate = Date.now();
+		this.backlinks = new Map<number, WSProject>();
+		this.links = [];
+	}
+
+	addLink(link: WSFileRef) {
+		this.links.push(link);
+	}
+
+	removeLink(link: WSFileRef) {
+		this.links.remove(link);
+	}
+
+	getLinks(): WSFileRef[] {
+		return this.links;
+	}
+
+	hasLinks() {
+		return this.links.length > 0;
+	}
+
+	clearLinks() {
+		this.links.length = 0;
+	}
+
+	clearBacklinks() {
+		this.backlinks.clear();
+	}
+
+	setBacklink(id: number, proj: WSProject) {
+		this.backlinks.set(id, proj);
+	}
+
+	getBacklink(id: number) {
+		if (this.backlinks.has(id)) {
+			return this.backlinks.get(id);
+		}
+		return null;
+	}
+
+	getBacklinks() {
+		return this.backlinks;
+	}
+
+	getBacklinkedIDs() {
+		return Array.from(this.backlinks.keys());
+	}
+
+	getBacklinkedProjects() {
+		return Array.from(this.backlinks.values());
+	}
+
+	hasBacklinks() {
+		return (this.backlinks.size > 0);
+	}
+
+	hasBacklink(id: number) {
+		return this.backlinks.has(id);
+	}
+
+	removeBacklink(id: number) {
+		this.backlinks.delete(id);
 	}
 
 	setTitle(newTitle: string) {
@@ -58,12 +121,16 @@ export class WSFileRef {
 		return this.title;
 	}
 
-	setProjectName(newName: string) {
-		this.projectName = newName;
+	setProject(proj: WSProject) {
+		this.project = proj;
 	}
 
-	getProjectName() {
-		return this.projectName;
+	getProject() {
+		return this.project;
+	}
+
+	hasProject() {
+		return (this.project != undefined && this.project != null);
 	}
 
 	setProjectIndex(isIndex: boolean) {
@@ -75,7 +142,7 @@ export class WSFileRef {
 	}
 
 	setProjectExclusion(exclude: boolean) {
-		this.projectExcludeCount = exclude
+		this.projectExcludeCount = exclude;
 	}
 
 	isCountExcludedFromProject() {

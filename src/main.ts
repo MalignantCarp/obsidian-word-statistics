@@ -25,7 +25,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new Collector(this.app.vault, this.app.metadataCache);
-		this.collector.ScanVault();
+		await this.collector.ScanVault();
 
 		this.debouncerWC = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
@@ -38,7 +38,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
 
-		this.registerInterval(window.setInterval(this.onInterval.bind(this), 1000));
+		this.registerInterval(window.setInterval(this.onInterval.bind(this), 500));
 
 		// in order to track selection and offer word counting for selection, will need to extend code mirror and look out for relevant state changes
 		// for now, the code works as far as counting words in the current context.

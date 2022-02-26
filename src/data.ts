@@ -11,8 +11,8 @@ export class Collector {
     private queue: QueuedItem[];
     private totalWords: number = 0;
     private lastUpdate: number = 0;
-    private projects: Map<string, WSProject>;
-    private projectMap: Map<string, WSProject[]>;
+    private projects: Map<string, WSProject>; // projectName, Project object
+    private projectMap: Map<number, WSProject[]>; // WSFileRef.id, Project List
 
     constructor(vault: Vault, metadataCache: MetadataCache) {
         this.vault = vault;
@@ -22,7 +22,7 @@ export class Collector {
         this.files = [];
         this.queue = [];
         this.projects = new Map<string, WSProject>();
-        this.projectMap = new Map<string, WSProject[]>();
+        this.projectMap = new Map<number, WSProject[]>();
         this.totalWords = 0;
         this.lastUpdate = 0;
     }
@@ -36,6 +36,9 @@ export class Collector {
     }
 
     getProject(name: string) {
+        if (name == undefined || name == null) {
+            return null;
+        }
         if (this.projects.has(name)) {
             return (this.projects.get(name));
         }
@@ -45,19 +48,18 @@ export class Collector {
     }
 
     getProjectsFromPath(path: string) {
-        if (this.projectMap.has(path)) {
-            return this.projectMap.get(path);
+        let ref = this.fileMap.get(path);
+        let projects: WSProject[] = [];
+        if (ref.hasProject) {
+            projects.push(ref.getProject());
         }
-        let frontmatter = this.mdCache.getCache(path).frontmatter;
-        /*
-        
-        TODO: We need a means of building up the projectMap so we can quickly lookup a project for a given
-        path. We can technically have multiple projects per path in the event multiple project index files
-        contain a link to it, so we will need to keep a list of projects for each path, so the map is for an
-        array.
-        
-        */
-        // console.log(frontmatter);
+        if (ref.hasBacklinks()) {
+            let backlinks = ref.getBacklinkedProjects();
+            for (let i = 0; i < backlinks.length; i++) {
+                projects.push(backlinks[i]);
+            }
+        }
+        return projects;
     }
 
     onRename(file: TFile, oldName: string) {
@@ -74,18 +76,19 @@ export class Collector {
 
     UpdateFile(file: TFile) {
         let fi = this.getFile(file.path);
+        let id = fi.getID();
         let frontMatter = this.mdCache.getCache(file.path).frontmatter;
-        let links = this.mdCache.getCache(file.path).links;
         if (frontMatter != undefined) {
-            let project = frontMatter['word-stats-project'];
+            let project = this.getProject(frontMatter['word-stats-project']);
             let isIndex = frontMatter['word-stats-project-is-index'];
             let exclude = frontMatter['word-stats-project-exclude'];
             let title = frontMatter['title'];
             if (title != undefined) {
                 fi.setTitle(title);
             }
-            if (project != undefined) {
-                fi.setProjectName(project);
+            if (project != null) {
+                fi.setProject(project);
+                project.addFile(fi);
                 if (isIndex != undefined) {
                     // check to see if project is currently an index; if so, will need to check to see if the linked files
                     // are still to be included; iterate over all current files in the project map?
@@ -94,6 +97,37 @@ export class Collector {
                 if (exclude != undefined) {
                     fi.setProjectExclusion(exclude);
                 }
+            }
+            if (fi.isProjectIndex) {
+                let oldLinks: WSFileRef[] = [];
+                oldLinks.push(...fi.getLinks());
+                fi.clearLinks(); // clear the old links
+                let newLinks: WSFileRef[] = [];
+                let links = this.mdCache.getCache(file.path).links;
+                for (let i = 0; i < links.length; i++) {
+                    let linkName = links[i].link;
+                    let dest = this.mdCache.getFirstLinkpathDest(linkName, file.path);
+                    newLinks.push(this.getFile(dest.path));
+                }
+                for (let i = 0; i < newLinks.length; i++) {
+                    let link = newLinks[i];
+                    link.setBacklink(id, project);
+                    if (oldLinks.contains(link)) {
+                        oldLinks.remove(link);
+                    }
+                    fi.addLink(link);
+                }
+                for (let i = 0; i < oldLinks.length; i++) {
+                    oldLinks[i].removeBacklink(id);
+                }
+            } else if (fi.hasLinks()) {
+                // this is not an index, so does not need links
+                let links = fi.getLinks();
+                for (let i = 0; i < links.length; i++) {
+                    let link = links[i];
+                    link.removeBacklink(id);
+                }
+                fi.clearLinks();
             }
         }
     }
@@ -125,7 +159,7 @@ export class Collector {
     async ProcessQueuedItems() {
         let startTime = Date.now();
         let items = 0;
-        while (this.queue.length > 0 && Date.now() - startTime < 1000) {
+        while (this.queue.length > 0 && Date.now() - startTime < 500) {
             items++;
             let item = this.queue.pop();
             let fi = this.idMap.get(item.getID());
@@ -143,7 +177,9 @@ export class Collector {
             }
             this.update();
         }
-        return items;
+        if (this.queue.length > 0) {
+            console.log("Processed %d queued items. %d items remain...", items, this.queue.length);
+        }
     }
 
     GetWords(path: string): number {
@@ -188,12 +224,22 @@ export class Collector {
         return fi;
     }
 
+    getFilebyID(id: number): WSFileRef {
+        if (!this.idMap.has(id)) {
+            return null;
+        }
+        return this.idMap.get(id);
+    }
+
     async ScanVault() {
         const files = this.vault.getMarkdownFiles();
         for (const i in files) {
             const file = files[i];
             let fi = this.getFile(file.path);
             this.UpdateFile(file);
+            // console.log(fi.getPath());
+            // console.log(fi.getLinks());
+            // console.log(fi.getBacklinks());
             let words = WordCountForText(await this.vault.cachedRead(file));
             fi.setWords(words);
             this.totalWords += words;

@@ -1,3 +1,7 @@
+2022-02-25
+ - Project map will now use ID number to avoid having to change any path string keys. ID will remain constant for the life of the plugin.
+ - Project map builds automatically based on updates to files. Will need to determine when the update function should be run for a given TFile. Right now it is only run once upon vault sync, but it should ideally be run whenever front matter or links change on a file. Need to determine if there is a way to keep an eye out for that particular kind of change.
+
 2022-02-24
  - There is now a means of determining word count for rendered text in a preview window currently commented out in WordStatisticsPlugin.onLeafChange().
  - Added YAML tag determination. Now need to build the project map.
