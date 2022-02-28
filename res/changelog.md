@@ -1,4 +1,4 @@
-2022-02-26
+2022-02-27
  - WSFileRef now includes titles for backlinks; added setting to make use of this
  - Moved all validation for WSFileRefs into WSFileRefs, they will handle all addition and deletion of cross-referencing
  - Started tables.ts with table-building functionality. Table ssettings are available through a modal for now. Default settings should ideally be configurable, as should currently-in-use settings (i.e., there should be a flag to save current settings as the default or to save them for the session, so both of these scenarios will need a particular setting in the plugin settings)
