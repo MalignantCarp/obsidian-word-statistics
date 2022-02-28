@@ -1,8 +1,10 @@
 import { Vault, MetadataCache, TFile, TAbstractFile } from 'obsidian';
+import WordStatisticsPlugin from './main';
 import { QIType, QueuedItem, WSFileRef, WSProject } from './types';
 import { WordCountForText } from './words';
 
 export class Collector {
+    private plugin: WordStatisticsPlugin;
     private vault: Vault;
     private mdCache: MetadataCache;
     private fileMap: Map<string, WSFileRef>;
@@ -14,7 +16,8 @@ export class Collector {
     private projects: Map<string, WSProject>; // projectName, Project object
     private projectMap: Map<number, WSProject[]>; // WSFileRef.id, Project List
 
-    constructor(vault: Vault, metadataCache: MetadataCache) {
+    constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
+        this.plugin = plugin;
         this.vault = vault;
         this.mdCache = metadataCache; // we will eventually use this to obtain content of embeds
         this.fileMap = new Map<string, WSFileRef>();
@@ -25,6 +28,10 @@ export class Collector {
         this.projectMap = new Map<number, WSProject[]>();
         this.totalWords = 0;
         this.lastUpdate = 0;
+    }
+
+    getMetadataCache() {
+        return this.mdCache;
     }
 
     getLastUpdate() {
@@ -45,6 +52,14 @@ export class Collector {
         let project = new WSProject(name);
         this.projects.set(name, project);
         return project;
+    }
+
+    getProjectList() {
+        return (Array.from(this.projects.values()));
+    }
+
+    getProjectsCount() {
+        return this.projects.size;
     }
 
     getProjectsFromPath(path: string) {
@@ -100,55 +115,11 @@ export class Collector {
             let isIndex = frontMatter['word-stats-project-is-index'];
             let exclude = frontMatter['word-stats-project-exclude'];
             let title = frontMatter['title'];
-            if (title != undefined) {
-                fi.setTitle(title);
-            }
-            if (project != null) {
-                if (fi.getProject() != project) {
-                    fi.setProject(project);
-                }
-                if (isIndex != undefined) {
-                    // check to see if project is currently an index; if so, will need to check to see if the linked files
-                    // are still to be included; iterate over all current files in the project map?
-                    fi.setProjectIndex(isIndex);
-                }
-                if (exclude != undefined) {
-                    fi.setProjectExclusion(exclude);
-                }
-            }
-            if (fi.isProjectIndex) {
-                let oldLinks: WSFileRef[] = [];
-                oldLinks.push(...fi.getLinks());
-                fi.clearLinks(); // clear the old links
-                let newLinks: WSFileRef[] = [];
-                let links = this.mdCache.getCache(file.path).links;
-                if (links != undefined) {
-                    for (let i = 0; i < links.length; i++) {
-                        let linkName = links[i].link;
-                        let dest = this.mdCache.getFirstLinkpathDest(linkName, file.path);
-                        newLinks.push(this.getFile(dest.path));
-                    }
-                }
-                for (let i = 0; i < newLinks.length; i++) {
-                    let link = newLinks[i];
-                    link.setBacklink(id, project);
-                    if (oldLinks.contains(link)) {
-                        oldLinks.remove(link);
-                    }
-                    fi.addLink(link);
-                }
-                for (let i = 0; i < oldLinks.length; i++) {
-                    oldLinks[i].removeBacklink(id);
-                }
-            } else if (fi.hasLinks()) {
-                // this is not an index, so does not need links
-                let links = fi.getLinks();
-                for (let i = 0; i < links.length; i++) {
-                    let link = links[i];
-                    link.removeBacklink(id);
-                }
-                fi.clearLinks();
-            }
+            fi.setTitle(title);
+            fi.setProject(project);
+            fi.setProjectIndex(isIndex);
+            fi.setProjectExclusion(exclude);
+            fi.updateLinks();
         }
     }
 
@@ -158,7 +129,7 @@ export class Collector {
 
     newFile(path: string) {
         // console.log("newFile(%d)", this.files.length);
-        let file = new WSFileRef(this.files.length, path);
+        let file = new WSFileRef(this, this.files.length, path);
         this.files.push(file);
         this.fileMap.set(path, file);
         this.idMap.set(file.getID(), file);

@@ -1,4 +1,9 @@
 2022-02-26
+ - WSFileRef now includes titles for backlinks; added setting to make use of this
+ - Moved all validation for WSFileRefs into WSFileRefs, they will handle all addition and deletion of cross-referencing
+ - Started tables.ts with table-building functionality. Table ssettings are available through a modal for now. Default settings should ideally be configurable, as should currently-in-use settings (i.e., there should be a flag to save current settings as the default or to save them for the session, so both of these scenarios will need a particular setting in the plugin settings)
+
+2022-02-26
  - Fixed a bug in WordStatisticsPlugin.onInterval() that resulted in an exception when the view object had no file or when the view object itself was null. The interval update will not indicate total words in the vault when there is no active view and/or file.
  - Data collector now handles file deletion.
  - Data collector now can retrieve total project word count and project file list

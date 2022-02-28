@@ -14,18 +14,23 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+		containerEl.createEl('h2', {text: 'Word Statistics Plugin.'});
+		containerEl.createEl('h3', {text: 'Project Index Settings'});
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+			.setName('Use Display Text')
+			.setDesc('If an index file has display text for a link to a project file, use that display text instead of the filename (or title YAML attribute if present).')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useDisplayText)
 				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.useDisplayText = value;
 					await this.plugin.saveSettings();
 				}));
-	}
+		containerEl.createEl('h3', {text: 'Table Settings'});
+        /*
+		We will eventually also want to add table settings so they can have defaults set by the user.
+		This will need an option to "save table settings for session" to record those as the session
+		options so the current session options are overwritten.
+		*/
+		}
 }

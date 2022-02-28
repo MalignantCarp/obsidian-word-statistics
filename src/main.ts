@@ -1,18 +1,27 @@
 import { setDefaultResultOrder } from 'dns';
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile } from 'obsidian';
+import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice } from 'obsidian';
 import { Collector } from './data';
 import WordStatsSettingTab from './settings';
-import { PluginSettings } from './types';
-import { FindRawText } from './util';
+import ProjectTableModal, { BuildProjectTable } from './tables';
+import { WSPluginSettings, WSTableSettings } from './types';
 import { WordCountForText } from './words';
 
 
-const DEFAULT_SETTINGS: PluginSettings = {
-	mySetting: 'default'
+const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
+	useDisplayText: true
+};
+
+const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
+	showNumber: true,
+    sortAlpha: false,
+    showShare: true,
+	showExcluded: true,
+	project: null
 };
 
 export default class WordStatisticsPlugin extends Plugin {
-	public settings: PluginSettings;
+	public settings: WSPluginSettings;
+	public tableSettings: WSTableSettings; // we should also create one for current settings and session settings for this
 	public debounceRunCount: Debouncer<[file: TFile, data: string]>;
 	public wordsPerMS: number[] = [];
 	private statusBar: HTMLElement;
@@ -25,7 +34,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
-		this.collector = new Collector(this.app.vault, this.app.metadataCache);
+		this.collector = new Collector(this, this.app.vault, this.app.metadataCache);
 		await this.collector.ScanVault();
 
 		this.debounceRunCount = debounce(
@@ -46,6 +55,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		// for now, the code works as far as counting words in the current context.
 
 		this.statusBar = this.addStatusBarItem();
+
+		this.addCommand({
+			id: 'insert-project-table-modal',
+			name: 'Insert Project Table Modal',
+			callback: () => {
+				this.insertProjectTableModal()
+			}
+		})		
 	}
 
 	onunload() {
@@ -53,7 +70,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = Object.assign({}, DEFAULT_PLUGIN_SETTINGS, await this.loadData());
+		this.tableSettings = Object.assign({}, DEFAULT_TABLE_SETTINGS); // this should be created out of existing settings, which will need to be added.
 	}
 
 	async saveSettings() {
@@ -76,6 +94,16 @@ export default class WordStatisticsPlugin extends Plugin {
 		await this.collector.ProcessQueuedItems();
 		if (this.hudLastUpdate < this.collector.getLastUpdate()) {
 			this.updateStatusBar();
+		}
+	}
+
+	insertProjectTableModal() {
+		if (this.collector.getProjectsCount() > 0) {
+			let projects = this.collector.getProjectList();
+			new ProjectTableModal(this.app, this, projects).open()
+			let tableText = BuildProjectTable(this.collector, this.tableSettings);
+		} else {
+			new Notice("There are no projects to display.")
 		}
 	}
 
