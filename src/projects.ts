@@ -1,0 +1,127 @@
+import { timeStamp } from "console";
+import { WSDataCollector } from "./data";
+import { WSFileRef } from "./files";
+import WordStatisticsPlugin from "./main";
+
+interface WSProjectData {
+    displayText: string,
+    wordsExcluded: boolean,
+}
+
+export class WSProjectManager {
+    private plugin: WordStatisticsPlugin;
+    private collector: WSDataCollector;
+    private projects: Map<string, WSProject>;
+
+    constructor(plugin: WordStatisticsPlugin, collector: WSDataCollector) {
+        this.plugin = plugin;
+        this.collector = collector;
+        this.projects = new Map<string,WSProject>();
+    }
+
+    getProjectByName(name: string) {
+        if (name == undefined || name == null) {
+            return null;
+        }
+        let project = this.projects.get(name);
+        if (project == undefined) {
+            let project = new WSProject(name);
+            this.projects.set(name, project);
+        }
+        return project;
+    }
+
+    projectNameExists(name: string) {
+        return this.projects.has(name);
+    }
+
+    renameProject(project: WSProject, name:string) {
+        let oldName = project.getName();
+        project.setName(name);
+        this.projects.delete(oldName);
+        this.projects.set(name, project);
+    }
+
+    getProject(name: string) {
+        if (!this.projects.has(name)) {
+            this.projects.set(name, new WSProject(name));
+        }
+        return this.projects.get(name);
+    }
+
+    deleteProject(name: string) {
+        if (!this.projects.has(name)) {
+            console.log("Tried to delete project '%s' but it does not exist.", name);
+        } else {
+            this.projects.get(name).cleanup();
+            this.projects.delete(name);
+        }
+    }
+
+    getProjectList() {
+        return (Array.from(this.projects.values()));
+    }
+
+    getProjectsCount() {
+        return this.projects.size;
+    }
+
+    cleanup() {
+        for (const [, project] of this.projects) {
+            project.cleanup();
+        }
+        this.projects.clear();
+    }
+}
+
+export class WSProject {
+    private name: string;
+    private files: Map<WSFileRef, WSProjectData>;
+
+    constructor(name: string) {
+        this.name = name;
+        this.files = new Map<WSFileRef, WSProjectData>();
+    }
+
+    cleanup() {
+        this.files.clear();
+    }
+
+    getName() {
+        return this.name;
+    }
+
+    setName(name: string) {
+        this.name = name;
+    }
+
+    addFile(file: WSFileRef, name: string, excluded: boolean) {
+        if (!this.files.has(file)) {
+            this.files.set(file, { displayText: name, wordsExcluded: excluded });
+        } else {
+            console.log("Tried to add WSFileRef(%d)[%s] to project '%s', but it was already in file list.", file.getID(), file.getPath(), this.name);
+        }
+    }
+
+    hasFile(file: WSFileRef) {
+        return (this.files.has(file));
+    }
+
+    deleteFile(file: WSFileRef) {
+        if (this.files.has(file)) {
+            this.files.delete(file);
+        } else {
+            console.log("Tried to remove WSFileRef(%d)[%s] from project '%s', but it was not there.", file.getID(), file.getPath(), this.name);
+        }
+    }
+
+    getFilesTuple() {
+        let files: [WSFileRef, WSProjectData][] = [];
+        let fileList = Array.from(this.files.keys());
+        for (let i = 0; i < fileList.length; i++) {
+            files.push([fileList[i], this.files.get(fileList[i])]);
+        }
+        return files;
+    }
+
+}

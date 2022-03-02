@@ -31,6 +31,12 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 		We will eventually also want to add table settings so they can have defaults set by the user.
 		This will need an option to "save table settings for session" to record those as the session
 		options so the current session options are overwritten.
+
+		Also want to add a table setting for showing estimated page count.
+		Should a number of pages be added for estimated front/back matter? Round up to nearest even number?
+
 		*/
+
+
 		}
 }

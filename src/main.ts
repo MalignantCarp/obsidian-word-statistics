@@ -1,6 +1,7 @@
 import { setDefaultResultOrder } from 'dns';
 import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice } from 'obsidian';
-import { Collector } from './data';
+import { WSDataCollector } from './data';
+import { WSProjectManager } from './projects';
 import WordStatsSettingTab from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings, WSTableSettings } from './types';
@@ -25,7 +26,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	public debounceRunCount: Debouncer<[file: TFile, data: string]>;
 	public wordsPerMS: number[] = [];
 	private statusBar: HTMLElement;
-	private collector: Collector;
+	private collector: WSDataCollector;
 	private hudLastUpdate: number = 0;
 
 	async onload() {
@@ -34,7 +35,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
-		this.collector = new Collector(this, this.app.vault, this.app.metadataCache);
+		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
 		await this.collector.ScanVault();
 
 		this.debounceRunCount = debounce(
@@ -98,8 +99,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	insertProjectTableModal() {
-		if (this.collector.getProjectsCount() > 0) {
-			let projects = this.collector.getProjectList();
+		if (this.collector.projects.getProjectsCount() > 0) {
+			let projects = this.collector.projects.getProjectList();
 			new ProjectTableModal(this.app, this, projects).open()
 			let tableText = BuildProjectTable(this.collector, this.tableSettings);
 		} else {

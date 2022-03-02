@@ -1,3 +1,13 @@
+2022-03-01
+ - Scrapped old project system and links/backlinks. WSFileRefs will now just keep track of file-related things, such as current title, word count, etc.
+ - Built new project manager and project ref classes that are solely responsible for everything project-related.
+ - Renamed Collector => WSDataCollector
+ - Deferred project-management tasks from WSDataCollector to WSProjectManager
+ - ProjectManager will now manage project files. The projects will be created through a modal and settings, and possibly later a leaf.
+
+2022-02-28
+ - Collector.getProjectWordsTotal() was missing return words
+
 2022-02-27
  - WSFileRef now includes titles for backlinks; added setting to make use of this
  - Moved all validation for WSFileRefs into WSFileRefs, they will handle all addition and deletion of cross-referencing

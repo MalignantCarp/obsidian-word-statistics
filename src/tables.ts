@@ -1,7 +1,8 @@
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
-import { Collector } from "./data";
+import { WSDataCollector } from "./data";
 import WordStatisticsPlugin from "./main";
-import { WSProject, WSTableSettings } from "./types";
+import { WSProject } from "./projects";
+import { WSTableSettings } from "./types";
 
 export default class ProjectTableModal extends Modal {
     plugin: WordStatisticsPlugin;
@@ -106,11 +107,42 @@ export default class ProjectTableModal extends Modal {
     }
 }
 
-export function BuildProjectTable(collector: Collector, settings: WSTableSettings): string {
+export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings): string {
     let text = "";
 
     let project = settings.project;
-    let files = project.getAllFiles();
+    let files = collector.projects.getProjectList();
+    let bar = "";
+    if (settings.showNumber) {
+        text += "|  #";
+        bar += "|---";
+    }
+    text += "|Note|Count";
+    bar += "|----|-----";
+    if (settings.showShare) {
+        text += "|Share";
+        bar += "|-----";
+    }
+    text += "|\n";
+    bar += "|\n";
+    text += bar;
+
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        // if (file.isCountExcludedFromProject() && !settings.showExcluded) {
+        //     continue;
+        // }
+        // let line = `${settings.showNumber ? `|${i}` : ``}|${collector.getPluginSettings().useDisplayText?`${file.getTitleForProject(project)}`:`${file.getTitle()}`}`;
+        // if (settings.showNumber) {
+        //     line = "|" + i;
+        // }
+        if (collector.getPluginSettings().useDisplayText) {
+            // if (file.getProject() != project) {
+            //     // we need to see if there is a special name tied to the backlink to the project
+
+            // }
+        }
+    }
 
     return text;
 }

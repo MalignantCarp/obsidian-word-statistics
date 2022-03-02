@@ -1,9 +1,11 @@
 import { Vault, MetadataCache, TFile, TAbstractFile } from 'obsidian';
+import { WSFileRef } from './files';
 import WordStatisticsPlugin from './main';
-import { QIType, QueuedItem, WSFileRef, WSProject } from './types';
+import { WSProject, WSProjectManager } from './projects';
+import { QIType, QueuedItem, YAML_PROJECT_INDEX } from './types';
 import { WordCountForText } from './words';
 
-export class Collector {
+export class WSDataCollector {
     private plugin: WordStatisticsPlugin;
     private vault: Vault;
     private mdCache: MetadataCache;
@@ -13,8 +15,7 @@ export class Collector {
     private queue: QueuedItem[];
     private totalWords: number = 0;
     private lastUpdate: number = 0;
-    private projects: Map<string, WSProject>; // projectName, Project object
-    private projectMap: Map<number, WSProject[]>; // WSFileRef.id, Project List
+    public projects: WSProjectManager;
 
     constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
         this.plugin = plugin;
@@ -24,8 +25,7 @@ export class Collector {
         this.idMap = new Map<number, WSFileRef>();
         this.files = [];
         this.queue = [];
-        this.projects = new Map<string, WSProject>();
-        this.projectMap = new Map<number, WSProject[]>();
+        this.projects = new WSProjectManager(plugin, this);
         this.totalWords = 0;
         this.lastUpdate = 0;
     }
@@ -34,47 +34,20 @@ export class Collector {
         return this.mdCache;
     }
 
+    getPlugin() {
+        return this.plugin
+    }
+
+    getPluginSettings() {
+        return this.plugin.settings
+    }
+
     getLastUpdate() {
         return this.lastUpdate;
     }
 
     getTotalFileCount() {
         return this.vault.getMarkdownFiles().length;
-    }
-
-    getProject(name: string) {
-        if (name == undefined || name == null) {
-            return null;
-        }
-        if (this.projects.has(name)) {
-            return (this.projects.get(name));
-        }
-        let project = new WSProject(name);
-        this.projects.set(name, project);
-        return project;
-    }
-
-    getProjectList() {
-        return (Array.from(this.projects.values()));
-    }
-
-    getProjectsCount() {
-        return this.projects.size;
-    }
-
-    getProjectsFromPath(path: string) {
-        let ref = this.fileMap.get(path);
-        let projects: WSProject[] = [];
-        if (ref.hasProject()) {
-            projects.push(ref.getProject());
-        }
-        if (ref.hasBacklinks()) {
-            let backlinks = ref.getBacklinkedProjects();
-            for (let i = 0; i < backlinks.length; i++) {
-                projects.push(backlinks[i]);
-            }
-        }
-        return projects;
     }
 
     onRename(file: TAbstractFile, oldName: string) {
@@ -108,18 +81,13 @@ export class Collector {
     UpdateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFile(file.path);
-        let id = fi.getID();
         let frontMatter = this.mdCache.getCache(file.path).frontmatter;
         if (frontMatter != undefined) {
-            let project = this.getProject(frontMatter['word-stats-project']);
-            let isIndex = frontMatter['word-stats-project-is-index'];
-            let exclude = frontMatter['word-stats-project-exclude'];
+            let project = this.projects.getProject(frontMatter[YAML_PROJECT_INDEX]);
+            // we should do something to update links for a project; if the file is set to be a project index
+            // can a project have more than one index?
             let title = frontMatter['title'];
             fi.setTitle(title);
-            fi.setProject(project);
-            fi.setProjectIndex(isIndex);
-            fi.setProjectExclusion(exclude);
-            fi.updateLinks();
         }
     }
 
@@ -239,46 +207,4 @@ export class Collector {
             this.update();
         }
     }
-
-    async getProjectWordsTotal(project: WSProject) {
-        let refs = project.getFileList();
-        let words = 0;
-        for (let i = 0; i < refs.length; i++) {
-            let fi = refs[i];
-            if (!fi.isCountExcludedFromProject()) {
-                words += fi.getWords();
-            }
-            if (fi.hasLinks()) {
-                let links = fi.getLinks();
-                for (let j = 0; j < links.length; j++) {
-                    let link = links[j];
-                    if (!link.isCountExcludedFromProject()) {
-                        words += link.getWords();
-                    }
-                }
-            }
-        }
-    }
-
-    getProjectFiles(project: WSProject, ignoreExclusions: boolean) {
-        let fileList = project.getFileList();
-        let files: WSFileRef[] = [];
-        for (let i = 0; i < fileList.length; i++) {
-            let fi = fileList[i];
-            if (!fi.isCountExcludedFromProject() || ignoreExclusions) {
-                files.push(fi);
-            }
-            if (fi.hasLinks()) {
-                let links = fi.getLinks();
-                for (let j = 0; j < links.length; j++) {
-                    let link = links[j];
-                    if (!link.isCountExcludedFromProject() || ignoreExclusions) {
-                        files.push(link);
-                    }
-                }
-            }
-        }
-    }
-
-
 }  
