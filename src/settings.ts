@@ -1,5 +1,19 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import WordStatisticsPlugin from "./main";
+import { WSPluginSettings, WSTableSettings } from "./types";
+
+export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
+	showNumber: true,
+	sortAlpha: false,
+	showShare: true,
+	showExcluded: true,
+	project: null
+};
+
+export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
+	useDisplayText: true,
+	defaultTableSettings: DEFAULT_TABLE_SETTINGS,
+};
 
 export default class WordStatsSettingTab extends PluginSettingTab {
 	plugin: WordStatisticsPlugin;
@@ -10,12 +24,12 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Word Statistics Plugin.'});
-		containerEl.createEl('h3', {text: 'Project Index Settings'});
+		containerEl.createEl('h2', { text: 'Word Statistics Plugin.' });
+		containerEl.createEl('h3', { text: 'Project Index Settings' });
 
 		new Setting(containerEl)
 			.setName('Use Display Text')
@@ -26,17 +40,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					this.plugin.settings.useDisplayText = value;
 					await this.plugin.saveSettings();
 				}));
-		containerEl.createEl('h3', {text: 'Table Settings'});
-        /*
-		We will eventually also want to add table settings so they can have defaults set by the user.
-		This will need an option to "save table settings for session" to record those as the session
-		options so the current session options are overwritten.
+		containerEl.createEl('h3', { text: 'Table Settings' });
 
-		Also want to add a table setting for showing estimated page count.
-		Should a number of pages be added for estimated front/back matter? Round up to nearest even number?
-
-		*/
-
-
-		}
+	}
 }

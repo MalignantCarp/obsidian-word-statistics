@@ -1,3 +1,7 @@
+2022-03-02
+ - Further work on new project system, sadly not much today.
+ TODO: Pull table settings into settings.ts for the main settings and just have the table modal select the project
+
 2022-03-01
  - Scrapped old project system and links/backlinks. WSFileRefs will now just keep track of file-related things, such as current title, word count, etc.
  - Built new project manager and project ref classes that are solely responsible for everything project-related.

@@ -1,24 +1,10 @@
 import { setDefaultResultOrder } from 'dns';
 import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice } from 'obsidian';
 import { WSDataCollector } from './data';
-import { WSProjectManager } from './projects';
-import WordStatsSettingTab from './settings';
+import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings, WSTableSettings } from './types';
 import { WordCountForText } from './words';
-
-
-const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
-	useDisplayText: true
-};
-
-const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
-	showNumber: true,
-    sortAlpha: false,
-    showShare: true,
-	showExcluded: true,
-	project: null
-};
 
 export default class WordStatisticsPlugin extends Plugin {
 	public settings: WSPluginSettings;
@@ -100,7 +86,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	insertProjectTableModal() {
 		if (this.collector.projects.getProjectsCount() > 0) {
-			let projects = this.collector.projects.getProjectList();
+			let projects = this.collector.projects;
 			new ProjectTableModal(this.app, this, projects).open()
 			let tableText = BuildProjectTable(this.collector, this.tableSettings);
 		} else {

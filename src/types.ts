@@ -4,6 +4,7 @@ export const YAML_PROJECT_INDEX = 'wsplugin-project-index'; // set this to the n
 
 export interface WSPluginSettings {
 	useDisplayText: boolean;
+	defaultTableSettings: WSTableSettings;
 }
 
 export interface WSTableSettings {

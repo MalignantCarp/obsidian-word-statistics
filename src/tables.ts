@@ -1,20 +1,17 @@
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
 import { WSDataCollector } from "./data";
 import WordStatisticsPlugin from "./main";
-import { WSProject } from "./projects";
+import { WSProject, WSProjectManager } from "./projects";
 import { WSTableSettings } from "./types";
 
 export default class ProjectTableModal extends Modal {
     plugin: WordStatisticsPlugin;
-    projects: Map<string, WSProject>;
+    projects: WSProjectManager;
 
-    constructor(app: App, plugin: WordStatisticsPlugin, projects: WSProject[]) {
+    constructor(app: App, plugin: WordStatisticsPlugin, projects: WSProjectManager) {
         super(app);
         this.plugin = plugin;
-        this.projects = new Map<string, WSProject>();
-        for (let i = 0; i < projects.length; i++) {
-            this.projects.set(projects[i].getName(), projects[i]);
-        }
+        this.projects = projects
     }
 
     isEnter(e: KeyboardEvent) {
@@ -34,7 +31,7 @@ export default class ProjectTableModal extends Modal {
         // if there isn't, we just create a notice that there are no projects
         let project = "";
         if (this.plugin.tableSettings.project == null) {
-            project = this.projects.keys().next().value;
+            project = this.projects.getProjectNames()[0];
         } else {
             project = this.plugin.tableSettings.project.getName();
         }
@@ -57,12 +54,12 @@ export default class ProjectTableModal extends Modal {
             .setName('Project')
             .setDesc('Select the project for which to generate a table')
             .addDropdown((cb: DropdownComponent) => {
-                Array.from(this.projects.keys()).forEach((proj: string) => {
+                this.projects.getProjectNames().forEach((proj: string) => {
                     cb.addOption(proj, proj);
                 });
                 cb.setValue(this.getProject()); // what if this is null?
                 cb.onChange(async (value: string) => {
-                    this.plugin.tableSettings.project = this.projects.get(value);
+                    this.plugin.tableSettings.project = this.projects.getProjectByName(value);
                     await this.plugin.saveSettings();
                 });
             });

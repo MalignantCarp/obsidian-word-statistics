@@ -35,6 +35,12 @@ export class WSProjectManager {
         return this.projects.has(name);
     }
 
+    // unless we're using some kind of ID system, there's no real way for this to be useful
+    // if you change the name of the project, then it will no longer trigger in all of the links
+    // and there will instead be project files linked to an invalid project, which I suppose
+    // could then be listed in the project leaf;
+    // we don't want the project to be manipulating any files, so changing the YAML tags for a file
+    // doesn't seem like a good plan
     renameProject(project: WSProject, name:string) {
         let oldName = project.getName();
         project.setName(name);
@@ -60,6 +66,10 @@ export class WSProjectManager {
 
     getProjectList() {
         return (Array.from(this.projects.values()));
+    }
+
+    getProjectNames() {
+        return (Array.from(this.projects.keys()));
     }
 
     getProjectsCount() {
