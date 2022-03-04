@@ -32,7 +32,10 @@ One caveat to note is that the word counts stored for a particular document will
 ## Features
 - [x] Basic word counting
 - [x] Custom status bar for word counts - currently shows current note words/total words
-- [x] Project-based counting
+- [?] Project-based counting
+    - [ ] Compatibility with Longform project index
+- [ ] Project manager leaf
+- [ ] Statistics view leaf
 - [ ] Per-project statistics tables via code blocks
 - [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
 - [ ] Per-project word goals
@@ -46,7 +49,6 @@ One caveat to note is that the word counts stored for a particular document will
     - [ ] Legacy editor? (Maybe; since the legacy editor will eventually be removed, not sure there is a huge userbase for whom this would be a useful feature.)
 
 ## Planned Features
-- [ ] Compatibility with Longform project index
 - [ ] Per-section breakdown of notes (i.e., utilizing headings to break up counting)
 - [ ] Historical word counts stored on a per file basis (with rename and relocation tracking)
     - The main caveats of this functionality are:

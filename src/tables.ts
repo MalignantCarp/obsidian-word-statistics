@@ -7,11 +7,13 @@ import { WSTableSettings } from "./types";
 export default class ProjectTableModal extends Modal {
     plugin: WordStatisticsPlugin;
     projects: WSProjectManager;
+    project: WSProject;
 
     constructor(app: App, plugin: WordStatisticsPlugin, projects: WSProjectManager) {
         super(app);
         this.plugin = plugin;
-        this.projects = projects
+        this.projects = projects;
+        this.project = null;
     }
 
     isEnter(e: KeyboardEvent) {
@@ -19,37 +21,28 @@ export default class ProjectTableModal extends Modal {
             e.altKey === false && e.ctrlKey === false);
     }
 
-    onClose() {
+    clear() {
         this.plugin = null;
+        this.projects = null;
+        this.project = null;
 
         let { contentEl } = this;
         contentEl.empty();
     }
 
     getProject() {
-        // we know that when we call this modal, there is at least one project
-        // if there isn't, we just create a notice that there are no projects
-        let project = "";
-        if (this.plugin.tableSettings.project == null) {
-            project = this.projects.getProjectNames()[0];
-        } else {
-            project = this.plugin.tableSettings.project.getName();
+        // if there are no projects, this modal cannot be created and a notice is given instead advising there are no projects
+        // so this should never return a null value
+        if (this.project == null) {
+            this.project = this.projects.getProjectList()[0]; // get the first project in the project manager's list
         }
-        return project;
+        return this.project.getName();
     }
 
     onOpen() {
         let { contentEl } = this;
 
         contentEl.createEl('h2', { text: 'Insert Statistics Table' });
-
-        // we will eventually also want to add a setting to set these as the default settings
-        // and to save them for the session. We will need three sets of settings then
-        // (default), current, and session. The current settings will be used for tab functions.
-        // The current settings can be reset to default. The session settings will be called up
-        // by this modal, so if the current settings are saved to session, it will be the same
-        // settings loaded next time.
-
         new Setting(contentEl)
             .setName('Project')
             .setDesc('Select the project for which to generate a table')
@@ -57,44 +50,12 @@ export default class ProjectTableModal extends Modal {
                 this.projects.getProjectNames().forEach((proj: string) => {
                     cb.addOption(proj, proj);
                 });
-                cb.setValue(this.getProject()); // what if this is null?
+                cb.setValue(this.getProject()); // this should never be null
                 cb.onChange(async (value: string) => {
-                    this.plugin.tableSettings.project = this.projects.getProjectByName(value);
-                    await this.plugin.saveSettings();
+                    // value should always be valid as his is a modal, so no changes could be made, this this should never return null
+                    this.project = this.projects.getProject(value);
                 });
             });
-        new Setting(contentEl)
-            .setName('Display number')
-            .setDesc('Show numerical index as first column of table')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.tableSettings.showNumber)
-                .onChange(async (value: boolean) => {
-                    this.plugin.tableSettings.showNumber = value;
-                }));
-        new Setting(contentEl)
-            .setName('Alphanumeric sorting')
-            .setDesc('Sort table entries alphabetically instead of by index position')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.tableSettings.sortAlpha)
-                .onChange(async (value: boolean) => {
-                    this.plugin.tableSettings.sortAlpha = value;
-                }));
-        new Setting(contentEl)
-            .setName('Show percentage of whole')
-            .setDesc('Show the percentage of words each entry holds to the total words represented by the table')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.tableSettings.showShare)
-                .onChange(async (value: boolean) => {
-                    this.plugin.tableSettings.showShare = value;
-                }));
-        new Setting(contentEl)
-            .setName('Show excluded notes')
-            .setDesc('Show notes within the project even if they are not to be counted (with "--" as their counts)')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.tableSettings.showExcluded)
-                .onChange(async (value: boolean) => {
-                    this.plugin.tableSettings.showExcluded = value;
-                }));
         new Setting(contentEl)
             .addButton((button) => {
                 button.setButtonText("Insert and close").onClick(async () => {
@@ -104,10 +65,9 @@ export default class ProjectTableModal extends Modal {
     }
 }
 
-export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings): string {
+export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings, project: WSProject): string {
     let text = "";
 
-    let project = settings.project;
     let files = collector.projects.getProjectList();
     let bar = "";
     if (settings.showNumber) {

@@ -4,7 +4,7 @@ export const YAML_PROJECT_INDEX = 'wsplugin-project-index'; // set this to the n
 
 export interface WSPluginSettings {
 	useDisplayText: boolean;
-	defaultTableSettings: WSTableSettings;
+	tableSettings: WSTableSettings;
 }
 
 export interface WSTableSettings {
@@ -12,7 +12,6 @@ export interface WSTableSettings {
 	sortAlpha: boolean; // sorts all entries alphabetically -- ignores index sort
 	showShare: boolean; // shorts the percentage of words the note holds of the project's total word count
 	showExcluded: boolean; // still shows an file in the table where counting is to be excluded 
-	project: WSProject;
 }
 
 export enum QIType {

@@ -7,12 +7,11 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	sortAlpha: false,
 	showShare: true,
 	showExcluded: true,
-	project: null
 };
 
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
-	defaultTableSettings: DEFAULT_TABLE_SETTINGS,
+	tableSettings: DEFAULT_TABLE_SETTINGS,
 };
 
 export default class WordStatsSettingTab extends PluginSettingTab {
@@ -40,7 +39,39 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					this.plugin.settings.useDisplayText = value;
 					await this.plugin.saveSettings();
 				}));
-		containerEl.createEl('h3', { text: 'Table Settings' });
-
+		containerEl.createEl('h3', { text: 'Insert Table Settings' });
+		new Setting(containerEl)
+			.setName('Display number')
+			.setDesc('Show numerical index as first column of table')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.tableSettings.showNumber)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.tableSettings.showNumber = value;
+				}));
+		new Setting(containerEl)
+			.setName('Alphanumeric sorting')
+			.setDesc('Sort table entries alphabetically instead of by index position')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.tableSettings.sortAlpha)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.tableSettings.sortAlpha = value;
+				}));
+		new Setting(containerEl)
+			.setName('Show percentage of whole')
+			.setDesc('Show the percentage of words each entry holds to the total words represented by the table')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.tableSettings.showShare)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.tableSettings.showShare = value;
+				}));
+		new Setting(containerEl)
+			.setName('Show excluded notes')
+			.setDesc('Show notes within the project even if they are not to be counted (with "--" as their counts)')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.tableSettings.showExcluded)
+				.onChange(async (value: boolean) => {
+					this.plugin.settings.tableSettings.showExcluded = value;
+				}));
 	}
+
 }

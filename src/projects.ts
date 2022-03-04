@@ -19,18 +19,6 @@ export class WSProjectManager {
         this.projects = new Map<string,WSProject>();
     }
 
-    getProjectByName(name: string) {
-        if (name == undefined || name == null) {
-            return null;
-        }
-        let project = this.projects.get(name);
-        if (project == undefined) {
-            let project = new WSProject(name);
-            this.projects.set(name, project);
-        }
-        return project;
-    }
-
     projectNameExists(name: string) {
         return this.projects.has(name);
     }
@@ -50,9 +38,18 @@ export class WSProjectManager {
 
     getProject(name: string) {
         if (!this.projects.has(name)) {
-            this.projects.set(name, new WSProject(name));
+            return null;
         }
         return this.projects.get(name);
+    }
+
+    newProject(name: string) {
+        if (this.projects.has(name)) {
+            return null;
+        }
+        let project = new WSProject(name);
+        this.projects.set(name, project);
+        return project;
     }
 
     deleteProject(name: string) {

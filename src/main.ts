@@ -8,7 +8,6 @@ import { WordCountForText } from './words';
 
 export default class WordStatisticsPlugin extends Plugin {
 	public settings: WSPluginSettings;
-	public tableSettings: WSTableSettings; // we should also create one for current settings and session settings for this
 	public debounceRunCount: Debouncer<[file: TFile, data: string]>;
 	public wordsPerMS: number[] = [];
 	private statusBar: HTMLElement;
@@ -47,9 +46,9 @@ export default class WordStatisticsPlugin extends Plugin {
 			id: 'insert-project-table-modal',
 			name: 'Insert Project Table Modal',
 			callback: () => {
-				this.insertProjectTableModal()
+				this.insertProjectTableModal();
 			}
-		})		
+		});
 	}
 
 	onunload() {
@@ -58,7 +57,6 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_PLUGIN_SETTINGS, await this.loadData());
-		this.tableSettings = Object.assign({}, DEFAULT_TABLE_SETTINGS); // this should be created out of existing settings, which will need to be added.
 	}
 
 	async saveSettings() {
@@ -87,10 +85,14 @@ export default class WordStatisticsPlugin extends Plugin {
 	insertProjectTableModal() {
 		if (this.collector.projects.getProjectsCount() > 0) {
 			let projects = this.collector.projects;
-			new ProjectTableModal(this.app, this, projects).open()
-			let tableText = BuildProjectTable(this.collector, this.tableSettings);
+			let modal = new ProjectTableModal(this.app, this, projects);
+			modal.open();
+			let project = modal.project;
+			modal.clear();
+			let tableText = BuildProjectTable(this.collector, this.settings.tableSettings, modal.project);
+
 		} else {
-			new Notice("There are no projects to display.")
+			new Notice("There are no projects to display.");
 		}
 	}
 
