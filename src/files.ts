@@ -1,15 +1,11 @@
-import { WSDataCollector } from "./data";
-
 export class WSFileRef {
-	private collector: WSDataCollector;
 	private id: number;
 	private path: string;
 	private words: number;
 	private lastUpdate: number;
 	private title: string;
 
-	constructor(collector: WSDataCollector, id: number, path: string) {
-		this.collector = collector;
+	constructor(id: number, path: string) {
 		this.id = id;
 		this.path = path;
 		this.words = 0;

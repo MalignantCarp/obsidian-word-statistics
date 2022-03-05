@@ -1,18 +1,25 @@
-2022-03-03
- - Moved Table Settings into plugin settings.
- - More cleanup.
- - ProjectManager.getProject() will now return null if the project does not exist. Previously it created the project.
- - ProjectManager has a newProject() routine now. It will return null if the project name is already in use.
+2022-03-04
+ - Added WSProjectRef interface and array added to plugin settings to store project list.
+  - WSPluginRef allows a choice of using a tag, folder, or file as the index for the project.
+  - Added WSPIndexType enum for the three types of indices, along with their relevant setters and getter.
+ - Cleanup
+  - Removed Collector from WSPluginRef was it was not used)
+  - Migrated interfaces to their respective project files. No point in having them separate in a types.ts file when they are rarely used outside of their context. It is likely some of them won't even need to be exported.
  - [ ] TODO: Finish up the WSProjectManager class with respect to building project indices so that a project has contents.
   - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
-  - [ ] We will want to specify a project as being indexed by an index file (singular), by tag (sorted alphabetically, or perhaps by subtag?), or by folder (sorted by path).
+  - [x] We will want to specify a project as being indexed by an index file (singular), by tag (sorted alphabetically, or perhaps by subtag?), or by folder (sorted by path).
   - [ ] We will also want to make sure that when onRename() happens on a folder, that we check to see if any projects use it as an index and perform the rename there accordingly.
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
+2022-03-03
+ - [x] ~~TODO: Pull table settings into settings.ts for the main settings and just have the table modal select the project~~
+ - More cleanup.
+ - ProjectManager.getProject() will now return null if the project does not exist. Previously it created the project.
+ - ProjectManager has a newProject() routine now. It will return null if the project name is already in use.
+
 2022-03-02
  - Further work on new project system, sadly not much today.
-  - [x] ~~TODO: Pull table settings into settings.ts for the main settings and just have the table modal select the project~~
  
 2022-03-01
  - Scrapped old project system and links/backlinks. WSFileRefs will now just keep track of file-related things, such as current title, word count, etc.

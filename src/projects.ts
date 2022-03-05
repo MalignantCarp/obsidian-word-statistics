@@ -8,6 +8,16 @@ interface WSProjectData {
     wordsExcluded: boolean,
 }
 
+enum WSPIndexType {
+    File = 0, Folder, Tag
+}
+
+export interface WSProjectRef {
+    name: string;
+    type: WSPIndexType;
+    index: string;
+}
+
 export class WSProjectManager {
     private plugin: WordStatisticsPlugin;
     private collector: WSDataCollector;
@@ -16,7 +26,16 @@ export class WSProjectManager {
     constructor(plugin: WordStatisticsPlugin, collector: WSDataCollector) {
         this.plugin = plugin;
         this.collector = collector;
-        this.projects = new Map<string,WSProject>();
+        this.projects = new Map<string, WSProject>();
+    }
+
+    buildProjects(projects: WSProjectRef[]) {
+        projects.forEach((project: WSProjectRef) => {
+            if (this.newProject(project) == null) {
+                console.log ("Unable to create project for ", project);
+                throw (Error());
+            }
+        });
     }
 
     projectNameExists(name: string) {
@@ -29,7 +48,7 @@ export class WSProjectManager {
     // could then be listed in the project leaf;
     // we don't want the project to be manipulating any files, so changing the YAML tags for a file
     // doesn't seem like a good plan
-    renameProject(project: WSProject, name:string) {
+    renameProject(project: WSProject, name: string) {
         let oldName = project.getName();
         project.setName(name);
         this.projects.delete(oldName);
@@ -43,12 +62,12 @@ export class WSProjectManager {
         return this.projects.get(name);
     }
 
-    newProject(name: string) {
-        if (this.projects.has(name)) {
+    newProject(ref: WSProjectRef) {
+        if (this.projects.has(ref.name)) {
             return null;
         }
-        let project = new WSProject(name);
-        this.projects.set(name, project);
+        let project = new WSProject(this, ref);
+        this.projects.set(ref.name, project);
         return project;
     }
 
@@ -83,11 +102,66 @@ export class WSProjectManager {
 
 export class WSProject {
     private name: string;
+    private manager: WSProjectManager;
     private files: Map<WSFileRef, WSProjectData>;
+    private ref: WSProjectRef;
 
-    constructor(name: string) {
-        this.name = name;
+    constructor(manager: WSProjectManager, ref: WSProjectRef) {
+        this.manager = manager;
+        this.name = ref.name;
         this.files = new Map<WSFileRef, WSProjectData>();
+        this.ref = ref;
+    }
+
+    getRef() {
+        return this.ref;
+    }
+
+    clearIndex() {
+
+    }
+
+    indexedByFolder() {
+        return this.ref.type === WSPIndexType.Folder;
+    }
+
+    indexedByFile() {
+        return this.ref.type === WSPIndexType.File;
+    }
+
+    indexedByTag() {
+        return this.ref.type === WSPIndexType.Tag;
+    }
+
+    setIndexFile(path: string) {
+        this.ref.type = WSPIndexType.File;
+        this.ref.index = path;
+    }
+
+    setIndexFolder(path: string) {
+        this.ref.type = WSPIndexType.Folder;
+        this.ref.index = path;
+    }
+
+    setIndexTag(tag: string) {
+        this.ref.type = WSPIndexType.Tag;
+        this.ref.index = tag;
+    }
+
+    getIndexFile() {
+        return this.ref.type === WSPIndexType.File ? this.ref.index : null;
+    }
+
+    getIndexFolder() {
+        return this.ref.type === WSPIndexType.Folder ? this.ref.index : null;
+    }
+
+    getIndexTag() {
+        return this.ref.type === WSPIndexType.Tag ? this.ref.index : null;
+    }
+
+    getIndexType() {
+        return this.ref.type;
     }
 
     cleanup() {
@@ -100,6 +174,7 @@ export class WSProject {
 
     setName(name: string) {
         this.name = name;
+        this.ref.name = name;
     }
 
     addFile(file: WSFileRef, name: string, excluded: boolean) {

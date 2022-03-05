@@ -1,9 +1,43 @@
 import { Vault, MetadataCache, TFile, TAbstractFile } from 'obsidian';
 import { WSFileRef } from './files';
 import WordStatisticsPlugin from './main';
-import { WSProject, WSProjectManager } from './projects';
-import { QIType, QueuedItem, YAML_PROJECT_INDEX } from './types';
+import { WSProjectManager } from './projects';
 import { WordCountForText } from './words';
+
+enum QIType {
+	Log = "QIT_LOG",
+	Delta = "QIT_DELTA"
+}
+
+class QueuedItem {
+	private type: QIType;
+	private id: number;
+	private path: string;
+	private count: number;
+
+	constructor(type: QIType, id: number, path: string, count: number) {
+		this.type = type;
+		this.id = id;
+		this.path = path;
+		this.count = count;
+	}
+
+	getType() {
+		return this.type;
+	}
+
+	getID() {
+		return this.id;
+	}
+
+	getPath() {
+		return this.path;
+	}
+
+	getCount() {
+		return this.count;
+	}
+}
 
 export class WSDataCollector {
     private plugin: WordStatisticsPlugin;
@@ -83,7 +117,6 @@ export class WSDataCollector {
         let fi = this.getFile(file.path);
         let frontMatter = this.mdCache.getCache(file.path).frontmatter;
         if (frontMatter != undefined) {
-            let project = this.projects.getProject(frontMatter[YAML_PROJECT_INDEX]);
             // we should do something to update links for a project; if the file is set to be a project index
             // can a project have more than one index?
             let title = frontMatter['title'];
@@ -97,7 +130,7 @@ export class WSDataCollector {
 
     newFile(path: string) {
         // console.log("newFile(%d)", this.files.length);
-        let file = new WSFileRef(this, this.files.length, path);
+        let file = new WSFileRef(this.files.length, path);
         this.files.push(file);
         this.fileMap.set(path, file);
         this.idMap.set(file.getID(), file);
@@ -189,7 +222,7 @@ export class WSDataCollector {
         }
         return this.idMap.get(id);
     }
-
+    
     async ScanVault() {
         const files = this.vault.getMarkdownFiles();
         for (const i in files) {

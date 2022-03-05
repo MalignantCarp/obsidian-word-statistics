@@ -2,7 +2,7 @@ import { App, DropdownComponent, Modal, Setting } from "obsidian";
 import { WSDataCollector } from "./data";
 import WordStatisticsPlugin from "./main";
 import { WSProject, WSProjectManager } from "./projects";
-import { WSTableSettings } from "./types";
+import { WSTableSettings } from "./settings";
 
 export default class ProjectTableModal extends Modal {
     plugin: WordStatisticsPlugin;

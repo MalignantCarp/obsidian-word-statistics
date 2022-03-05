@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import WordStatisticsPlugin from "./main";
-import { WSPluginSettings, WSTableSettings } from "./types";
+import { WSPluginRef } from "./projects";
 
 export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showNumber: true,
@@ -12,7 +12,21 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
+	projects: [],
 };
+
+export interface WSPluginSettings {
+	useDisplayText: boolean;
+	tableSettings: WSTableSettings;
+	projects: WSPluginRef[];
+}
+
+export interface WSTableSettings {
+	showNumber: boolean; // shows a number next to each entry as the primary key
+	sortAlpha: boolean; // sorts all entries alphabetically -- ignores index sort
+	showShare: boolean; // shorts the percentage of words the note holds of the project's total word count
+	showExcluded: boolean; // still shows an file in the table where counting is to be excluded 
+}
 
 export default class WordStatsSettingTab extends PluginSettingTab {
 	plugin: WordStatisticsPlugin;
