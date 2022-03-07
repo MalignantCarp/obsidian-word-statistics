@@ -1,3 +1,22 @@
+ - [ ] TODO: Finish up the WSProjectManager class with respect to building project indices so that a project has contents.
+  - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
+ - [ ] TODO: Refactor WSFileRef and WSProject systems to simply where possible
+ - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
+ - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
+
+2022-03-06
+ - Internalized much of the WSProjectRef interface into the WSProject class. Transformed the interface into WSProjectMap for data mapping to and from data.json.
+ - Added code to WSProject to update based on a WSProjectMap (retrieved from the settings interface for creating projects, yet to be coded).
+ - Added code to WSFileRef to hold onto tags and links.
+ - Added code to WSDataCollector to retrieve a list of all WSFileRefs by tag.
+ - Added code to WSDataCollector to retrieve a list of all WSFileRefs by folder.
+ - Added code to determine if an index rebuild is required for the project.
+ - WSProjectManager now has a list of file indexes.
+ - Added code to the WSDataCollector.updateFile() code to update links and tags on the WSFileRef(). Links are only updated if the file is an index.
+ - TAbstractFile.name is now set as title when none exists.
+ - First steps are in for Longform integration. Will need a flag to specify when an index file is a longform project.
+ - [x] ~~We will also want to make sure that when onRename() happens on a folder, that we check to see if any projects use it as an index and perform the rename there accordingly.~~ This is no longer an issue, as the file is now a WSFileRef
+
 2022-03-04
  - Added WSProjectRef interface and array added to plugin settings to store project list.
   - WSPluginRef allows a choice of using a tag, folder, or file as the index for the project.
@@ -5,12 +24,7 @@
  - Cleanup
   - Removed Collector from WSPluginRef was it was not used)
   - Migrated interfaces to their respective project files. No point in having them separate in a types.ts file when they are rarely used outside of their context. It is likely some of them won't even need to be exported.
- - [ ] TODO: Finish up the WSProjectManager class with respect to building project indices so that a project has contents.
-  - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
-  - [x] We will want to specify a project as being indexed by an index file (singular), by tag (sorted alphabetically, or perhaps by subtag?), or by folder (sorted by path).
-  - [ ] We will also want to make sure that when onRename() happens on a folder, that we check to see if any projects use it as an index and perform the rename there accordingly.
- - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
- - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
+
 
 2022-03-03
  - [x] ~~TODO: Pull table settings into settings.ts for the main settings and just have the table modal select the project~~

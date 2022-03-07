@@ -1,9 +1,8 @@
-import { setDefaultResultOrder } from 'dns';
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice } from 'obsidian';
+import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata } from 'obsidian';
 import { WSDataCollector } from './data';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
-import { WSPluginSettings, WSTableSettings } from './types';
+import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 
 export default class WordStatisticsPlugin extends Plugin {
@@ -22,6 +21,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
 		await this.collector.ScanVault();
+		await this.collector.projects.buildProjects(this.settings.projects);
 
 		this.debounceRunCount = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
@@ -34,6 +34,8 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
+		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
+		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 
 		this.registerInterval(window.setInterval(this.onInterval.bind(this), 500));
 
@@ -60,6 +62,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async saveSettings() {
+		this.settings.projects = this.collector.projects.mapProjects();
 		await this.saveData(this.settings);
 	}
 
@@ -131,6 +134,16 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
+	onMDChanged(file: TFile, data: string, cache: CachedMetadata) {
+		// console.log("onMDChanged(%s)", file.path, file);
+		this.collector.UpdateFile(file);
+	}
+
+	onMDResolve(file: TFile) {
+		// console.log("onMDResolve(%s)", file.path, file);
+		this.collector.UpdateFile(file);
+	}
+
 	onLeafChange(leaf: WorkspaceLeaf) {
 		// console.log("onLeafChange(%s)", leaf.view.getViewType());
 		if (leaf.view.getViewType() === "markdown") {
@@ -171,7 +184,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		let words = WordCountForText(data);
 		let endTime = Date.now();
 		this.logSpeed(words, startTime, endTime);
-		this.collector.UpdateFile(file);
 		this.collector.LogWords(file.path, words);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
 		this.updateStatusBar();

@@ -1,4 +1,4 @@
-import { timeStamp } from "console";
+import { TFile } from "obsidian";
 import { WSDataCollector } from "./data";
 import { WSFileRef } from "./files";
 import WordStatisticsPlugin from "./main";
@@ -12,7 +12,7 @@ enum WSPIndexType {
     File = 0, Folder, Tag
 }
 
-export interface WSProjectRef {
+export interface WSProjectMap {
     name: string;
     type: WSPIndexType;
     index: string;
@@ -22,20 +22,39 @@ export class WSProjectManager {
     private plugin: WordStatisticsPlugin;
     private collector: WSDataCollector;
     private projects: Map<string, WSProject>;
+    private indexFiles: Map<WSFileRef, WSProject>;
 
     constructor(plugin: WordStatisticsPlugin, collector: WSDataCollector) {
         this.plugin = plugin;
         this.collector = collector;
         this.projects = new Map<string, WSProject>();
+        this.indexFiles = new Map<WSFileRef, WSProject>();
     }
 
-    buildProjects(projects: WSProjectRef[]) {
-        projects.forEach((project: WSProjectRef) => {
+    async buildProjects(projects: WSProjectMap[]) {
+        projects.forEach((project: WSProjectMap) => {
             if (this.newProject(project) == null) {
-                console.log ("Unable to create project for ", project);
+                console.log("Unable to create project for ", project);
                 throw (Error());
             }
         });
+    }
+
+    mapProjects() {
+        let maps: WSProjectMap[] = [];
+        for (const [name, project] of this.projects) {
+            let map: WSProjectMap = {
+                name: project.getName(),
+                type: project.getIndexType(),
+                index: project.getIndexString()
+            };
+            maps.push(map);
+        }
+        return maps;
+    }
+
+    isIndexFile(fi: WSFileRef) {
+        return this.indexFiles.has(fi);
     }
 
     projectNameExists(name: string) {
@@ -62,13 +81,36 @@ export class WSProjectManager {
         return this.projects.get(name);
     }
 
-    newProject(ref: WSProjectRef) {
-        if (this.projects.has(ref.name)) {
+    newProject(map: WSProjectMap) {
+        if (this.projects.has(map.name)) {
             return null;
         }
-        let project = new WSProject(this, ref);
-        this.projects.set(ref.name, project);
+        let project = new WSProject(this, this.collector, map);
+        if (project.indexedByFile()) {
+            this.indexFiles.set(project.getIndexFile(), project);
+        }
+        this.projects.set(map.name, project);
         return project;
+    }
+
+    updateProject(name: string, map: WSProjectMap) {
+        let project = this.projects.get(name);
+        let oldMap: WSProjectMap = {
+            name: project.getName(),
+            type: project.getIndexType(),
+            index: project.getIndexString()
+        };
+
+        if (oldMap.type === WSPIndexType.File && map.type != WSPIndexType.File) {
+            this.indexFiles.delete(project.getIndexFile());
+        }
+        let rebuild = project.update(map);
+        if (oldMap.name != map.name) {
+            this.renameProject(project, map.name);
+        }
+        if (rebuild) {
+            project.buildIndex();
+        }
     }
 
     deleteProject(name: string) {
@@ -103,65 +145,108 @@ export class WSProjectManager {
 export class WSProject {
     private name: string;
     private manager: WSProjectManager;
+    private collector: WSDataCollector;
     private files: Map<WSFileRef, WSProjectData>;
-    private ref: WSProjectRef;
+    private indexType: WSPIndexType;
+    private indexFolder: string; // should we find a way to encapsulate folders?
+    private indexFile: WSFileRef;
+    private indexTag: string;
 
-    constructor(manager: WSProjectManager, ref: WSProjectRef) {
+    constructor(manager: WSProjectManager, collector: WSDataCollector, map: WSProjectMap) {
         this.manager = manager;
-        this.name = ref.name;
+        this.collector = collector;
+        this.name = map.name;
+        this.indexType = map.type;
+        this.indexFolder = null;
+        this.indexFile = null;
+        this.indexTag = null;
         this.files = new Map<WSFileRef, WSProjectData>();
-        this.ref = ref;
+        if (this.update(map)) {
+            this.buildIndex();
+        }
     }
 
-    getRef() {
-        return this.ref;
+    buildIndex() {
+        this.cleanup();
+        if (this.indexedByFile()) {
+            let fileRef = this.indexFile;
+            if (fileRef === null) {
+                console.log("Invalid index file ('%s') for project ('%s')", this.indexFile, this.name, this);
+                throw (Error("Invalid file index passed for project."));
+            }
+
+        }
     }
 
-    clearIndex() {
-
+    update(map: WSProjectMap) {
+        let rebuild = (this.indexType != map.type) || (this.indexType === map.type && this.getIndexString() != map.index);
+        if (map.type === WSPIndexType.File) {
+            this.indexFile = this.collector.getFile(map.index);
+        } else if (map.type === WSPIndexType.Folder) {
+            this.indexFolder = map.index;
+        } else if (map.type === WSPIndexType.Tag) {
+            this.indexTag = map.index;
+        }
+        return rebuild;
     }
 
     indexedByFolder() {
-        return this.ref.type === WSPIndexType.Folder;
+        return this.indexType === WSPIndexType.Folder;
     }
 
     indexedByFile() {
-        return this.ref.type === WSPIndexType.File;
+        return this.indexType === WSPIndexType.File;
     }
 
     indexedByTag() {
-        return this.ref.type === WSPIndexType.Tag;
+        return this.indexType === WSPIndexType.Tag;
     }
 
-    setIndexFile(path: string) {
-        this.ref.type = WSPIndexType.File;
-        this.ref.index = path;
+    setIndexFile(file: WSFileRef) {
+        this.indexType = WSPIndexType.File;
+        this.indexFile = file;
+        this.indexFolder = null;
+        this.indexTag = null;
     }
 
     setIndexFolder(path: string) {
-        this.ref.type = WSPIndexType.Folder;
-        this.ref.index = path;
+        this.indexType = WSPIndexType.Folder;
+        this.indexFile = null;
+        this.indexFolder = path;
+        this.indexTag = null;
     }
 
     setIndexTag(tag: string) {
-        this.ref.type = WSPIndexType.Tag;
-        this.ref.index = tag;
+        this.indexType = WSPIndexType.Tag;
+        this.indexFile = null;
+        this.indexFolder = null;
+        this.indexTag = tag;
     }
 
     getIndexFile() {
-        return this.ref.type === WSPIndexType.File ? this.ref.index : null;
+        return this.indexType === WSPIndexType.File ? this.indexFile : null;
     }
 
     getIndexFolder() {
-        return this.ref.type === WSPIndexType.Folder ? this.ref.index : null;
+        return this.indexType === WSPIndexType.Folder ? this.indexFolder : null;
     }
 
     getIndexTag() {
-        return this.ref.type === WSPIndexType.Tag ? this.ref.index : null;
+        return this.indexType === WSPIndexType.Tag ? this.indexTag : null;
+    }
+
+    getIndexString() {
+        if (this.indexedByFile()) {
+            return (this.indexFile != null && this.indexFile != undefined) ? this.indexFile.getPath() : null;
+        } else if (this.indexedByFolder()) {
+            return this.indexFolder;
+        } else if (this.indexedByTag()) {
+            return this.indexTag;
+        }
     }
 
     getIndexType() {
-        return this.ref.type;
+        return this.indexType;
     }
 
     cleanup() {
@@ -174,7 +259,6 @@ export class WSProject {
 
     setName(name: string) {
         this.name = name;
-        this.ref.name = name;
     }
 
     addFile(file: WSFileRef, name: string, excluded: boolean) {

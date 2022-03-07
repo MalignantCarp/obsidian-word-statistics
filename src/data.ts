@@ -1,42 +1,48 @@
-import { Vault, MetadataCache, TFile, TAbstractFile } from 'obsidian';
+import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache } from 'obsidian';
 import { WSFileRef } from './files';
 import WordStatisticsPlugin from './main';
 import { WSProjectManager } from './projects';
 import { WordCountForText } from './words';
 
 enum QIType {
-	Log = "QIT_LOG",
-	Delta = "QIT_DELTA"
+    Log = "QIT_LOG",
+    Delta = "QIT_DELTA"
+}
+
+interface LongformDraft {
+    name: string;
+    folder: string;
+    scenes: string[];
 }
 
 class QueuedItem {
-	private type: QIType;
-	private id: number;
-	private path: string;
-	private count: number;
+    private type: QIType;
+    private id: number;
+    private path: string;
+    private count: number;
 
-	constructor(type: QIType, id: number, path: string, count: number) {
-		this.type = type;
-		this.id = id;
-		this.path = path;
-		this.count = count;
-	}
+    constructor(type: QIType, id: number, path: string, count: number) {
+        this.type = type;
+        this.id = id;
+        this.path = path;
+        this.count = count;
+    }
 
-	getType() {
-		return this.type;
-	}
+    getType() {
+        return this.type;
+    }
 
-	getID() {
-		return this.id;
-	}
+    getID() {
+        return this.id;
+    }
 
-	getPath() {
-		return this.path;
-	}
+    getPath() {
+        return this.path;
+    }
 
-	getCount() {
-		return this.count;
-	}
+    getCount() {
+        return this.count;
+    }
 }
 
 export class WSDataCollector {
@@ -64,16 +70,20 @@ export class WSDataCollector {
         this.lastUpdate = 0;
     }
 
+    getFileList() {
+        return Array.from(this.fileMap.values());
+    }
+
     getMetadataCache() {
         return this.mdCache;
     }
 
     getPlugin() {
-        return this.plugin
+        return this.plugin;
     }
 
     getPluginSettings() {
-        return this.plugin.settings
+        return this.plugin.settings;
     }
 
     getLastUpdate() {
@@ -93,6 +103,7 @@ export class WSDataCollector {
                 throw Error("Cannot rename file reference as new file path already in use.");
             }
             this.fileMap.set(file.path, fi);
+            fi.setTitle(file.name);
             fi.setPath(file.path);
         } else {
             console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldName, file.path);
@@ -102,7 +113,7 @@ export class WSDataCollector {
     }
 
     onDelete(file: TAbstractFile) {
-        console.log(file);
+        // console.log(file);
         if (this.fileMap.has(file.path)) {
             let fi = this.fileMap.get(file.path);
             this.fileMap.delete(file.path);
@@ -112,15 +123,53 @@ export class WSDataCollector {
         }
     }
 
+    checkFMLongform(file: TFile, frontmatter: FrontMatterCache) {
+        let longformDrafts: LongformDraft[] = [];
+        if (frontmatter?.['drafts'] != undefined) {
+            let drafts = frontmatter['drafts'];
+            for (let draft of drafts) {
+                longformDrafts.push(draft);
+            }
+        }
+    }
+
     UpdateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFile(file.path);
-        let frontMatter = this.mdCache.getCache(file.path).frontmatter;
-        if (frontMatter != undefined) {
-            // we should do something to update links for a project; if the file is set to be a project index
-            // can a project have more than one index?
-            let title = frontMatter['title'];
-            fi.setTitle(title);
+        fi.setTitle(file.name);
+        let cache = this.mdCache.getCache(file.path);
+        if (cache != undefined && cache != null) {
+            fi.setTitle(cache.frontmatter?.['title'] || file.name);
+            this.checkFMLongform(file, cache.frontmatter);
+            let tagCache = cache.tags;
+            let tags: string[] = [];
+            if (tagCache != undefined && tagCache != null && tagCache.length > 0) {
+                tagCache.forEach((tag) => {
+                    tags.push(tag.tag);
+                });
+            }
+            fi.setTags(tags);
+            if (this.projects.isIndexFile(fi)) {
+                // update index
+                let links = this.mdCache.getCache(file.path).links;
+                let newLinks: [WSFileRef, string][] = [];
+                for (let i = 0; i < links.length; i++) {
+                    let link = links[i];
+                    let linkPath = getLinkpath(link.link);
+                    let linkedFile = this.mdCache.getFirstLinkpathDest(link.link, file.path);
+                    // if there is no link, we don't want to add it to the list
+                    if (linkedFile != null) {
+                        let lFile = this.getFile(linkedFile.path);
+                        newLinks.push([lFile, link.displayText || lFile.getTitle()]);
+                    }
+                }
+                // clear old links
+                fi.clearLinks();
+                // set all new links
+                for (const [ref, title] of newLinks) {
+                    fi.setLink(ref, title);
+                }
+            }
         }
     }
 
@@ -222,7 +271,7 @@ export class WSDataCollector {
         }
         return this.idMap.get(id);
     }
-    
+
     async ScanVault() {
         const files = this.vault.getMarkdownFiles();
         for (const i in files) {
