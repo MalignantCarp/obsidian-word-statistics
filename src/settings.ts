@@ -1,7 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import { WSFileRef } from "./files";
 import WordStatisticsPlugin from "./main";
-import { WSProject, WSProjectMap } from "./projects";
 
 export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showNumber: true,
@@ -13,13 +11,13 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
-	projects: [],
+//	projects: [],
 };
 
 export interface WSPluginSettings {
 	useDisplayText: boolean;
 	tableSettings: WSTableSettings;
-	projects: WSProjectMap[];
+//	projects: WSProjectMap[];
 }
 
 export interface WSTableSettings {

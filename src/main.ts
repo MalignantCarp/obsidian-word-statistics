@@ -1,7 +1,7 @@
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata } from 'obsidian';
+import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata, normalizePath } from 'obsidian';
 import { WSDataCollector } from './data';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
-import ProjectTableModal, { BuildProjectTable } from './tables';
+//import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 
@@ -62,9 +62,57 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async saveSettings() {
-		this.settings.projects = this.collector.projects.mapProjects();
 		await this.saveData(this.settings);
 	}
+
+	async loadSerialData(plugin: WordStatisticsPlugin, path: string) {
+		const adapter = plugin.app.vault.adapter;
+		const dir = plugin.manifest.dir;
+		const loadPath = normalizePath(`${dir}/${path}`);
+		if (await adapter.exists(path)) {
+			return await adapter.read(loadPath);
+		}
+		return undefined;
+	}
+
+
+	/*
+	async loadStats() {
+			const adapter = this.app.vault.adapter;
+			const dir = this.manifest.dir;
+			const path = normalizePath(`${dir}/${STATS_FILENAME}`)
+			let stats : string;
+	
+			if (await adapter.exists(path)) {
+				stats = await adapter.read(path)
+	
+				try {
+					this.sprintHistory = JSON.parse(stats) as SprintRunStat[]
+				} catch(error) {
+					new Notice(`Unable to read ${STATS_FILENAME}`)
+					console.error(error)
+				}
+	
+			}
+		}
+	
+		async saveStats(statsFilename : string = STATS_FILENAME) {
+			const adapter = this.app.vault.adapter;
+			const dir = this.manifest.dir;
+			const path = normalizePath(`${dir}/${statsFilename}`)
+	
+			if (this.settings.nanowrimoProjectId && this.settings.nanowrimoProjectChallengeId) {
+				await this.updateNano(this.theSprint.getStats().totalWordsWritten)
+			}
+	
+			try {
+				await adapter.write(path, JSON.stringify(this.sprintHistory))
+			} catch(error) {
+				new Notice(`Unable to write to ${statsFilename} file`)
+				console.error(error)
+			}
+		}
+	*/
 
 	async logSpeed(wordsCounted: number, startTime: number, endTime: number) {
 		let duration = endTime - startTime;

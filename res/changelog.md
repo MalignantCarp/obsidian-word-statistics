@@ -4,6 +4,11 @@
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
+2022-03-11, 2022-03-12, 2022-03-13, 2022-03-18, 2022-03-20
+ - Rebuilt WSFile and WSProject classes, added WSProjectGroup.
+ - Rebuilt WSProjectManager class.
+ - Added a Dispatcher class to run function callbacks sending both id (used to remove callback) and message to the callback function. Right now the Dispatcher just receives a message for dispatch, but this could later be expanded to dispatch objects and enum types to tell it what it needs to do. Basic event system.
+
 2022-03-06
  - Internalized much of the WSProjectRef interface into the WSProject class. Transformed the interface into WSProjectMap for data mapping to and from data.json.
  - Added code to WSProject to update based on a WSProjectMap (retrieved from the settings interface for creating projects, yet to be coded).

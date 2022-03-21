@@ -1,3 +1,4 @@
+/*
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
 import { WSDataCollector } from "./data";
 import WordStatisticsPlugin from "./main";
@@ -103,3 +104,4 @@ export function BuildProjectTable(collector: WSDataCollector, settings: WSTableS
 
     return text;
 }
+*/

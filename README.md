@@ -34,8 +34,10 @@ One caveat to note is that the word counts stored for a particular document will
 - [x] Custom status bar for word counts - currently shows current note words/total words
 - [?] Project-based counting
     - [ ] Compatibility with Longform project index
-- [ ] Project manager leaf
-- [ ] Statistics view leaf
+- [ ] Historical statistics on a per-project basis
+- [ ] Project groups
+- [ ] Project manager view
+- [ ] Statistics view
 - [ ] Per-project statistics tables via code blocks
 - [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
 - [ ] Per-project word goals
@@ -50,10 +52,6 @@ One caveat to note is that the word counts stored for a particular document will
 
 ## Planned Features
 - [ ] Per-section breakdown of notes (i.e., utilizing headings to break up counting)
-- [ ] Historical word counts stored on a per file basis (with rename and relocation tracking)
-    - The main caveats of this functionality are:
-        - external modification of notes, since there is no way to account for these in determining the time during which the change in word count occurred
-        - clipboard-related changes (i.e., cut/paste), since these can both move, duplicate, and delete words (see below on clipboard-related word count deferrals)
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.
 
 ## Future Possibilities
