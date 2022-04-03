@@ -1,9 +1,11 @@
 import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata, normalizePath } from 'obsidian';
 import { WSDataCollector } from './data';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
-//import ProjectTableModal, { BuildProjectTable } from './tables';
+import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
+
+const PROJECT_PATH = "projects.json";
 
 export default class WordStatisticsPlugin extends Plugin {
 	public settings: WSPluginSettings;
@@ -21,7 +23,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
 		await this.collector.ScanVault();
-		await this.collector.projects.buildProjects(this.settings.projects);
+		let projects = await this.loadSerialData(this, PROJECT_PATH);
+		if (projects) {
+			this.collector.manager.populateFromSerialized(projects);
+		}
 
 		this.debounceRunCount = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
@@ -75,45 +80,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		return undefined;
 	}
 
-
-	/*
-	async loadStats() {
-			const adapter = this.app.vault.adapter;
-			const dir = this.manifest.dir;
-			const path = normalizePath(`${dir}/${STATS_FILENAME}`)
-			let stats : string;
-	
-			if (await adapter.exists(path)) {
-				stats = await adapter.read(path)
-	
-				try {
-					this.sprintHistory = JSON.parse(stats) as SprintRunStat[]
-				} catch(error) {
-					new Notice(`Unable to read ${STATS_FILENAME}`)
-					console.error(error)
-				}
-	
-			}
-		}
-	
-		async saveStats(statsFilename : string = STATS_FILENAME) {
-			const adapter = this.app.vault.adapter;
-			const dir = this.manifest.dir;
-			const path = normalizePath(`${dir}/${statsFilename}`)
-	
-			if (this.settings.nanowrimoProjectId && this.settings.nanowrimoProjectChallengeId) {
-				await this.updateNano(this.theSprint.getStats().totalWordsWritten)
-			}
-	
-			try {
-				await adapter.write(path, JSON.stringify(this.sprintHistory))
-			} catch(error) {
-				new Notice(`Unable to write to ${statsFilename} file`)
-				console.error(error)
-			}
-		}
-	*/
-
 	async logSpeed(wordsCounted: number, startTime: number, endTime: number) {
 		let duration = endTime - startTime;
 		// it must take at least 1 ms to be considered for the log
@@ -127,15 +93,14 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async onInterval() {
-		await this.collector.ProcessQueuedItems();
-		if (this.hudLastUpdate < this.collector.getLastUpdate()) {
+		if (this.hudLastUpdate < this.collector.lastUpdate) {
 			this.updateStatusBar();
 		}
 	}
 
 	insertProjectTableModal() {
-		if (this.collector.projects.getProjectsCount() > 0) {
-			let projects = this.collector.projects;
+		if (this.collector.manager.projects.size > 0) {
+			let projects = this.collector.manager;
 			let modal = new ProjectTableModal(this.app, this, projects);
 			modal.open();
 			let project = modal.project;
@@ -155,13 +120,13 @@ export default class WordStatisticsPlugin extends Plugin {
 			// let projects = this.collector.getProjectsFromPath(path);
 			// console.log(projects);
 			let words = this.collector.GetWords(path);
-			let totalWords = this.collector.getTotalWords();
+			let totalWords = this.collector.totalWords;
 
 			// **Is this valid for mobile?**
 			let wordStr = Intl.NumberFormat().format(words) + " / " + Intl.NumberFormat().format(totalWords);
 			this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words"));
 		} else {
-			let totalWords = this.collector.getTotalWords();
+			let totalWords = this.collector.totalWords;
 			let wordStr = Intl.NumberFormat().format(totalWords);
 			this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words") + " in vault.");
 		}

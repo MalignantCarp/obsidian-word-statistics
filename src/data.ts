@@ -1,6 +1,7 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache } from 'obsidian';
 import { WSFile } from './files';
 import WordStatisticsPlugin from './main';
+import { WSProjectManager } from './projects';
 import { WordCountForText } from './words';
 
 enum QIType {
@@ -65,7 +66,7 @@ class Dispatcher {
 
     dispatchMessage(msg: string) {
         this.callbacks.forEach((func, id) => {
-            console.log(`Dispatching message '${msg}' for id ${id}`)
+            console.log(`Dispatching message '${msg}' for id ${id}`);
             func(id, msg);
         });
     }
@@ -78,7 +79,7 @@ export class WSDataCollector {
     private fileMap: Map<string, WSFile>;
     private fileCallbacks: Map<string, Dispatcher>;
     private files: WSFile[];
-    private queue: QueuedItem[];
+    manager: WSProjectManager;
     totalWords: number = 0;
     lastUpdate: number = 0;
 
@@ -89,46 +90,46 @@ export class WSDataCollector {
         this.fileMap = new Map<string, WSFile>();
         this.fileCallbacks = new Map<string, Dispatcher>();
         this.files = [];
-        this.queue = [];
         this.totalWords = 0;
         this.lastUpdate = 0;
+        this.manager = new WSProjectManager(plugin, this);
     }
 
-    addCallback(filename: string, id: string, func: Function) {
-        if (this.fileCallbacks.has(filename)) {
-            let disp = this.fileCallbacks.get(filename);
+    addCallback(path: string, id: string, func: Function) {
+        if (this.fileCallbacks.has(path)) {
+            let disp = this.fileCallbacks.get(path);
             disp.addCallback(id, func);
         } else {
             let disp = new Dispatcher();
             disp.addCallback(id, func);
-            this.fileCallbacks.set(filename, disp);
+            this.fileCallbacks.set(path, disp);
         }
     }
 
-    removeCallback(filename: string, id: string) {
-        if (this.fileCallbacks.has(filename)) {
-            this.fileCallbacks.get(filename).removeCallback(id);
+    removeCallback(path: string, id: string) {
+        if (this.fileCallbacks.has(path)) {
+            this.fileCallbacks.get(path).removeCallback(id);
         }
     }
 
-    renameDispatcher(filename: string, newFn: string) {
-        if (this.fileCallbacks.has(filename)) {
-            if (this.fileCallbacks.has(newFn)) {
-                if (this.fileCallbacks.get(filename) != this.fileCallbacks.get(newFn)) {
-                    console.log(this.fileCallbacks.get(filename))
-                    console.log(this.fileCallbacks.get(newFn));
-                    throw(Error("Attempted to rename message dispatcher, but a different message dispatcher with that name already exists."))
+    renameDispatcher(oldPath: string, newPath: string) {
+        if (this.fileCallbacks.has(oldPath)) {
+            if (this.fileCallbacks.has(newPath)) {
+                if (this.fileCallbacks.get(oldPath) != this.fileCallbacks.get(newPath)) {
+                    console.log(this.fileCallbacks.get(oldPath));
+                    console.log(this.fileCallbacks.get(newPath));
+                    throw (Error("Attempted to rename message dispatcher, but a different message dispatcher with that name already exists."));
                 }
             }
-            this.fileCallbacks.set(newFn, this.fileCallbacks.get(filename));
-            this.fileCallbacks.delete(filename);
+            this.fileCallbacks.set(newPath, this.fileCallbacks.get(oldPath));
+            this.fileCallbacks.delete(oldPath);
         }
     }
 
-    dispatchMessage(filename: string, msg: string) {
-        if (this.fileCallbacks.has(filename)) {
-            console.log(`Dispatching '${msg}' for '${filename}.`)
-            this.fileCallbacks.get(filename).dispatchMessage(msg);
+    dispatchMessage(path: string, msg: string) {
+        if (this.fileCallbacks.has(path)) {
+            console.log(`Dispatching '${msg}' for '${path}.`);
+            this.fileCallbacks.get(path).dispatchMessage(msg);
         }
     }
 
@@ -144,20 +145,20 @@ export class WSDataCollector {
         return this.vault.getMarkdownFiles().length;
     }
 
-    onRename(file: TAbstractFile, oldName: string) {
-        if (this.fileMap.has(oldName)) {
-            let fi = this.fileMap.get(oldName);
-            this.fileMap.delete(oldName);
+    onRename(file: TAbstractFile, oldPath: string) {
+        if (this.fileMap.has(oldPath)) {
+            let fi = this.fileMap.get(oldPath);
+            this.fileMap.delete(oldPath);
             if (this.fileMap.has(file.path)) {
-                console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldName, file.path);
+                console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldPath, file.path);
                 throw Error("Cannot rename file reference as new file path already in use.");
             }
             this.fileMap.set(file.path, fi);
             fi.name = file.name;
             fi.path = file.path;
-            this.renameDispatcher(oldName, file.name);
+            this.renameDispatcher(oldPath, file.path);
         } else {
-            console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldName, file.path);
+            console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldPath, file.path);
             let fi = this.getFile(file.path);
         }
         this.update();
@@ -183,6 +184,14 @@ export class WSDataCollector {
         }
     }
 
+    LogWords (path: string, count: number) {
+        if (this.fileMap.has(path)) {
+            this.fileMap.get(path).setWords(count);
+            return;
+        }
+        console.log(`Attempted to log words for path '${path}' but path not found in file map.`)
+    }
+
     UpdateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFile(file.path);
@@ -199,7 +208,7 @@ export class WSDataCollector {
                 });
             }
             fi.setTags(tags);
-            if (this.projects.isIndexFile(fi)) {
+            if (this.manager.isIndexFile(fi)) {
                 // update index
                 let links = this.mdCache.getCache(file.path).links;
                 let newLinks: [WSFile, string][] = [];
@@ -210,7 +219,7 @@ export class WSDataCollector {
                     // if there is no link, we don't want to add it to the list
                     if (linkedFile != null) {
                         let lFile = this.getFile(linkedFile.path);
-                        newLinks.push([lFile, link.displayText || lFile.getTitle()]);
+                        newLinks.push([lFile, link.displayText || lFile.title]);
                     }
                 }
                 // clear old links
@@ -239,66 +248,12 @@ export class WSDataCollector {
 
     GetWords(path: string): number {
         let fi = this.fileMap.get(path);
+        if (fi === null) {
+            return undefined;
+        }
         // console.log("GetWords(%s) = %s", path, fi.getWords());
-        return fi.currentWords || 0;
+        return fi.words;
     }
-
-    /*
-        queuePush(item: QueuedItem) {
-            // console.log("Pushing queued item.", this.queue, item)
-            this.queue.push(item);
-        }
-    
-        async ProcessQueuedItems() {
-            let startTime = Date.now();
-            let items = 0;
-            while (this.queue.length > 0 && Date.now() - startTime < 500) {
-                items++;
-                let item = this.queue.pop();
-                let fi = this.idMap.get(item.getID());
-                if (item.getType() == QIType.Log) {
-                    let lastWords = fi.getWords();
-                    let newWords = item.getCount();
-                    fi.setWords(item.getCount());
-                    this.LogDelta("", newWords - lastWords);
-                } else if (item.getType() == QIType.Delta) {
-                    if (item.getID() == -1) {
-                        this.totalWords += item.getCount();
-                    } else {
-                        fi.addWords(item.getCount());
-                    }
-                }
-                this.update();
-            }
-            if (this.queue.length > 0) {
-                console.log("Processed %d queued items. %d items remain...", items, this.queue.length);
-            }
-        }
-    
-        LogWords(path: string, words: number) {
-            let fi = this.getFile(path);
-    
-            this.queuePush(new QueuedItem(QIType.Log, fi.getID(), path, words));
-        }
-    
-        LogDelta(path: string, words: number) {
-            // This is where, in future revisions, the words added/deleted will be determined.
-            // We will also need to hook into cut/paste events in CM6 to create a different
-            // field for adding "imported" and "exported" text. Those may need to be
-            // handled differently as a type of history queue type system where it can
-            // be considered deleted unless it gets pasted back in, in which case it will
-            // be exported
-            let fi = this.fileMap.get(path);
-            let id: number;
-            if (path == "") {
-                id = -1;
-            } else {
-                id = fi.getID();
-            }
-    
-            this.queuePush(new QueuedItem(QIType.Delta, id, path, words));
-        }
-    */
 
     getFile(path: string): WSFile {
         let fi: WSFile;
@@ -308,6 +263,17 @@ export class WSDataCollector {
             return null;
         }
         return fi;
+    }
+
+    getFileSafer(path: string): WSFile {
+        if (this.fileMap.has(path)) {
+            return this.fileMap.get(path);
+        }
+        let af = this.vault.getAbstractFileByPath(path);
+        if (af != null) {
+            return this.newFile(af.name, af.path);
+        }
+        return null;
     }
 
     async ScanVault() {

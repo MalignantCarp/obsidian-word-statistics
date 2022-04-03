@@ -1,4 +1,4 @@
-/*
+
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
 import { WSDataCollector } from "./data";
 import WordStatisticsPlugin from "./main";
@@ -7,13 +7,13 @@ import { WSTableSettings } from "./settings";
 
 export default class ProjectTableModal extends Modal {
     plugin: WordStatisticsPlugin;
-    projects: WSProjectManager;
+    manager: WSProjectManager;
     project: WSProject;
 
-    constructor(app: App, plugin: WordStatisticsPlugin, projects: WSProjectManager) {
+    constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager) {
         super(app);
         this.plugin = plugin;
-        this.projects = projects;
+        this.manager = manager;
         this.project = null;
     }
 
@@ -24,7 +24,7 @@ export default class ProjectTableModal extends Modal {
 
     clear() {
         this.plugin = null;
-        this.projects = null;
+        this.manager = null;
         this.project = null;
 
         let { contentEl } = this;
@@ -35,9 +35,9 @@ export default class ProjectTableModal extends Modal {
         // if there are no projects, this modal cannot be created and a notice is given instead advising there are no projects
         // so this should never return a null value
         if (this.project == null) {
-            this.project = this.projects.getProjectList()[0]; // get the first project in the project manager's list
+            this.project = this.manager.getProject(this.manager.getProjectNames()[0]); // get the first project in the project manager's list
         }
-        return this.project.getName();
+        return this.project.name;
     }
 
     onOpen() {
@@ -48,7 +48,7 @@ export default class ProjectTableModal extends Modal {
             .setName('Project')
             .setDesc('Select the project for which to generate a table')
             .addDropdown((cb: DropdownComponent) => {
-                this.projects.getProjectNames().forEach((proj: string) => {
+                this.manager.getProjectNames().forEach((proj: string) => {
                     cb.addOption(proj, proj);
                 });
                 cb.setValue(this.getProject()); // this should never be null
@@ -104,4 +104,3 @@ export function BuildProjectTable(collector: WSDataCollector, settings: WSTableS
 
     return text;
 }
-*/

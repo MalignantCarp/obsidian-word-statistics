@@ -1,11 +1,11 @@
- - [ ] TODO: Finish up the WSProjectManager class with respect to building project indices so that a project has contents.
+ - [x] TODO: Finish up the WSProjectManager class with respect to building project indices so that a project has contents.
   - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
- - [ ] TODO: Refactor WSFileRef and WSProject systems to simply where possible
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
-2022-03-11, 2022-03-12, 2022-03-13, 2022-03-18, 2022-03-20
+2022-03-11, 2022-03-12, 2022-03-13, 2022-03-18, 2022-03-20, 2022-04-02
  - Rebuilt WSFile and WSProject classes, added WSProjectGroup.
+ - WSProject class now has a register and deregister method that will record a callback to send new word counts to
  - Rebuilt WSProjectManager class.
  - Added a Dispatcher class to run function callbacks sending both id (used to remove callback) and message to the callback function. Right now the Dispatcher just receives a message for dispatch, but this could later be expanded to dispatch objects and enum types to tell it what it needs to do. Basic event system.
 

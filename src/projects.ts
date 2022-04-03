@@ -3,84 +3,177 @@ import { WSFile } from "./files";
 import WordStatisticsPlugin from "./main";
 
 export enum WSPType {
-    File = 0,
+    Null = 0,
+    File,
     Folder,
     Tag
 }
 
-const PROJECT_TYPE_STRING = ["WSFileProject", "WSFolderProject", "WSTagProject"];
+const PROJECT_TYPE_STRING = ["WSProject", "WSFileProject", "WSFolderProject", "WSTagProject"];
 
-/*
-
-interface Project {
-    name: string,
-    readonly type: WSPType,
-    index: string;
+export interface ProjectMap {
+    fileProjects: string[];
+    folderProjects: string[];
+    tagProjects: string[];
+    projectGroups: string[];
 }
 
-interface Group {
-    name: string,
-    projects: string[];
-}
 
-interface ProjectMap {
-    fileProjects: Project[];
-    folderProjects: Project[];
-    tagProjects: Project[];
-    projectGroups: Group[];
-}
-
-class WSProject {
+export class WSProject {
     name: string;
     readonly type: WSPType;
+    collector: WSDataCollector;
+    callbacks: Map<Object, Function>;
 
-    constructor(name: string, type: WSPType) {
+    constructor(collector: WSDataCollector, name: string, type: WSPType = WSPType.Null) {
+        this.collector = collector;
         this.name = name;
         this.type = type;
     };
 
-    serialize() {
-        return { name: this.name, type: this.type, index: "" };
+    private toObject() {
+        return {
+            name: this.name,
+            type: this.type,
+            index: this.index
+        };
     }
+
+    serialize() {
+        return JSON.stringify(this.toObject());
+    }
+
+    static fromSerialized(collector: WSDataCollector, serialized: string) {
+        const proj: ReturnType<WSProject["toObject"]> = JSON.parse(serialized);
+
+        return new WSProject(
+            collector,
+            proj.name,
+            WSPType.Null
+        );
+    }
+
+    register (id: Object, cb: Function) {
+        this.callbacks.set(id, cb);
+    }
+
+    unregister (id: Object) {
+        this.callbacks.delete(id);
+    }
+
+    update() {
+        this.callbacks.forEach((func, ) => {
+            func(this.totalWords);
+        })
+    }
+
+    get index() {
+        return "";
+    }
+
+    get totalWords() {
+        let count = 0;
+        this.getFiles().forEach(file => {
+            count += file.words;
+        })
+        return count;
+    }
+
+    getFiles(): WSFile[] {
+        let files: WSFile[];
+        return files;
+    }
+
 }
 
 export class WSFileProject extends WSProject {
     file: WSFile;
 
-    constructor(name: string, file: WSFile) {
-        super(name, WSPType.File);
+    constructor(collector: WSDataCollector, name: string, file: WSFile) {
+        super(collector, name, WSPType.File);
         this.file = file;
     }
 
-    override serialize() {
-        return { name: this.name, type: this.type, index: this.file.path };
+    static override fromSerialized(collector: WSDataCollector, serialized: string) {
+        const proj: ReturnType<WSFileProject["toObject"]> = JSON.parse(serialized);
+        let file = collector.getFileSafer(proj.index);
+        if (file === null) {
+            console.log(`Error creating WSFileProject(${proj.name}). Could not open file with path '${proj.index}'`)
+            console.log(serialized);
+            throw Error()
+        }
+
+        return new WSFileProject(
+            collector,
+            proj.name,
+            file
+        );
+    }
+
+    override get index() {
+        return this.file.path;
+    }
+
+    override getFiles(): WSFile[] {
+        return this.file.getLinkedRefs();
     }
 }
 
 export class WSFolderProject extends WSProject {
     folder: string;
 
-    constructor(name: string, folder: string) {
-        super(name, WSPType.Folder);
+    constructor(collector: WSDataCollector, name: string, folder: string) {
+        super(collector, name, WSPType.Folder);
         this.folder = folder;
     }
 
-    override serialize() {
-        return { name: this.name, type: this.type, index: this.folder };
+    static override fromSerialized(collector: WSDataCollector, serialized: string) {
+        const proj: ReturnType<WSFolderProject["toObject"]> = JSON.parse(serialized);
+
+        return new WSFolderProject(
+            collector,
+            proj.name,
+            proj.index
+        );
+    }
+
+    override get index() {
+        return this.folder;
+    }
+
+    override getFiles(): WSFile[] {
+        return this.collector.fileList.filter((file => {
+            file.path.startsWith(this.folder + "/");
+        }));
     }
 }
 
 export class WSTagProject extends WSProject {
     tag: string;
-    override readonly type: WSPType = WSPType.Tag;
 
-    constructor(name: string, tag: string) {
-        super(name, WSPType.Tag);
+    constructor(collector: WSDataCollector, name: string, tag: string) {
+        super(collector, name, WSPType.Tag);
         this.tag = tag;
     }
 
-    override serialize() {
-        return { name: this.name, type: this.type, index: this.tag };
+    static override fromSerialized(collector: WSDataCollector, serialized: string) {
+        const proj: ReturnType<WSTagProject["toObject"]> = JSON.parse(serialized);
+
+        return new WSTagProject(
+            collector,
+            proj.name,
+            proj.index
+        );
+    }
+
+    override get index() {
+        return this.tag;
+    }
+
+    override getFiles(): WSFile[] {
+        return this.collector.fileList.filter((file => {
+            file.tags.contains(this.tag);
+        }));
     }
 }
 
@@ -94,35 +187,37 @@ export class WSProjectGroup {
         this.projects = projects;
     };
 
-    serialize() {
+    private toObject() {
         let projList: string[] = [];
         this.projects.forEach((proj: WSProject) => {
             projList.push(proj.name);
         });
         return { name: this.name, projects: projList };
     }
+
+    serialize() {
+        return JSON.stringify(this.toObject());
+    }
+
+    static fromSerialized(manager: WSProjectManager, serialized: string) {
+        const grp: ReturnType<WSProjectGroup["toObject"]> = JSON.parse(serialized);
+
+        let projects: WSProject[];
+        grp.projects.forEach((gName => {
+            if (manager.checkProjectName(gName)) {
+                projects.push(manager.getProject(gName));
+            } else {
+                manager.logError(`Tried to deserialize project ${gName}, but no such project found. (in WSProjectGroup.fromSerialized((${grp.name}))`);
+                console.log(grp.projects);
+            }
+        }));
+        return new WSProjectGroup(
+            grp.name,
+            projects
+        );
+    }
+
 }
-
-*/
-
-interface WSProject {
-    name: string,
-    readonly type: WSPType,
-    index: string;
-}
-
-interface WSProjectGroup {
-    name: string,
-    projects: string[];
-}
-
-interface WSProjectMap {
-    fileProjects: WSProject[];
-    folderProjects: WSProject[];
-    tagProjects: WSProject[];
-    projectGroups: Map<string, WSProjectGroup>;
-}
-
 
 /*
 
@@ -134,9 +229,9 @@ People who are using Longform are likely to use Obsidian for all of the writing 
 */
 
 export class WSProjectManager {
-    tagProjects: WSProject[] = [];
-    fileProjects: WSProject[] = [];
-    folderProjects: WSProject[] = [];
+    tagProjects: WSTagProject[] = [];
+    fileProjects: WSFileProject[] = [];
+    folderProjects: WSFolderProject[] = [];
     projectGroups: Map<string, WSProjectGroup>;
     plugin: WordStatisticsPlugin = null;
     collector: WSDataCollector = null;
@@ -144,19 +239,66 @@ export class WSProjectManager {
     errorState: boolean = false;
     errorMessages: string[] = [];
 
-    constructor(plugin: WordStatisticsPlugin, collector: WSDataCollector, wMap?: WSProjectMap) {
+    constructor(plugin: WordStatisticsPlugin, collector: WSDataCollector) {
         this.plugin = plugin;
         this.collector = collector;
         this.projects = new Map<string, [WSPType, WSProject]>();
         this.projectGroups = new Map<string, WSProjectGroup>();
-        if (wMap != undefined) {
-            this.loadProjects(wMap.fileProjects);
-            this.loadProjects(wMap.folderProjects);
-            this.loadProjects(wMap.tagProjects);
-            wMap.projectGroups.forEach((group) => {
-                this.realizeProjectGroup(group);
-            });
-        }
+    }
+
+    private toObject() {
+        let fileProjects: string[] = []
+        let folderProjects: string[] = []
+        let tagProjects: string[] = []
+        let projectGroups: string[] = [];
+
+        this.fileProjects.forEach((proj) => {
+            fileProjects.push(proj.serialize());
+        });
+        this.folderProjects.forEach((proj) => {
+            folderProjects.push(proj.serialize());
+        });
+        this.tagProjects.forEach((proj) => {
+            tagProjects.push(proj.serialize());
+        });
+        this.projectGroups.forEach((grp) => {
+            projectGroups.push(grp.serialize());
+        });
+        return { fileProjects, folderProjects, tagProjects, projectGroups };
+    }
+
+    serialize() {
+        return JSON.stringify(this.toObject());
+    }
+
+    populateFromSerialized(serialized: string) {
+        const man: ReturnType<WSProjectManager["toObject"]> = JSON.parse(serialized);
+
+        man.fileProjects.forEach(obj => {
+            let proj = WSFileProject.fromSerialized(this.collector, obj);
+            this.registerProject(proj);
+        })
+
+        man.folderProjects.forEach(obj => {
+            let proj = WSFolderProject.fromSerialized(this.collector, obj);
+            this.registerProject(proj);
+        })
+
+        man.tagProjects.forEach(obj => {
+            let proj = WSTagProject.fromSerialized(this.collector, obj);
+            this.registerProject(proj);
+        })
+        
+        man.projectGroups.forEach(obj => {
+            let grp = WSProjectGroup.fromSerialized(this, obj);
+            this.registerProjectGroup(grp);
+        })
+    }
+
+    logError(msg: string) {
+        this.errorState = true;
+        this.errorMessages.push(msg);
+        console.log("WordStatistics.ProjectManager[err]: " + msg);
     }
 
     checkProjectName(name: string) {
@@ -166,6 +308,18 @@ export class WSProjectManager {
     getProject(name: string) {
         let [, proj] = this.projects.get(name);
         return proj;
+    }
+
+    getProjectNames() {
+        return Array.from(this.projects.keys());
+    }
+
+    getProjectList(): WSProject[] {
+        let list: WSProject[] = []
+        Array.from(this.projects.values()).forEach(([,proj]) => {
+            list.push(proj);
+        })
+        return list;
     }
 
     getProjectsForGroup(name: string) {
@@ -203,10 +357,13 @@ export class WSProjectManager {
         return undefined;
     }
 
-    logError(msg: string) {
-        this.errorState = true;
-        this.errorMessages.push(msg);
-        console.log("WordStatistics.ProjectManager[err]: " + msg);
+    isIndexFile(file: WSFile) {
+        this.fileProjects.forEach(fp => {
+            if (fp.file === file) {
+                return true;
+            }
+        })
+        return false;
     }
 
     registerProject(proj: WSProject) {
@@ -218,32 +375,20 @@ export class WSProjectManager {
         this.projects.set(proj.name, [proj.type, proj]);
         switch (proj.type) {
             case WSPType.File:
-                this.fileProjects.push(proj);
+                this.fileProjects.push(<WSFileProject>proj);
                 break;
             case WSPType.Folder:
-                this.folderProjects.push(proj);
+                this.folderProjects.push(<WSFolderProject>proj);
                 break;
             case WSPType.Tag:
-                this.tagProjects.push(proj);
+                this.tagProjects.push(<WSTagProject>proj);
                 break;
             default:
                 console.log(proj);
                 this.logError(`Invalid project type: ${proj.type} for project: ${proj}`);
         }
     }
-    /*
-        realizeProject(proj: Project) {
-            if (proj.type === WSPType.File) {
-                return (new WSFileProject(proj.name, this.collector.getFile(proj.index)));
-            } else if (proj.type === WSPType.Folder) {
-                return (new WSFolderProject(proj.name, proj.index));
-            } else if (proj.type === WSPType.Tag) {
-                return (new WSTagProject(proj.name, proj.index));
-            } else {
-                throw Error(`Invalid project type ${proj.type}`);
-            }
-        }
-    */
+
     validateProjectLoad(projects: WSProject[]) {
         let names: string[] = [];
         projects.forEach((proj) => {
@@ -264,52 +409,12 @@ export class WSProjectManager {
         }
     }
 
-    realizeProjectGroup(group: WSProjectGroup) {
+    registerProjectGroup(group: WSProjectGroup) {
         if (this.projectGroups.has(group.name)) {
             console.log(this.projectGroups.get(group.name));
-            this.logError(`Tried to realize project group '${group.name}' but a group already exists with that name.`);
+            this.logError(`Tried to register project group '${group.name}' but a group already exists with that name.`);
             return;
         }
-
-        let fail = false;
-        group.projects.forEach((name: string) => {
-            if (!this.projects.has(name)) {
-                fail = true;
-                this.logError(`Could not resolve project '${name}' for project group '${group.name}'.`);
-            }
-        });
-        if (fail) {
-            this.logError(`Failed to load project group '${group.name}'.`);
-        } else {
-            this.projectGroups.set(group.name, group);
-        }
+        this.projectGroups.set(group.name, group);
     }
-
-    /*
-        serialize(): ProjectMap {
-            let fileProjects: Project[] = [];
-            let folderProjects: Project[] = [];
-            let tagProjects: Project[] = [];
-            let projectGroups: Group[] = [];
-    
-            this.fileProjects.forEach((proj) => {
-                fileProjects.push(proj.serialize());
-            });
-            this.folderProjects.forEach((proj) => {
-                folderProjects.push(proj.serialize());
-            });
-            this.tagProjects.forEach((proj) => {
-                tagProjects.push(proj.serialize());
-            });
-            this.projectGroups.forEach((grp) => {
-                projectGroups.push(grp.serialize());
-            });
-            return { fileProjects, folderProjects, tagProjects, projectGroups };
-        }
-    */
-
-    serialize(): WSProjectMap {
-        return { fileProjects: this.fileProjects, folderProjects: this.folderProjects, tagProjects: this.tagProjects, projectGroups: this.projectGroups };
-    }
-
 }
