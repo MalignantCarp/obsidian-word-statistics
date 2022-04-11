@@ -184,12 +184,12 @@ export class WSDataCollector {
         }
     }
 
-    LogWords (path: string, count: number) {
+    LogWords(path: string, count: number) {
         if (this.fileMap.has(path)) {
             this.fileMap.get(path).setWords(count);
             return;
         }
-        console.log(`Attempted to log words for path '${path}' but path not found in file map.`)
+        console.log(`Attempted to log words for path '${path}' but path not found in file map.`);
     }
 
     UpdateFile(file: TFile) {
@@ -199,7 +199,7 @@ export class WSDataCollector {
         let cache = this.mdCache.getCache(file.path);
         if (cache != undefined && cache != null) {
             fi.setTitle(cache.frontmatter?.['title'] || file.name);
-            this.checkFMLongform(file, cache.frontmatter);
+            // this.checkFMLongform(file, cache.frontmatter);
             let tagCache = cache.tags;
             let tags: string[] = [];
             if (tagCache != undefined && tagCache != null && tagCache.length > 0) {
@@ -207,7 +207,23 @@ export class WSDataCollector {
                     tags.push(tag.tag);
                 });
             }
+            let oldTags = fi.tags;
+            let newTags: string[] = [];
+            tags.forEach((tag) => {
+                if (oldTags.contains(tag)) {
+                    oldTags.remove(tag);
+                } else {
+                    newTags.push(tag);
+                }
+            });
             fi.setTags(tags);
+            oldTags.forEach((tag) => {
+                this.manager.updateProjectsForTag(tag)
+            })
+            newTags.forEach((tag) => {
+                this.manager.updateProjectsForTag(tag)
+            })
+            // Now we need to alert any projects that use a tag that was changed (added/deleted)
             if (this.manager.isIndexFile(fi)) {
                 // update index
                 let links = this.mdCache.getCache(file.path).links;
@@ -228,6 +244,7 @@ export class WSDataCollector {
                 for (const [ref, title] of newLinks) {
                     fi.setLink(ref, title);
                 }
+                this.manager.updateProjectsForIndex(fi);
             }
         }
     }

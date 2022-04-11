@@ -54,7 +54,7 @@ export default class ProjectTableModal extends Modal {
                 cb.setValue(this.getProject()); // this should never be null
                 cb.onChange(async (value: string) => {
                     // value should always be valid as his is a modal, so no changes could be made, this this should never return null
-                    this.project = this.projects.getProject(value);
+                    this.project = this.manager.getProject(value);
                 });
             });
         new Setting(contentEl)
@@ -69,7 +69,7 @@ export default class ProjectTableModal extends Modal {
 export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings, project: WSProject): string {
     let text = "";
 
-    let files = collector.projects.getProjectList();
+    let files = collector.manager.getProjectList();
     let bar = "";
     if (settings.showNumber) {
         text += "|  #";
@@ -94,7 +94,7 @@ export function BuildProjectTable(collector: WSDataCollector, settings: WSTableS
         // if (settings.showNumber) {
         //     line = "|" + i;
         // }
-        if (collector.getPluginSettings().useDisplayText) {
+        if (collector.pluginSettings.useDisplayText) {
             // if (file.getProject() != project) {
             //     // we need to see if there is a special name tied to the backlink to the project
 

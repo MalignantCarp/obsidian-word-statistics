@@ -18,12 +18,11 @@ export interface ProjectMap {
     projectGroups: string[];
 }
 
-
 export class WSProject {
     name: string;
     readonly type: WSPType;
     collector: WSDataCollector;
-    callbacks: Map<Object, Function>;
+    files: WSFile[];
 
     constructor(collector: WSDataCollector, name: string, type: WSPType = WSPType.Null) {
         this.collector = collector;
@@ -53,29 +52,15 @@ export class WSProject {
         );
     }
 
-    register (id: Object, cb: Function) {
-        this.callbacks.set(id, cb);
-    }
-
-    unregister (id: Object) {
-        this.callbacks.delete(id);
-    }
-
-    update() {
-        this.callbacks.forEach((func, ) => {
-            func(this.totalWords);
-        })
-    }
-
     get index() {
         return "";
     }
 
     get totalWords() {
         let count = 0;
-        this.getFiles().forEach(file => {
+        this.files.forEach(file => {
             count += file.words;
-        })
+        });
         return count;
     }
 
@@ -84,6 +69,18 @@ export class WSProject {
         return files;
     }
 
+    updateFiles() {
+        let deletedItems: WSFile[] = [];
+        let newItems = this.getFiles();
+        while (this.files.length > 0) {
+            let fi = this.files.pop();
+            if (!newItems.contains(fi)) {
+                deletedItems.push(fi);
+            }
+        }
+        this.files = newItems;
+        return deletedItems;
+    }
 }
 
 export class WSFileProject extends WSProject {
@@ -98,9 +95,9 @@ export class WSFileProject extends WSProject {
         const proj: ReturnType<WSFileProject["toObject"]> = JSON.parse(serialized);
         let file = collector.getFileSafer(proj.index);
         if (file === null) {
-            console.log(`Error creating WSFileProject(${proj.name}). Could not open file with path '${proj.index}'`)
+            console.log(`Error creating WSFileProject(${proj.name}). Could not open file with path '${proj.index}'`);
             console.log(serialized);
-            throw Error()
+            throw Error();
         }
 
         return new WSFileProject(
@@ -177,7 +174,6 @@ export class WSTagProject extends WSProject {
     }
 }
 
-
 export class WSProjectGroup {
     name: string;
     projects: WSProject[];
@@ -246,10 +242,14 @@ export class WSProjectManager {
         this.projectGroups = new Map<string, WSProjectGroup>();
     }
 
+    get isEmpty() {
+        return this.projects.size == 0;
+    }
+
     private toObject() {
-        let fileProjects: string[] = []
-        let folderProjects: string[] = []
-        let tagProjects: string[] = []
+        let fileProjects: string[] = [];
+        let folderProjects: string[] = [];
+        let tagProjects: string[] = [];
         let projectGroups: string[] = [];
 
         this.fileProjects.forEach((proj) => {
@@ -277,22 +277,22 @@ export class WSProjectManager {
         man.fileProjects.forEach(obj => {
             let proj = WSFileProject.fromSerialized(this.collector, obj);
             this.registerProject(proj);
-        })
+        });
 
         man.folderProjects.forEach(obj => {
             let proj = WSFolderProject.fromSerialized(this.collector, obj);
             this.registerProject(proj);
-        })
+        });
 
         man.tagProjects.forEach(obj => {
             let proj = WSTagProject.fromSerialized(this.collector, obj);
             this.registerProject(proj);
-        })
-        
+        });
+
         man.projectGroups.forEach(obj => {
             let grp = WSProjectGroup.fromSerialized(this, obj);
             this.registerProjectGroup(grp);
-        })
+        });
     }
 
     logError(msg: string) {
@@ -305,6 +305,10 @@ export class WSProjectManager {
         return !this.projects.has(name);
     }
 
+    checkProjectGroupName(name: string) {
+        return !this.projectGroups.has(name);
+    }
+
     getProject(name: string) {
         let [, proj] = this.projects.get(name);
         return proj;
@@ -315,10 +319,10 @@ export class WSProjectManager {
     }
 
     getProjectList(): WSProject[] {
-        let list: WSProject[] = []
-        Array.from(this.projects.values()).forEach(([,proj]) => {
+        let list: WSProject[] = [];
+        Array.from(this.projects.values()).forEach(([, proj]) => {
             list.push(proj);
-        })
+        });
         return list;
     }
 
@@ -362,8 +366,37 @@ export class WSProjectManager {
             if (fp.file === file) {
                 return true;
             }
-        })
+        });
         return false;
+    }
+
+    updateProjectsForIndex(file: WSFile) {
+        this.fileProjects.forEach(proj => {
+            if (proj.file === file) {
+                this.updateProject(proj);
+            }
+        });
+    }
+
+    updateProjectsForTag(tag: string) {
+        this.tagProjects.forEach((proj) => {
+            if (proj.tag == tag) {
+                this.updateProject(proj);
+            }
+        });
+    }
+
+    updateProjectsForFolder(folder: string) {
+        this.folderProjects.forEach((proj) => {
+            if (proj.folder == folder) {
+                this.updateProject(proj);
+            }
+        });
+    }
+
+    updateProject(proj: WSProject) {
+        proj.updateFiles();
+        this.plugin.app.workspace.trigger("word-statistics-project-files-update", proj);
     }
 
     registerProject(proj: WSProject) {
@@ -386,7 +419,54 @@ export class WSProjectManager {
             default:
                 console.log(proj);
                 this.logError(`Invalid project type: ${proj.type} for project: ${proj}`);
+                break;
         }
+    }
+
+    unregisterProject(proj: WSProject) {
+        if (!this.projects.has(proj.name)) {
+            console.log(this.projects, proj, proj.name);
+            this.logError(`Tried to unregister project '${proj.name}', but it is not registered.`);
+            throw Error();
+        }
+        switch (proj.type) {
+            case WSPType.File:
+                this.fileProjects.remove(<WSFileProject>proj);
+                break;
+            case WSPType.Folder:
+                this.folderProjects.remove(<WSFolderProject>proj);
+                break;
+            case WSPType.Tag:
+                this.tagProjects.push(<WSTagProject>proj);
+                break;
+            default:
+                console.log(proj);
+                this.logError(`Invalid project type: ${proj.type} for project: ${proj}`);
+                break;
+        }
+        this.projects.delete(proj.name);
+    }
+
+    renameProject(proj: WSProject, name: string) {
+        if (this.projects.has(name)) {
+            console.log(`Attempted to rename project '${proj.name}' to '${name}', but a project with that name already exists.`);
+            return false;
+        }
+        this.projects.delete(proj.name);
+        proj.name = name;
+        this.projects.set(name, [proj.type, proj]);
+        this.plugin.app.workspace.trigger("word-statistics-project-update", proj);
+    }
+
+    deleteProject(proj: WSProject) {
+        // unregister project
+        this.unregisterProject(proj);
+        // remove project from any outstanding groups
+        this.projectGroups.forEach((group: WSProjectGroup) => {
+            if (group.projects.contains(proj)) {
+                group.projects.remove(proj);
+            }
+        });
     }
 
     validateProjectLoad(projects: WSProject[]) {
@@ -405,6 +485,7 @@ export class WSProjectManager {
         if (this.validateProjectLoad(projects)) {
             projects.forEach((proj: WSProject) => {
                 this.registerProject(proj);
+                this.updateProject(proj);
             });
         }
     }
@@ -417,4 +498,15 @@ export class WSProjectManager {
         }
         this.projectGroups.set(group.name, group);
     }
+
+    unregisterProjectGroup(group: WSProjectGroup) {
+        if (!this.projectGroups.has(group.name)) {
+            console.log(this.projectGroups.get(group.name));
+            this.logError(`Tried to unregister project group '${group.name}', but it is not registered.`);
+            return;
+        }
+
+        this.projectGroups.delete(group.name);
+    }
 }
+

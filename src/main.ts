@@ -4,8 +4,26 @@ import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } 
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
+import { WSProject } from './projects';
+import { WSFile } from './files';
 
 const PROJECT_PATH = "projects.json";
+
+declare module "obsidian" {
+	interface Workspace {
+		on(
+			name: "word-statistics-project-update",
+			callback: (project: WSProject) => any
+		): EventRef;
+		on(
+			name: "word-statistics-project-files-update",
+			callback: (project: WSProject) => any
+		): EventRef;
+
+		trigger(name: "word-statistics-project-update", project: WSProject): void;
+		trigger(name: "word-statistics-project-files-update", project: WSProject): void;
+	}
+}
 
 export default class WordStatisticsPlugin extends Plugin {
 	public settings: WSPluginSettings;
@@ -18,12 +36,11 @@ export default class WordStatisticsPlugin extends Plugin {
 	async onload() {
 		console.log("Obsidian Word Statistics.onload()");
 		await this.loadSettings();
-
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
 		await this.collector.ScanVault();
-		let projects = await this.loadSerialData(this, PROJECT_PATH);
+		let projects = await this.loadSerialData(PROJECT_PATH);
 		if (projects) {
 			this.collector.manager.populateFromSerialized(projects);
 		}
@@ -37,15 +54,18 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("quick-preview", this.onQuickPreview.bind(this)));
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
+
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
+		
 		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 
 		this.registerInterval(window.setInterval(this.onInterval.bind(this), 500));
 
-		// in order to track selection and offer word counting for selection, will need to extend code mirror and look out for relevant state changes
-		// for now, the code works as far as counting words in the current context.
+		// custom events
+		this.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
+		this.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectFilesUpdate.bind(this)));
 
 		this.statusBar = this.addStatusBarItem();
 
@@ -70,14 +90,26 @@ export default class WordStatisticsPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	async loadSerialData(plugin: WordStatisticsPlugin, path: string) {
-		const adapter = plugin.app.vault.adapter;
-		const dir = plugin.manifest.dir;
+	async loadSerialData(path: string) {
+		const adapter = this.app.vault.adapter;
+		const dir = this.manifest.dir;
 		const loadPath = normalizePath(`${dir}/${path}`);
 		if (await adapter.exists(path)) {
 			return await adapter.read(loadPath);
 		}
 		return undefined;
+	}
+
+	async saveSerialData(path: string, data: string) {
+		const adapter = this.app.vault.adapter;
+		const dir = this.manifest.dir;
+		const savePath = normalizePath(`${dir}/${path}`);
+		try {
+			await adapter.write(savePath, data)
+		} catch(error) {
+			new Notice(`Unable to write to ${path}.`)
+			console.error(error)
+		}
 	}
 
 	async logSpeed(wordsCounted: number, startTime: number, endTime: number) {
@@ -137,6 +169,13 @@ export default class WordStatisticsPlugin extends Plugin {
 		// console.log("'%s' renamed to '%s'", data, file.path);
 		if (file.path.search(/(.*)(\.md)/) >= 0) {
 			this.collector.onRename(file, data);
+			return;
+		}
+		// we may have renamed a folder
+		if (file.path.search(/^(.*)(?<!\.\w+)$/umig) >= 0) {
+			// we may be a folder
+			// console.log(`Folder: '${file.path}'`);
+			this.collector.manager.updateProjectsForFolder(file.path);
 		}
 	}
 
@@ -189,6 +228,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
 			this.debounceRunCount(file, data);
 		}
+	}
+
+	onProjectUpdate(proj: WSProject) {
+		// project has been updated, we now want to save all project data
+		let data = this.collector.manager.serialize();
+		this.saveSerialData(PROJECT_PATH, data);
+	}
+
+	onProjectFilesUpdate(proj: WSProject) {
+		// update UI that project has been updated; anything watching for this project will need to obtain a new count
+		// this.view.updateForProject(proj); // this needs to go through any project groups as well
 	}
 
 	RunCount(file: TFile, data: string) {

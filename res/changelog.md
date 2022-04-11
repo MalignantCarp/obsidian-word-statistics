@@ -3,6 +3,15 @@
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
+2022-04-11
+ - More work on main plugin re: handling of project data.
+ - Added a current list of files on a project, and a method on WSProject to populate the list. The update method will return any file that was removed from the list since last updated.
+ - Added events for project updates and project file list updates. The former will trigger after a project has been altered so that we can trigger saving data. The file list update will trigger when something is done that updates a project's file list, so we can call routines for updating the UI.
+ - Added routines to WordStatisticsPlugin and WSProjectManager for handling updating projects based on index file, tag, and folder. Also added SaveSerialData method to WordStatisticsPlugin.
+ - Updated WSDataCollector's routine for updating tag information when a file is updated. It will now call an update to projects containing tags that now include a file or that no longer include a file when that change occurs.
+ - Added methods for unregistering and deleting projects.
+ - Added method to unregister a project group.
+
 2022-03-11, 2022-03-12, 2022-03-13, 2022-03-18, 2022-03-20, 2022-04-02
  - Rebuilt WSFile and WSProject classes, added WSProjectGroup.
  - WSProject class now has a register and deregister method that will record a callback to send new word counts to
