@@ -9,7 +9,8 @@ export enum WSPType {
     Tag
 }
 
-const PROJECT_TYPE_STRING = ["WSProject", "WSFileProject", "WSFolderProject", "WSTagProject"];
+export const PROJECT_TYPE_STRING = ["WSProject", "WSFileProject", "WSFolderProject", "WSTagProject"];
+export const PROJECT_TYPE_NAME = ["Project", "File Index Project", "Folder Project", "Tag Project"];
 
 export interface ProjectMap {
     fileProjects: string[];
@@ -509,4 +510,3 @@ export class WSProjectManager {
         this.projectGroups.delete(group.name);
     }
 }
-

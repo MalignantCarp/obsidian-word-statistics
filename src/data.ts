@@ -80,7 +80,6 @@ export class WSDataCollector {
     private fileCallbacks: Map<string, Dispatcher>;
     private files: WSFile[];
     manager: WSProjectManager;
-    totalWords: number = 0;
     lastUpdate: number = 0;
 
     constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
@@ -90,9 +89,16 @@ export class WSDataCollector {
         this.fileMap = new Map<string, WSFile>();
         this.fileCallbacks = new Map<string, Dispatcher>();
         this.files = [];
-        this.totalWords = 0;
         this.lastUpdate = 0;
         this.manager = new WSProjectManager(plugin, this);
+    }
+
+    get totalWords() {
+        let words = 0;
+        this.files.forEach((file) => {
+            words += file.words;
+        });
+        return words;
     }
 
     addCallback(path: string, id: string, func: Function) {
@@ -169,6 +175,7 @@ export class WSDataCollector {
         if (this.fileMap.has(file.path)) {
             let fi = this.fileMap.get(file.path);
             this.fileMap.delete(file.path);
+            this.update();
         } else {
             console.log("!!! onDelete('%s'): File does not exist. Nothing to delete.", file.path);
         }
@@ -187,14 +194,16 @@ export class WSDataCollector {
     LogWords(path: string, count: number) {
         if (this.fileMap.has(path)) {
             this.fileMap.get(path).setWords(count);
+            this.update();
             return;
         }
-        console.log(`Attempted to log words for path '${path}' but path not found in file map.`);
+        console.log(`ERROR: Attempted to log words for path '${path}' but path not found in file map.`);
     }
 
     UpdateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
-        let fi = this.getFile(file.path);
+        let fi = this.getFileSafer(file.path);
+        // fi should never be null as we have a TFile we are updating.
         fi.setTitle(file.name);
         let cache = this.mdCache.getCache(file.path);
         if (cache != undefined && cache != null) {
@@ -218,11 +227,11 @@ export class WSDataCollector {
             });
             fi.setTags(tags);
             oldTags.forEach((tag) => {
-                this.manager.updateProjectsForTag(tag)
-            })
+                this.manager.updateProjectsForTag(tag);
+            });
             newTags.forEach((tag) => {
-                this.manager.updateProjectsForTag(tag)
-            })
+                this.manager.updateProjectsForTag(tag);
+            });
             // Now we need to alert any projects that use a tag that was changed (added/deleted)
             if (this.manager.isIndexFile(fi)) {
                 // update index
@@ -287,16 +296,19 @@ export class WSDataCollector {
             return this.fileMap.get(path);
         }
         let af = this.vault.getAbstractFileByPath(path);
-        if (af != null) {
+        if (af != null && af instanceof TFile) {
             return this.newFile(af.name, af.path);
         }
         return null;
     }
 
     async ScanVault() {
+        // console.log("Vault scan initiated.");
         const files = this.vault.getMarkdownFiles();
+        // console.log("Vault file list retrieved.");
         for (const i in files) {
             const file = files[i];
+            // console.log(`[${Date.now()}: Processing file '${file.path}'.`);
             let fi = this.getFile(file.path);
             if (fi === null) {
                 fi = this.newFile(file.name, file.path);
@@ -307,7 +319,6 @@ export class WSDataCollector {
             // console.log(fi.getBacklinks());
             let words = WordCountForText(await this.vault.cachedRead(file));
             fi.setWords(words);
-            this.totalWords += words;
 
             //console.log(frontMatter.wordStatsProject);
             this.update();

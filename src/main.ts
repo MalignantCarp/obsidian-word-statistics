@@ -1,4 +1,4 @@
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata, normalizePath } from 'obsidian';
+import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata, normalizePath, TFolder } from 'obsidian';
 import { WSDataCollector } from './data';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
@@ -32,6 +32,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	private statusBar: HTMLElement;
 	private collector: WSDataCollector;
 	private hudLastUpdate: number = 0;
+	initialScan: boolean = false;
 
 	async onload() {
 		console.log("Obsidian Word Statistics.onload()");
@@ -39,7 +40,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
-		await this.collector.ScanVault();
 		let projects = await this.loadSerialData(PROJECT_PATH);
 		if (projects) {
 			this.collector.manager.populateFromSerialized(projects);
@@ -57,7 +57,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
-		
+
 		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 
@@ -105,10 +105,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		const dir = this.manifest.dir;
 		const savePath = normalizePath(`${dir}/${path}`);
 		try {
-			await adapter.write(savePath, data)
-		} catch(error) {
-			new Notice(`Unable to write to ${path}.`)
-			console.error(error)
+			await adapter.write(savePath, data);
+		} catch (error) {
+			new Notice(`Unable to write to ${path}.`);
+			console.error(error);
 		}
 	}
 
@@ -125,6 +125,12 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async onInterval() {
+		if (!this.initialScan) {
+			// console.log("Initiating vault scan.");
+			await this.collector.ScanVault();
+			// console.log("Vault scan complete.");
+			this.initialScan = true;
+		}
 		if (this.hudLastUpdate < this.collector.lastUpdate) {
 			this.updateStatusBar();
 		}
@@ -167,12 +173,14 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onFileRename(file: TAbstractFile, data: string) {
 		// console.log("'%s' renamed to '%s'", data, file.path);
-		if (file.path.search(/(.*)(\.md)/) >= 0) {
+		// if (file.path.search(/(.*)(\.md)/) >= 0) {
+		if (file instanceof TFile && file.extension === "md") {
 			this.collector.onRename(file, data);
 			return;
 		}
 		// we may have renamed a folder
-		if (file.path.search(/^(.*)(?<!\.\w+)$/umig) >= 0) {
+		// if (file.path.search(/^(.*)(?<!\.\w+)$/umig) >= 0) {
+		if (file instanceof TFolder) {
 			// we may be a folder
 			// console.log(`Folder: '${file.path}'`);
 			this.collector.manager.updateProjectsForFolder(file.path);
@@ -181,7 +189,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onFileDelete(file: TAbstractFile, data: string) {
 		// console.log("'%s' deleted.", file.path);
-		if (file.path.search(/(.*)(\.md)/) >= 0) {
+		//		if (file.path.search(/(.*)(\.md)/) >= 0) {
+		if (file instanceof TFile && file.extension === "md") {
 			this.collector.onDelete(file);
 		}
 	}

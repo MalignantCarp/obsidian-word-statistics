@@ -3,6 +3,15 @@
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
+2022-04-14
+ - First work on the Project creation Modals
+  - Borrowed validation code from Jeremy Valentine's Admonition plugin, MIT Licensed
+  - Borrowed suggester code from Jeremy Valentine's Fantasy Calendar plugin, MIT Licensed
+    - Adapted path.ts into file.ts for handling TFiles only.
+    - Should be able to adapt this for tags as well
+ - Updated minimum Obsidian version to 0.14.6.
+ - Deferred initial vault scan into first interval update.
+
 2022-04-11
  - More work on main plugin re: handling of project data.
  - Added a current list of files on a project, and a method on WSProject to populate the list. The update method will return any file that was removed from the list since last updated.
