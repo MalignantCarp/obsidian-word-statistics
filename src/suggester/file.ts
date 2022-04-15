@@ -17,7 +17,7 @@ import {
     App,
 } from "obsidian";
 
-export default class PathSuggestionModal extends SuggestionModal<TFile> {
+export default class FileSuggestionModal extends SuggestionModal<TFile> {
     file: TFile;
     files: TFile[];
     text: TextComponent;
@@ -66,10 +66,7 @@ export default class PathSuggestionModal extends SuggestionModal<TFile> {
         this.close();
         this.onClose();
     }
-    renderSuggestion(
-        result: FuzzyMatch<TFile>,
-        el: HTMLElement
-    ) {
+    renderSuggestion(result: FuzzyMatch<TFile>, el: HTMLElement) {
         let { item, match: matches } = result || {};
         let content = el.createDiv({
             cls: "suggestion-content"
@@ -84,21 +81,15 @@ export default class PathSuggestionModal extends SuggestionModal<TFile> {
         const matchElements = matches.matches.map((m) => {
             return createSpan("suggestion-highlight");
         });
-        for (
-            let i = pathLength;
-            i < item.path.length - item.extension.length - 1;
-            i++
-        ) {
+        for (let i = pathLength; i < item.path.length - item.extension.length - 1; i++) {
             let match = matches.matches.find((m) => m[0] === i);
             if (match) {
                 let element = matchElements[matches.matches.indexOf(match)];
                 content.appendChild(element);
                 element.appendText(item.path.substring(match[0], match[1]));
-
                 i += match[1] - match[0] - 1;
                 continue;
             }
-
             content.appendText(item.path[i]);
         }
         el.createDiv({

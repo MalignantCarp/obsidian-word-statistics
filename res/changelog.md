@@ -3,6 +3,14 @@
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
+2022-04-15
+ - Created Tag suggester based on Jeremy Valentine's suggester code for folders.
+ - Fixed a few small types in the file.ts code
+ - Added a method to get all projects of a specific type from WSProjectManager
+ - Unified some method naming in data.ts for WSDataCollector
+ - Major additions to ui.ts
+ - Updated styles.css for new additions to the UI
+
 2022-04-14
  - First work on the Project creation Modals
   - Borrowed validation code from Jeremy Valentine's Admonition plugin, MIT Licensed

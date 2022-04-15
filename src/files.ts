@@ -32,6 +32,9 @@ export class WSFile {
 	}
 
 	setTags(tags: string[]) {
+		while (this.tags.length > 0) {
+			this.tags.pop();
+		}
 		this.tags = tags;
 	}
 
@@ -40,9 +43,9 @@ export class WSFile {
 	}
 
 	clearLinks() {
-		this.links.forEach((name:string, file:WSFile) => {
+		this.links.forEach((name: string, file: WSFile) => {
 			file.removeBacklink(this);
-		})
+		});
 		this.links.clear();
 	}
 

@@ -38,3 +38,39 @@ input.is-invalid {
 /*
 End borrow
 */
+
+
+.theme-light {
+    --project-background: #eeeeffdd;
+    --project-zebra-bg: #ddddeedd;
+ }
+
+.theme-dark {
+    --project-background: #666677dd;
+    --project-zebra-bg: #555566dd;
+}
+
+div.project {
+    background-color: var(--project-background);
+}
+
+div.project-info {
+    display: grid;
+    grid-template-columns: 32px 3fr 1fr;
+}
+
+details.project.table.tr:nth-child(even) {
+    background-color: var(--project-background);
+}
+
+details.project.table.tr:nth-child(odd) {
+    background-color: var(--project-zebra-bg);
+}
+
+div.project-name p {
+    font-weight: bold;
+}
+
+div.project-count p {
+    font-weight: normal;
+}

@@ -5,7 +5,6 @@ import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 import { WSProject } from './projects';
-import { WSFile } from './files';
 
 const PROJECT_PATH = "projects.json";
 
@@ -127,7 +126,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	async onInterval() {
 		if (!this.initialScan) {
 			// console.log("Initiating vault scan.");
-			await this.collector.ScanVault();
+			await this.collector.scanVault();
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
 		}
@@ -157,7 +156,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			let path = view.file.path;
 			// let projects = this.collector.getProjectsFromPath(path);
 			// console.log(projects);
-			let words = this.collector.GetWords(path);
+			let words = this.collector.getWords(path);
 			let totalWords = this.collector.totalWords;
 
 			// **Is this valid for mobile?**
@@ -197,12 +196,12 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onMDChanged(file: TFile, data: string, cache: CachedMetadata) {
 		// console.log("onMDChanged(%s)", file.path, file);
-		this.collector.UpdateFile(file);
+		this.collector.updateFile(file);
 	}
 
 	onMDResolve(file: TFile) {
 		// console.log("onMDResolve(%s)", file.path, file);
-		this.collector.UpdateFile(file);
+		this.collector.updateFile(file);
 	}
 
 	onLeafChange(leaf: WorkspaceLeaf) {
@@ -256,7 +255,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		let words = WordCountForText(data);
 		let endTime = Date.now();
 		this.logSpeed(words, startTime, endTime);
-		this.collector.LogWords(file.path, words);
+		this.collector.logWords(file.path, words);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
 		this.updateStatusBar();
 	}

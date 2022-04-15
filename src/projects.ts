@@ -247,6 +247,18 @@ export class WSProjectManager {
         return this.projects.size == 0;
     }
 
+    getProjectsByType(type: WSPType): WSProject[] {
+        switch (type) {
+            case WSPType.File:
+                return this.fileProjects as WSProject[];
+            case WSPType.Folder:
+                return this.folderProjects as WSProject[];
+            case WSPType.Tag:
+                return this.tagProjects as WSProject[];
+        }
+        return [];
+    }
+
     private toObject() {
         let fileProjects: string[] = [];
         let folderProjects: string[] = [];
@@ -450,13 +462,17 @@ export class WSProjectManager {
 
     renameProject(proj: WSProject, name: string) {
         if (this.projects.has(name)) {
-            console.log(`Attempted to rename project '${proj.name}' to '${name}', but a project with that name already exists.`);
-            return false;
+            let [, existingProj] = this.projects.get(name);
+            if (existingProj != proj) {
+                console.log(`Attempted to rename project '${proj.name}' to '${name}', but a project with that name already exists.`);
+            }
+            // else do nothing, as there is no need to rename it
+            return;
         }
         this.projects.delete(proj.name);
         proj.name = name;
         this.projects.set(name, [proj.type, proj]);
-        this.plugin.app.workspace.trigger("word-statistics-project-update", proj);
+        this.updateProject(proj);
     }
 
     deleteProject(proj: WSProject) {

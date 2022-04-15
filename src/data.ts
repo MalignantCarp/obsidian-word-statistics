@@ -101,6 +101,16 @@ export class WSDataCollector {
         return words;
     }
 
+    getAllTags() {
+        let tags = new Set<string>();
+        this.files.forEach((file) => {
+            file.tags.forEach((tag) => {
+                tags.add(tag);
+            })
+        });
+        return Array.from(tags);
+    }
+
     addCallback(path: string, id: string, func: Function) {
         if (this.fileCallbacks.has(path)) {
             let disp = this.fileCallbacks.get(path);
@@ -191,7 +201,7 @@ export class WSDataCollector {
         }
     }
 
-    LogWords(path: string, count: number) {
+    logWords(path: string, count: number) {
         if (this.fileMap.has(path)) {
             this.fileMap.get(path).setWords(count);
             this.update();
@@ -200,7 +210,7 @@ export class WSDataCollector {
         console.log(`ERROR: Attempted to log words for path '${path}' but path not found in file map.`);
     }
 
-    UpdateFile(file: TFile) {
+    updateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFileSafer(file.path);
         // fi should never be null as we have a TFile we are updating.
@@ -272,7 +282,7 @@ export class WSDataCollector {
         return file;
     }
 
-    GetWords(path: string): number {
+    getWords(path: string): number {
         let fi = this.fileMap.get(path);
         if (fi === null) {
             return undefined;
@@ -302,7 +312,7 @@ export class WSDataCollector {
         return null;
     }
 
-    async ScanVault() {
+    async scanVault() {
         // console.log("Vault scan initiated.");
         const files = this.vault.getMarkdownFiles();
         // console.log("Vault file list retrieved.");
@@ -313,7 +323,7 @@ export class WSDataCollector {
             if (fi === null) {
                 fi = this.newFile(file.name, file.path);
             }
-            this.UpdateFile(file);
+            this.updateFile(file);
             // console.log(fi.getPath());
             // console.log(fi.getLinks());
             // console.log(fi.getBacklinks());
