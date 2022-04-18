@@ -5,6 +5,7 @@ import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 import { WSProject } from './projects';
+import { ProjectManagerModal, ProjectViewerModal } from './ui';
 
 const PROJECT_PATH = "projects.json";
 
@@ -39,6 +40,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
+		// console.log("Data collector and project manager instantiated:");
+		// console.log(this.collector);
+		// console.log(this.collector?.manager);
 		let projects = await this.loadSerialData(PROJECT_PATH);
 		if (projects) {
 			this.collector.manager.populateFromSerialized(projects);
@@ -69,6 +73,22 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.statusBar = this.addStatusBarItem();
 
 		this.addCommand({
+			id: 'open-project-manager',
+			name: 'Open Project Manager',
+			callback: () => {
+				this.openProjectManager();
+			}
+		});
+
+		this.addCommand({
+			id: 'open-project-viewer',
+			name: 'Open Project Viewer',
+			callback: () => {
+				this.openProjectViewer();
+			}
+		});
+
+		this.addCommand({
 			id: 'insert-project-table-modal',
 			name: 'Insert Project Table Modal',
 			callback: () => {
@@ -79,6 +99,16 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onunload() {
 		console.log("Obsidian Word Statistics.onunload()");
+	}
+
+	openProjectViewer() {
+		let modal = new ProjectViewerModal(this.app, this, this.collector.manager);
+		modal.open();
+	}
+
+	openProjectManager() {
+		let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
+		modal.open();
 	}
 
 	async loadSettings() {

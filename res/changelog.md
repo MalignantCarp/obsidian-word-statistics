@@ -3,6 +3,10 @@
  - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
  - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
 
+2022-04-17
+ - Most of the manager and viewer modals are finished up, just need to debug them all and clean them up.
+ - Need to make sure file-list update event is fired so that the project can update its files list.
+
 2022-04-15
  - Created Tag suggester based on Jeremy Valentine's suggester code for folders.
  - Fixed a few small types in the file.ts code

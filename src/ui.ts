@@ -1,4 +1,5 @@
-import { App, Modal, Notice, Setting, TextComponent, TFile, TFolder } from "obsidian";
+import { App, ButtonComponent, Modal, Notice, Setting, TextComponent, TFile, TFolder } from "obsidian";
+import { WSPErrors } from "./errors";
 import WordStatisticsPlugin from "./main";
 import { PROJECT_TYPE_NAME, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSProjectManager, WSPType, WSTagProject } from "./projects";
 import FileSuggestionModal from "./suggester/file";
@@ -12,7 +13,7 @@ abstract class ProjectModal<T> extends Modal {
     readonly type: WSPType;
     errors: Map<string, boolean>;
     nameObject: TextComponent;
-    cancelled: boolean = false;
+    cancelled: boolean = true;
     changed: boolean = false;
     new: boolean = false;
 
@@ -96,10 +97,11 @@ abstract class ProjectModal<T> extends Modal {
                             errors.push(k);
                         }
                     });
-                    console.log(errors);
+                    // console.log(errors);
                     if (errorState) {
                         new Notice(WSPErrors.MESSAGE.PROJECT_VALIDATION);
                     } else {
+                        this.cancelled = false;
                         if (this.new) {
                             this.createProjectObject();
                         } else {
@@ -113,8 +115,7 @@ abstract class ProjectModal<T> extends Modal {
                         this.close();
                     }
                 });
-            });
-        new Setting(contentEl)
+            })
             .addButton((button) => {
                 button.setButtonText("Cancel").onClick(() => {
                     this.cancelled = true;
@@ -445,6 +446,7 @@ export class ProjectList {
         this.manager = manager;
         this.parent = parent;
         this.container = parent.createDiv({ cls: "project-list" });
+        this.type = type;
         this.projects = new Map<WSProject, HTMLElement>();
         this.rebuildProjects();
     }
@@ -478,7 +480,8 @@ export class ProjectList {
                         if (modal.cancelled) {
                             return;
                         }
-                        if (modal.nameChanged) {
+                        if (modal.nameChanged || modal.changed || modal.new) {
+                            this.manager.triggerProjectUpdate(project);
                             this.rebuildProjects();
                             return;
                         }
@@ -490,6 +493,7 @@ export class ProjectList {
                 button.setIcon("trash").setTooltip("Delete project.");
                 button.onClick(() => {
                     this.manager.deleteProject(project);
+                    this.manager.triggerProjectUpdate(project);
                     this.rebuildProjects();
                 });
             });
@@ -497,22 +501,167 @@ export class ProjectList {
     }
 }
 
+function SetupButtonClickCallback(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, button: ButtonComponent, pType: WSPType, cb: Function) {
+    button.onClick(() => {
+        let modal: FileProjectModal | FolderProjectModal | TagProjectModal;
+        switch (pType) {
+            case WSPType.File:
+                modal = new FileProjectModal(app, plugin, manager);
+                break;
+            case WSPType.Folder:
+                modal = new FolderProjectModal(app, plugin, manager);
+                break;
+            case WSPType.Tag:
+                modal = new TagProjectModal(app, plugin, manager);
+                break;
+        }
+        if (modal === undefined || modal === null) {
+            console.error(`Failed to create modal for new ${pType}/${PROJECT_TYPE_STRING[pType]}`);
+            return;
+        }
+        modal.onClose = () => {
+            if (modal.cancelled) {
+                return;
+            }
+            manager.triggerProjectUpdate(modal.project);
+            cb();
+        };
+        modal.open();
+    });
+}
+
 export class ProjectManagerPanel {
     app: App;
     plugin: WordStatisticsPlugin;
     manager: WSProjectManager;
     parent: HTMLElement;
-    fileProjects: Map<string, HTMLElement>;
-    folderProjects: Map<string, HTMLElement>;
-    tagProjects: Map<string, HTMLElement>;
+    container: HTMLDivElement;
+    fileProjects: ProjectList;
+    folderProjects: ProjectList;
+    tagProjects: ProjectList;
 
     constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, parent: HTMLElement) {
         this.app = app;
         this.plugin = plugin;
         this.manager = manager;
         this.parent = parent;
-        this.fileProjects = new Map<string, HTMLElement>();
-        this.folderProjects = new Map<string, HTMLElement>();
-        this.tagProjects = new Map<string, HTMLElement>();
+        this.container = parent.createDiv();
+        this.fileProjects = null;
+        this.folderProjects = null;
+        this.tagProjects = null;
+        this.rebuild();
+    }
+
+    rebuild() {
+        this.container.empty();
+        new Setting(this.container)
+            .setName("File Index Projects")
+            .setDesc("Create a new project based on a file index.")
+            .addButton((button) => {
+                button.setButtonText("New File Index Project");
+                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.File, this.rebuild.bind(this));
+            });
+        this.fileProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.File);
+        new Setting(this.container)
+            .setName("Folder Projects")
+            .setDesc("Create a new project based on a folder.")
+            .addButton((button) => {
+                button.setButtonText("New Folder Project");
+                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Folder, this.rebuild.bind(this));
+            });
+        this.folderProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.Folder);
+        new Setting(this.container)
+            .setName("Tag Projects")
+            .setDesc("Create a new project based on a tag.")
+            .addButton((button) => {
+                button.setButtonText("New Tag Project");
+                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Tag, this.rebuild.bind(this));
+            });
+        this.tagProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.Tag);
+    }
+}
+
+export class ProjectViewerPanel {
+    app: App;
+    plugin: WordStatisticsPlugin;
+    manager: WSProjectManager;
+    parent: HTMLElement;
+    container: HTMLDivElement;
+    list: Map<WSProject, ProjectElement>;
+
+    constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, parent: HTMLElement) {
+        this.app = app;
+        this.plugin = plugin;
+        this.manager = manager;
+        this.parent = parent;
+        this.container = parent.createDiv();
+        this.list = new Map<WSProject, ProjectElement>();
+        this.rebuild();
+        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
+        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
+    }
+
+    onProjectUpdate(project: WSProject) {
+        if (this.list.has(project)) {
+            this.list.get(project).update();
+        }
+    }
+
+    rebuild() {
+        this.container.empty();
+        this.list.clear();
+        this.container.createEl('h2', { text: "All Projects" });
+        this.manager.getProjectList().forEach((project) => {
+            this.list.set(project, new ProjectElement(this.app, this.plugin, this.manager, this.container, project));
+        });
+    }
+
+}
+
+abstract class BaseModal<T> extends Modal {
+    plugin: WordStatisticsPlugin;
+    manager: WSProjectManager;
+    panel: T;
+    bmTitle: string;
+
+    constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager) {
+        super(app);
+        this.plugin = plugin;
+        this.manager = manager;
+    }
+
+    clear() {
+        this.plugin = null;
+        this.manager = null;
+
+        let { contentEl } = this;
+        contentEl.empty();
+    }
+
+    abstract createPanel(): void;
+
+    onOpen() {
+        let { contentEl } = this;
+
+        contentEl.createEl('h2', { text: this.bmTitle });
+        this.createPanel();
+    }
+}
+
+export class ProjectManagerModal extends BaseModal<ProjectManagerPanel> {
+    override bmTitle: string = "Project Manager";
+
+    createPanel(): void {
+        let { contentEl } = this;
+        this.panel = new ProjectManagerPanel(this.app, this.plugin, this.manager, contentEl);
+    }
+}
+
+export class ProjectViewerModal extends BaseModal<ProjectViewerPanel> {
+    override bmTitle: string = "Project Viewer";
+
+    createPanel(): void {
+        let { contentEl } = this;
+        this.panel = new ProjectViewerPanel(this.app, this.plugin, this.manager, contentEl);
     }
 }

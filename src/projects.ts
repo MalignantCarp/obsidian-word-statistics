@@ -1,3 +1,4 @@
+import { timeStamp } from "console";
 import { WSDataCollector } from "./data";
 import { WSFile } from "./files";
 import WordStatisticsPlugin from "./main";
@@ -29,6 +30,7 @@ export class WSProject {
         this.collector = collector;
         this.name = name;
         this.type = type;
+        this.files = [];
     };
 
     private toObject() {
@@ -282,6 +284,10 @@ export class WSProjectManager {
 
     serialize() {
         return JSON.stringify(this.toObject());
+    }
+
+    triggerProjectUpdate(project: WSProject) {
+        this.plugin.app.workspace.trigger("word-statistics-project-update", project);
     }
 
     populateFromSerialized(serialized: string) {
