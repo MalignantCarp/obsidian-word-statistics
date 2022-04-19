@@ -33,6 +33,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	private collector: WSDataCollector;
 	private hudLastUpdate: number = 0;
 	initialScan: boolean = false;
+	projectLoad: boolean = false;
 
 	async onload() {
 		console.log("Obsidian Word Statistics.onload()");
@@ -43,10 +44,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		// console.log("Data collector and project manager instantiated:");
 		// console.log(this.collector);
 		// console.log(this.collector?.manager);
-		let projects = await this.loadSerialData(PROJECT_PATH);
-		if (projects) {
-			this.collector.manager.populateFromSerialized(projects);
-		}
 
 		this.debounceRunCount = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
@@ -123,8 +120,11 @@ export default class WordStatisticsPlugin extends Plugin {
 		const adapter = this.app.vault.adapter;
 		const dir = this.manifest.dir;
 		const loadPath = normalizePath(`${dir}/${path}`);
-		if (await adapter.exists(path)) {
-			return await adapter.read(loadPath);
+		// console.log(adapter, dir, loadPath);
+		if (await adapter.exists(loadPath)) {
+			let data = await adapter.read(loadPath);
+			// console.log(data);
+			return data
 		}
 		return undefined;
 	}
@@ -159,6 +159,16 @@ export default class WordStatisticsPlugin extends Plugin {
 			await this.collector.scanVault();
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
+		}
+		if (!this.projectLoad && this.initialScan) {
+			// console.log(`Loading data from ${PROJECT_PATH}`);
+			let projects = await this.loadSerialData(PROJECT_PATH);
+			if (projects) {
+				// console.log(projects);
+				this.collector.manager.populateFromSerialized(projects);
+				this.collector.manager.updateAllProjects();
+			}
+			this.projectLoad = true;
 		}
 		if (this.hudLastUpdate < this.collector.lastUpdate) {
 			this.updateStatusBar();
@@ -277,6 +287,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	onProjectFilesUpdate(proj: WSProject) {
 		// update UI that project has been updated; anything watching for this project will need to obtain a new count
 		// this.view.updateForProject(proj); // this needs to go through any project groups as well
+		// we may not even need this
 	}
 
 	RunCount(file: TFile, data: string) {

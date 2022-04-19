@@ -91,7 +91,11 @@ export class WSFileProject extends WSProject {
 
     constructor(collector: WSDataCollector, name: string, file: WSFile) {
         super(collector, name, WSPType.File);
-        this.file = file;
+        if (file instanceof WSFile) {
+            this.file = file;
+        } else {
+            throw Error(`Tried to create WSFileProject '${name}' with null file.`);
+        }
     }
 
     static override fromSerialized(collector: WSDataCollector, serialized: string) {
@@ -111,11 +115,17 @@ export class WSFileProject extends WSProject {
     }
 
     override get index() {
-        return this.file.path;
+        if (this.file instanceof WSFile) {
+            return this.file.path;
+        }
+        return null;
     }
 
     override getFiles(): WSFile[] {
-        return this.file.getLinkedRefs();
+        if (this.file instanceof WSFile) {
+            return this.file.getLinkedRefs();
+        }
+        return [];
     }
 }
 
@@ -142,9 +152,10 @@ export class WSFolderProject extends WSProject {
     }
 
     override getFiles(): WSFile[] {
-        return this.collector.fileList.filter((file => {
-            file.path.startsWith(this.folder + "/");
-        }));
+        let files = this.collector.fileList.filter(file =>
+            file.path.startsWith(this.folder + "/")
+        );
+        return files;
     }
 }
 
@@ -171,9 +182,7 @@ export class WSTagProject extends WSProject {
     }
 
     override getFiles(): WSFile[] {
-        return this.collector.fileList.filter((file => {
-            file.tags.contains(this.tag);
-        }));
+        return this.collector.fileList.filter(file => file.tags.contains(this.tag));
     }
 }
 
@@ -416,6 +425,13 @@ export class WSProjectManager {
     updateProject(proj: WSProject) {
         proj.updateFiles();
         this.plugin.app.workspace.trigger("word-statistics-project-files-update", proj);
+    }
+
+    updateAllProjects() {
+        this.projects.forEach(([, proj]) => {
+            proj.updateFiles();
+            this.plugin.app.workspace.trigger("word-statistics-project-files-update", proj);
+        });
     }
 
     registerProject(proj: WSProject) {

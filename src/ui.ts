@@ -194,6 +194,7 @@ export class FileProjectModal extends ProjectModal<WSFileProject> {
         }
         this.project = new WSFileProject(this.manager.collector, name, file);
         this.manager.registerProject(this.project);
+        this.manager.updateProject(this.project);
     }
 
     getProjectName(): string {
@@ -215,11 +216,16 @@ export class FileProjectModal extends ProjectModal<WSFileProject> {
             .addText((text) => {
                 this.text = text;
                 let files = this.app.vault.getMarkdownFiles();
-                text.setPlaceholder(this.project?.index || "Index File");
+                if (this.project != null && this.project != undefined) {
+                    text.setValue(this.project.index);
+                } else {
+                    text.setPlaceholder("Index File");
+                }
                 const modal = new FileSuggestionModal(this.app, text, files);
 
                 modal.onClose = () => {
                     if (!text.inputEl.value) {
+                        console.log("Input value is null.");
                         this.textValue = null;
                     } else {
                         this.textValue = text.inputEl.value;
@@ -260,6 +266,7 @@ export class FolderProjectModal extends ProjectModal<WSFolderProject> {
         let index = this.textValue;
         this.project = new WSFolderProject(this.manager.collector, name, index);
         this.manager.registerProject(this.project);
+        this.manager.updateProject(this.project);
     }
 
     getProjectName(): string {
@@ -281,12 +288,17 @@ export class FolderProjectModal extends ProjectModal<WSFolderProject> {
             .addText((text) => {
                 this.text = text;
                 let folders = this.app.vault.getAllLoadedFiles().filter((t) => t instanceof TFolder);
-                text.setPlaceholder(this.project?.index || "Index Folder");
+                if (this.project != null && this.project != undefined) {
+                    text.setValue(this.project.index);
+                } else {
+                    text.setPlaceholder("Index Folder");
+                }
                 const modal = new FolderSuggestionModal(this.app, text, [...(folders as TFolder[])]);
 
                 modal.onClose = () => {
                     if (!text.inputEl.value) {
                         this.textValue = null;
+                        console.log("Input value is null.");
                     } else {
                         this.textValue = text.inputEl.value;
                         if (this.textValue != this.project?.index) {
@@ -326,6 +338,7 @@ export class TagProjectModal extends ProjectModal<WSTagProject> {
         let index = this.textValue;
         this.project = new WSTagProject(this.manager.collector, name, index);
         this.manager.registerProject(this.project);
+        this.manager.updateProject(this.project);
     }
 
     getProjectName(): string {
@@ -347,12 +360,17 @@ export class TagProjectModal extends ProjectModal<WSTagProject> {
             .addText((text) => {
                 this.text = text;
                 let tags = this.manager.collector.getAllTags();
-                text.setPlaceholder(this.project?.index || "Index File");
+                if (this.project != null && this.project != undefined) {
+                    text.setValue(this.project.index);
+                } else {
+                    text.setPlaceholder("Index Tag");
+                }
                 const modal = new TagSuggestionModal(this.app, text, tags);
 
                 modal.onClose = () => {
                     if (!text.inputEl.value) {
                         this.textValue = null;
+                        console.log("Input value is null.");
                     } else {
                         this.textValue = text.inputEl.value;
                         if (this.textValue != this.project?.index) {
@@ -397,10 +415,11 @@ export class ProjectElement {
         this.parent = parent;
         this.container = parent.createDiv({ cls: "project" });
         this.info = this.container.createDiv({ cls: "project-info" });
-        this.name = this.info.createDiv({ cls: "project-name" }).createEl("p", { text: project.name });
-        this.words = this.info.createDiv({ cls: "project-words" }).createEl("p", { text: Intl.NumberFormat().format(project.totalWords) });
+        //this.name = this.info.createDiv({ cls: "project-name" }).createEl("p", { text: project.name });
+        let words = project.totalWords;
+        //this.words = this.info.createDiv({ cls: "project-words" }).createEl("p", { text: Intl.NumberFormat().format(words) + (words === 1 ? " word" : " words") });
         this.fileList = this.container.createEl("details", { cls: "project" });
-        this.fileList.createEl("summary", { text: "File List" });
+        this.name = this.fileList.createEl("summary", { cls: "project-name", text: project.name });
         this.table = this.fileList.createEl("table");
         this.files = new Map<string, [HTMLElement, HTMLElement, HTMLElement]>();
         this.rebuildTableFromProject();
@@ -411,23 +430,29 @@ export class ProjectElement {
         this.files.clear();
         this.project.files.forEach((file) => {
             let row = this.table.createEl("tr");
-            let fName = this.table.createEl("td", { cls: "project-name", text: file.path });
-            let words = this.table.createEl("td", { cls: "project-words", text: Intl.NumberFormat().format(file.words) });
+            let fName = row.createEl("td", { cls: "file-name", text: file.title });
+            let words = row.createEl("td", { cls: "file-words", text: Intl.NumberFormat().format(file.words) + (file.words === 1 ? " word" : " words") });
             this.files.set(file.path, [row, fName, words]);
         });
+        let row = this.table.createEl("tr", { cls: "total-line" });
+        let fName = row.createEl("td", { cls: "file-total", text: "" });
+        let words = row.createEl("td", { cls: "project-words", text: Intl.NumberFormat().format(this.project.totalWords) + (this.project.totalWords === 1 ? " word" : " words") });
+        this.files.set(null, [row, fName, words]);
     }
 
     update() {
         this.name.setText(this.project.name);
-        this.words.setText(Intl.NumberFormat().format(this.project.totalWords));
+        //this.words.setText(Intl.NumberFormat().format(this.project.totalWords));
         this.project.files.forEach((file) => {
             if (!this.files.has(file.path)) {
                 this.rebuildTableFromProject();
                 return;
             }
             let [row, name, words] = this.files.get(file.path);
-            words.setText(Intl.NumberFormat().format(file.words));
+            words.setText(Intl.NumberFormat().format(file.words) + (file.words === 1 ? " word" : " words"));
         });
+        let [row, name, words] = this.files.get(null);
+        words.setText(Intl.NumberFormat().format(this.project.totalWords) + (this.project.totalWords === 1 ? " word" : " words"));
     }
 }
 
@@ -501,7 +526,7 @@ export class ProjectList {
     }
 }
 
-function SetupButtonClickCallback(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, button: ButtonComponent, pType: WSPType, cb: Function) {
+function SetupButtonClickCallback(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, button: ButtonComponent, pType: WSPType) {
     button.onClick(() => {
         let modal: FileProjectModal | FolderProjectModal | TagProjectModal;
         switch (pType) {
@@ -524,7 +549,7 @@ function SetupButtonClickCallback(app: App, plugin: WordStatisticsPlugin, manage
                 return;
             }
             manager.triggerProjectUpdate(modal.project);
-            cb();
+            //manager.updateProject(modal.project);
         };
         modal.open();
     });
@@ -549,17 +574,22 @@ export class ProjectManagerPanel {
         this.fileProjects = null;
         this.folderProjects = null;
         this.tagProjects = null;
+        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.rebuild.bind(this)));
         this.rebuild();
     }
 
-    rebuild() {
+    clear() {
+        // cleanup?
+    }
+
+    rebuild(project?: WSProject) {
         this.container.empty();
         new Setting(this.container)
             .setName("File Index Projects")
             .setDesc("Create a new project based on a file index.")
             .addButton((button) => {
                 button.setButtonText("New File Index Project");
-                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.File, this.rebuild.bind(this));
+                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.File);
             });
         this.fileProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.File);
         new Setting(this.container)
@@ -567,7 +597,7 @@ export class ProjectManagerPanel {
             .setDesc("Create a new project based on a folder.")
             .addButton((button) => {
                 button.setButtonText("New Folder Project");
-                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Folder, this.rebuild.bind(this));
+                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Folder);
             });
         this.folderProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.Folder);
         new Setting(this.container)
@@ -575,7 +605,7 @@ export class ProjectManagerPanel {
             .setDesc("Create a new project based on a tag.")
             .addButton((button) => {
                 button.setButtonText("New Tag Project");
-                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Tag, this.rebuild.bind(this));
+                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Tag);
             });
         this.tagProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.Tag);
     }
@@ -601,6 +631,10 @@ export class ProjectViewerPanel {
         this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
     }
 
+    clear() {
+        // cleanup?
+    }
+
     onProjectUpdate(project: WSProject) {
         if (this.list.has(project)) {
             this.list.get(project).update();
@@ -610,7 +644,6 @@ export class ProjectViewerPanel {
     rebuild() {
         this.container.empty();
         this.list.clear();
-        this.container.createEl('h2', { text: "All Projects" });
         this.manager.getProjectList().forEach((project) => {
             this.list.set(project, new ProjectElement(this.app, this.plugin, this.manager, this.container, project));
         });
@@ -628,6 +661,9 @@ abstract class BaseModal<T> extends Modal {
         super(app);
         this.plugin = plugin;
         this.manager = manager;
+        this.onClose = () => {
+            this.clearPanel();
+        };
     }
 
     clear() {
@@ -639,6 +675,7 @@ abstract class BaseModal<T> extends Modal {
     }
 
     abstract createPanel(): void;
+    abstract clearPanel(): void;
 
     onOpen() {
         let { contentEl } = this;
@@ -655,6 +692,10 @@ export class ProjectManagerModal extends BaseModal<ProjectManagerPanel> {
         let { contentEl } = this;
         this.panel = new ProjectManagerPanel(this.app, this.plugin, this.manager, contentEl);
     }
+
+    clearPanel(): void {
+        this.panel.clear();
+    }
 }
 
 export class ProjectViewerModal extends BaseModal<ProjectViewerPanel> {
@@ -664,4 +705,9 @@ export class ProjectViewerModal extends BaseModal<ProjectViewerPanel> {
         let { contentEl } = this;
         this.panel = new ProjectViewerPanel(this.app, this.plugin, this.manager, contentEl);
     }
+
+    clearPanel(): void {
+        this.panel.clear();
+    }
+
 }

@@ -1,4 +1,4 @@
-import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache } from 'obsidian';
+import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags } from 'obsidian';
 import { WSFile } from './files';
 import WordStatisticsPlugin from './main';
 import { WSProjectManager } from './projects';
@@ -214,13 +214,19 @@ export class WSDataCollector {
         // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFileSafer(file.path);
         // fi should never be null as we have a TFile we are updating.
-        fi.setTitle(file.name);
+        fi.setTitle(file.basename);
         let cache = this.mdCache.getCache(file.path);
         if (cache != undefined && cache != null) {
-            fi.setTitle(cache.frontmatter?.['title'] || file.name);
+            fi.setTitle(cache.frontmatter?.['title'] || file.basename);
             // this.checkFMLongform(file, cache.frontmatter);
             let tagCache = cache.tags;
             let tags: string[] = [];
+            let fmTags = parseFrontMatterTags(cache.frontmatter);
+            if (fmTags != null) {
+                fmTags.forEach((item) => {
+                    tags.push(item);
+                })
+            }
             if (tagCache != undefined && tagCache != null && tagCache.length > 0) {
                 tagCache.forEach((tag) => {
                     tags.push(tag.tag);
