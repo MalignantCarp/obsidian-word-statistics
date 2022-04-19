@@ -1,10 +1,13 @@
-import { App, ButtonComponent, Modal, Notice, Setting, TextComponent, TFile, TFolder } from "obsidian";
+import { App, ButtonComponent, ItemView, Modal, Notice, Setting, TextComponent, TFile, TFolder, WorkspaceLeaf } from "obsidian";
 import { WSPErrors } from "./errors";
+import { WSFile } from "./files";
 import WordStatisticsPlugin from "./main";
-import { PROJECT_TYPE_NAME, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSProjectManager, WSPType, WSTagProject } from "./projects";
+import { PROJECT_TYPE_NAME, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSProjectGroup, WSProjectManager, WSPType, WSTagProject } from "./projects";
 import FileSuggestionModal from "./suggester/file";
 import { FolderSuggestionModal } from "./suggester/folder";
 import { TagSuggestionModal } from "./suggester/tag";
+
+const WORD_STATS_PROJECT_VIEW = "word-stats-project";
 
 abstract class ProjectModal<T> extends Modal {
     plugin: WordStatisticsPlugin;
@@ -89,6 +92,25 @@ abstract class ProjectModal<T> extends Modal {
         new Setting(contentEl)
             .addButton((button) => {
                 button.setButtonText("Save").onClick(async () => {
+                    let v = this.nameObject.getValue();
+                    v = v.trim();
+                    if (!this.manager.checkProjectName(v) && (this.getProjectName() != v)) {
+                        this.errors.set(WSPErrors.PROJECT_NAME_INVALID, true);
+                        ProjectModal.SetValidationError(this.nameObject, WSPErrors.MESSAGE.PROJECT_NAME_INVALID);
+                        return;
+                    } else {
+                        this.errors.set(WSPErrors.PROJECT_NAME_INVALID, false);
+                        ProjectModal.RemoveValidationError(this.nameObject);
+                    }
+                    if (!v.length) {
+                        this.errors.set(WSPErrors.PROJECT_NAME_BLANK, true);
+                        ProjectModal.SetValidationError(this.nameObject, WSPErrors.MESSAGE.PROJECT_NAME_BLANK);
+                        return;
+                    } else {
+                        this.errors.set(WSPErrors.PROJECT_NAME_BLANK, false);
+                        ProjectModal.RemoveValidationError(this.nameObject);
+                    }
+
                     let errorState = false;
                     let errors: string[] = [];
                     this.errors.forEach((v, k) => {
@@ -187,14 +209,15 @@ export class FileProjectModal extends ProjectModal<WSFileProject> {
     createProjectObject(): void {
         let name = this.nameObject.getValue();
         let index = this.textValue;
-        let file = this.manager.collector.getFileSafer(name);
-        if (file != null || file != undefined) {
-            console.error(`Attempted to create new WSFileProject(${name}) using invalid file '${index}' as an index.`);
+        let file = this.manager.collector.getFileSafer(index);
+        console.log(name, index, file);
+        if (file instanceof WSFile) {
+            this.project = new WSFileProject(this.manager.collector, name, file);
+            this.manager.registerProject(this.project);
+            this.manager.updateProject(this.project);
             return;
         }
-        this.project = new WSFileProject(this.manager.collector, name, file);
-        this.manager.registerProject(this.project);
-        this.manager.updateProject(this.project);
+        console.error(`Attempted to create new WSFileProject(${name}) using invalid file '${index}' as an index.`);
     }
 
     getProjectName(): string {
@@ -228,7 +251,7 @@ export class FileProjectModal extends ProjectModal<WSFileProject> {
                         console.log("Input value is null.");
                         this.textValue = null;
                     } else {
-                        this.textValue = text.inputEl.value;
+                        this.textValue = modal.file.path;
                         if (this.textValue != this.project?.index) {
                             this.changed = true;
                         }
@@ -239,7 +262,7 @@ export class FileProjectModal extends ProjectModal<WSFileProject> {
                     if (!text.inputEl.value) {
                         return;
                     }
-                    this.textValue = text.inputEl.value;
+                    this.textValue = modal.file.path;
                     if (this.textValue != this.project?.index) {
                         this.changed = true;
                     }
@@ -428,9 +451,24 @@ export class ProjectElement {
     rebuildTableFromProject() {
         this.table.empty();
         this.files.clear();
-        this.project.files.forEach((file) => {
+        let files: WSFile[];
+        let indexed = this.project.type == WSPType.File;
+        let fp: WSFileProject = null;
+        if (indexed) {
+            fp = this.project as WSFileProject;
+        }
+        if (this.plugin.settings.tableSettings.sortAlpha && !indexed) {
+            files = Array.from(this.project.files).sort(((a, b) => (a.path > b.path) ? 1 : ((b.path > a.path) ? -1 : 0)));
+        } else {
+            files = this.project.files;
+        }
+        files.forEach((file) => {
             let row = this.table.createEl("tr");
-            let fName = row.createEl("td", { cls: "file-name", text: file.title });
+            let fileName = this.plugin.settings.useDisplayText ? file.title : file.name;
+            if (indexed) {
+                fileName = fp.file.getLinkTitle(file);
+            }
+            let fName = row.createEl("td", { cls: "file-name", text: fileName });
             let words = row.createEl("td", { cls: "file-words", text: Intl.NumberFormat().format(file.words) + (file.words === 1 ? " word" : " words") });
             this.files.set(file.path, [row, fName, words]);
         });
@@ -611,13 +649,15 @@ export class ProjectManagerPanel {
     }
 }
 
-export class ProjectViewerPanel {
+export class ProjectGroupViewerPanel {
     app: App;
     plugin: WordStatisticsPlugin;
     manager: WSProjectManager;
     parent: HTMLElement;
     container: HTMLDivElement;
     list: Map<WSProject, ProjectElement>;
+    group: WSProjectGroup;
+    groupList: Setting;
 
     constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, parent: HTMLElement) {
         this.app = app;
@@ -625,7 +665,65 @@ export class ProjectViewerPanel {
         this.manager = manager;
         this.parent = parent;
         this.container = parent.createDiv();
+        this.manager.collector.updateAllFiles();
+        this.groupList = new Setting(this.container)
+            .setName("Project Group")
+            .setDesc("Choose a project group to view.")
+            .addDropdown((dropdown) => {
+
+            });
+        this.rebuild();
+        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-group-update", this.onProjectGroupUpdate.bind(this)));
+    }
+
+    clear() {
+        // cleanup?
+    }
+
+    onProjectGroupUpdate(group: WSProjectGroup) {
+        if (group == this.group) {
+            this.rebuild();
+        }
+    }
+
+    // update() {
+    //     let oldProjects: WSProject[] = Array.from(this.list.keys())
+    //     let newProjects: WSProject[] = this.group.projects;
+    //     let addedProjects = newProjects.filter(x => !oldProjects.contains(x)).length > 0;
+    //     let deletedProjects = oldProjects.filter(x => !newProjects.contains(x)).length > 0;
+    //     if (addedProjects || deletedProjects) {
+    //         this.rebuild();
+    //         return;
+    //     }
+    // }
+
+    rebuild() {
+        this.container.empty();
+        this.list.clear();
+        this.group.projects.forEach((project) => {
+            this.list.set(project, new ProjectElement(this.app, this.plugin, this.manager, this.container, project));
+        });
+    }
+}
+
+export class ProjectViewerPanel {
+    app: App;
+    plugin: WordStatisticsPlugin;
+    manager: WSProjectManager;
+    parent: HTMLElement;
+    container: HTMLDivElement;
+    list: Map<WSProject, ProjectElement>;
+    group: WSProjectGroup;
+
+    constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, parent: HTMLElement, group?: WSProjectGroup) {
+        this.app = app;
+        this.plugin = plugin;
+        this.manager = manager;
+        this.parent = parent;
+        this.group = group;
+        this.container = parent.createDiv();
         this.list = new Map<WSProject, ProjectElement>();
+        this.manager.collector.updateAllFiles();
         this.rebuild();
         this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
         this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
@@ -644,11 +742,16 @@ export class ProjectViewerPanel {
     rebuild() {
         this.container.empty();
         this.list.clear();
-        this.manager.getProjectList().forEach((project) => {
+        let projects: WSProject[];
+        if (this.group != null && this.group != undefined) {
+            projects = this.group.projects;
+        } else {
+            projects = this.manager.getProjectList();
+        }
+        projects.forEach((project) => {
             this.list.set(project, new ProjectElement(this.app, this.plugin, this.manager, this.container, project));
         });
     }
-
 }
 
 abstract class BaseModal<T> extends Modal {
@@ -682,6 +785,12 @@ abstract class BaseModal<T> extends Modal {
 
         contentEl.createEl('h2', { text: this.bmTitle });
         this.createPanel();
+        new Setting(contentEl)
+            .addButton((button) => {
+                button.setButtonText("Close").onClick(() => {
+                    this.close();
+                });
+            });
     }
 }
 
@@ -708,6 +817,31 @@ export class ProjectViewerModal extends BaseModal<ProjectViewerPanel> {
 
     clearPanel(): void {
         this.panel.clear();
+    }
+}
+
+class ProjectPanel extends ItemView {
+    app: App;
+    plugin: WordStatisticsPlugin;
+    manager: WSProjectManager;
+    parent: HTMLElement;
+    container: HTMLDivElement;
+
+    constructor(leaf: WorkspaceLeaf, app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, parent: HTMLElement) {
+        super(leaf);
+        this.app = app;
+        this.plugin = plugin;
+        this.manager = manager;
+        this.parent = parent;
+        this.container = parent.createDiv();
+    }
+
+    getDisplayText(): string {
+        return "Project View";
+    }
+
+    getViewType(): string {
+        return WORD_STATS_PROJECT_VIEW;
     }
 
 }

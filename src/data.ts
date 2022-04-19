@@ -1,4 +1,4 @@
-import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags } from 'obsidian';
+import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags, parseFrontMatterStringArray, parseFrontMatterEntry } from 'obsidian';
 import { WSFile } from './files';
 import WordStatisticsPlugin from './main';
 import { WSProjectManager } from './projects';
@@ -162,7 +162,7 @@ export class WSDataCollector {
     }
 
     onRename(file: TAbstractFile, oldPath: string) {
-        if (this.fileMap.has(oldPath)) {
+        if (this.fileMap.has(oldPath) && file instanceof TFile) {
             let fi = this.fileMap.get(oldPath);
             this.fileMap.delete(oldPath);
             if (this.fileMap.has(file.path)) {
@@ -170,7 +170,7 @@ export class WSDataCollector {
                 throw Error("Cannot rename file reference as new file path already in use.");
             }
             this.fileMap.set(file.path, fi);
-            fi.name = file.name;
+            fi.name = file.basename;
             fi.path = file.path;
             this.renameDispatcher(oldPath, file.path);
         } else {
@@ -210,12 +210,29 @@ export class WSDataCollector {
         console.log(`ERROR: Attempted to log words for path '${path}' but path not found in file map.`);
     }
 
+    forceUpdateFile(file: WSFile) {
+        let path = file.path;
+        let af = this.vault.getAbstractFileByPath(path);
+        if (af != null && af instanceof TFile) {
+            this.updateFile(af);
+        }
+    }
+
+    updateAllFiles() {
+        this.files.forEach((file) => {
+            this.forceUpdateFile(file);
+        })
+    }
+
     updateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
         let fi = this.getFileSafer(file.path);
         // fi should never be null as we have a TFile we are updating.
         fi.setTitle(file.basename);
-        let cache = this.mdCache.getCache(file.path);
+        let cache = this.plugin.app.metadataCache.getCache(file.path);
+        if (cache === undefined || cache === null) {
+            console.log(`Unable to update '${fi.path}. Cache is ${cache}`);
+        }
         if (cache != undefined && cache != null) {
             fi.setTitle(cache.frontmatter?.['title'] || file.basename);
             // this.checkFMLongform(file, cache.frontmatter);
@@ -242,13 +259,13 @@ export class WSDataCollector {
                 }
             });
             fi.setTags(tags);
+            // Now we need to alert any projects that use a tag that was changed (added/deleted) to update
             oldTags.forEach((tag) => {
                 this.manager.updateProjectsForTag(tag);
             });
             newTags.forEach((tag) => {
                 this.manager.updateProjectsForTag(tag);
             });
-            // Now we need to alert any projects that use a tag that was changed (added/deleted)
             if (this.manager.isIndexFile(fi)) {
                 // update index
                 let links = this.mdCache.getCache(file.path).links;
@@ -260,7 +277,8 @@ export class WSDataCollector {
                     // if there is no link, we don't want to add it to the list
                     if (linkedFile != null) {
                         let lFile = this.getFile(linkedFile.path);
-                        newLinks.push([lFile, link.displayText || lFile.title]);
+                        let dText = link.displayText == lFile.name ? null : link.displayText;
+                        newLinks.push([lFile, dText || lFile.title]);
                     }
                 }
                 // clear old links
@@ -327,7 +345,7 @@ export class WSDataCollector {
             // console.log(`[${Date.now()}: Processing file '${file.path}'.`);
             let fi = this.getFile(file.path);
             if (fi === null) {
-                fi = this.newFile(file.name, file.path);
+                fi = this.newFile(file.basename, file.path);
             }
             this.updateFile(file);
             // console.log(fi.getPath());

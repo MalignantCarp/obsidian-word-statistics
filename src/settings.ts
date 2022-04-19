@@ -62,7 +62,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				}));
 		new Setting(containerEl)
 			.setName('Alphanumeric sorting')
-			.setDesc('Sort table entries alphabetically instead of by index position')
+			.setDesc('Sort table entries alphabetically for tag-based and folder-based indices.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.tableSettings.sortAlpha)
 				.onChange(async (value: boolean) => {

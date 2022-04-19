@@ -1,4 +1,4 @@
-import { timeStamp } from "console";
+import { groupCollapsed, timeStamp } from "console";
 import { WSDataCollector } from "./data";
 import { WSFile } from "./files";
 import WordStatisticsPlugin from "./main";
@@ -123,6 +123,7 @@ export class WSFileProject extends WSProject {
 
     override getFiles(): WSFile[] {
         if (this.file instanceof WSFile) {
+            // console.log(this.file);
             return this.file.getLinkedRefs();
         }
         return [];
@@ -152,10 +153,7 @@ export class WSFolderProject extends WSProject {
     }
 
     override getFiles(): WSFile[] {
-        let files = this.collector.fileList.filter(file =>
-            file.path.startsWith(this.folder + "/")
-        );
-        return files;
+        return this.collector.fileList.filter(file => file.path.startsWith(this.folder + "/"));
     }
 }
 
@@ -390,12 +388,9 @@ export class WSProjectManager {
     }
 
     isIndexFile(file: WSFile) {
-        this.fileProjects.forEach(fp => {
-            if (fp.file === file) {
-                return true;
-            }
-        });
-        return false;
+        let matches = this.fileProjects.filter(fp => fp.file === file);
+        // console.log(`isIndexFile(${file.path}) = ${matches.length > 0}`);
+        return matches.length > 0;
     }
 
     updateProjectsForIndex(file: WSFile) {
@@ -420,6 +415,57 @@ export class WSProjectManager {
                 this.updateProject(proj);
             }
         });
+    }
+
+    updateProjectGroup(group: WSProjectGroup) {
+        group.projects.forEach((project) => {
+            this.updateProject(project);
+        });
+        this.plugin.app.workspace.trigger("word-statistics-project-group-update", group);
+    }
+
+    addProjectToGroup(project: WSProject, group: WSProjectGroup) {
+        if (!group.projects.contains(project)) {
+            group.projects.push(project);
+            this.updateProjectGroup(group);
+        }
+    }
+
+    removeProjectFromGroup(project: WSProject, group: WSProjectGroup) {
+        if (group.projects.contains(project)) {
+            group.projects.remove(project);
+            this.updateProjectGroup(group);
+        }
+    }
+
+    moveProjectUpInGroup(project: WSProject, group: WSProjectGroup) {
+        if (group.projects.contains(project)) {
+            let position = group.projects.indexOf(project);
+            if (position > 0) {
+                group.projects.remove(project);
+                group.projects.splice(position - 1, 0, project);
+                this.updateProjectGroup(group);
+            } else {
+                console.log(`Attempted to move project '${project.name}' up in group '${group.name},' but it is first in group.`);
+            }
+        } else {
+            console.log(`Attempted to move project '${project.name}' up in group '${group.name},' but it is not in group.`);
+        }
+    }
+
+    moveProjectDownInGroup(project: WSProject, group: WSProjectGroup) {
+        if (group.projects.contains(project)) {
+            let position = group.projects.indexOf(project);
+            if (position < (group.projects.length - 1)) {
+                group.projects.remove(project);
+                group.projects.splice(position + 1, 0, project);
+                this.updateProjectGroup(group);
+            } else {
+                console.log(`Attempted to move project '${project.name}' down in group '${group.name},' but it is last in group.`);
+            }
+        } else {
+            console.log(`Attempted to move project '${project.name}' down in group '${group.name},' but it is not in group.`);
+        }
     }
 
     updateProject(proj: WSProject) {
@@ -497,6 +543,21 @@ export class WSProjectManager {
         this.updateProject(proj);
     }
 
+    renameProjectGroup(group: WSProjectGroup, name: string) {
+        if (this.projectGroups.has(name)) {
+            let existingGroup = this.projectGroups.get(name);
+            if (existingGroup != group) {
+                console.log(`Attempted to rename project group '${group.name}' to '${name}', but a project with that name already exists.`);
+            }
+            // else do nothing, as there is no need to rename it
+            return;
+        }
+        this.projectGroups.delete(group.name);
+        group.name = name;
+        this.projectGroups.set(name, group);
+        this.updateProjectGroup(group);
+    }
+
     deleteProject(proj: WSProject) {
         // unregister project
         this.unregisterProject(proj);
@@ -504,6 +565,7 @@ export class WSProjectManager {
         this.projectGroups.forEach((group: WSProjectGroup) => {
             if (group.projects.contains(proj)) {
                 group.projects.remove(proj);
+                this.updateProjectGroup(group);
             }
         });
     }
@@ -536,6 +598,7 @@ export class WSProjectManager {
             return;
         }
         this.projectGroups.set(group.name, group);
+        this.updateProjectGroup(group);
     }
 
     unregisterProjectGroup(group: WSProjectGroup) {
@@ -544,7 +607,7 @@ export class WSProjectManager {
             this.logError(`Tried to unregister project group '${group.name}', but it is not registered.`);
             return;
         }
-
         this.projectGroups.delete(group.name);
+        this.updateProjectGroup(group);
     }
 }

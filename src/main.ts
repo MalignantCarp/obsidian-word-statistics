@@ -4,7 +4,7 @@ import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } 
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import { WSProject } from './projects';
+import { WSProject, WSProjectGroup } from './projects';
 import { ProjectManagerModal, ProjectViewerModal } from './ui';
 
 const PROJECT_PATH = "projects.json";
@@ -16,11 +16,16 @@ declare module "obsidian" {
 			callback: (project: WSProject) => any
 		): EventRef;
 		on(
+			name: "word-statistics-project-group-update",
+			callback: (project: WSProject) => any
+		): EventRef;
+		on(
 			name: "word-statistics-project-files-update",
 			callback: (project: WSProject) => any
 		): EventRef;
 
 		trigger(name: "word-statistics-project-update", project: WSProject): void;
+		trigger(name: "word-statistics-project-group-update", group: WSProjectGroup): void;
 		trigger(name: "word-statistics-project-files-update", project: WSProject): void;
 	}
 }
@@ -65,6 +70,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		// custom events
 		this.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
+		this.registerEvent(this.app.workspace.on("word-statistics-project-group-update", this.onProjectGroupUpdate.bind(this)));
 		this.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectFilesUpdate.bind(this)));
 
 		this.statusBar = this.addStatusBarItem();
@@ -85,13 +91,13 @@ export default class WordStatisticsPlugin extends Plugin {
 			}
 		});
 
-		this.addCommand({
-			id: 'insert-project-table-modal',
-			name: 'Insert Project Table Modal',
-			callback: () => {
-				this.insertProjectTableModal();
-			}
-		});
+		// this.addCommand({
+		// 	id: 'insert-project-table-modal',
+		// 	name: 'Insert Project Table Modal',
+		// 	callback: () => {
+		// 		this.insertProjectTableModal();
+		// 	}
+		// });
 	}
 
 	onunload() {
@@ -169,6 +175,7 @@ export default class WordStatisticsPlugin extends Plugin {
 				this.collector.manager.updateAllProjects();
 			}
 			this.projectLoad = true;
+			// await this.collector.scanVault();
 		}
 		if (this.hudLastUpdate < this.collector.lastUpdate) {
 			this.updateStatusBar();
@@ -288,6 +295,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		// update UI that project has been updated; anything watching for this project will need to obtain a new count
 		// this.view.updateForProject(proj); // this needs to go through any project groups as well
 		// we may not even need this
+	}
+
+	onProjectGroupUpdate(group: WSProjectGroup) {
+		this.onProjectUpdate(null);
 	}
 
 	RunCount(file: TFile, data: string) {

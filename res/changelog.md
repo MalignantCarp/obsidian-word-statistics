@@ -1,10 +1,17 @@
- - [x] TODO: Finish up the WSProjectManager class with respect to building project indices so that a project has contents.
-  - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
- - [ ] TODO: Interface for creating projects -- this should be built so that it can be put in the sidebar in addition to the settings window, ideally without having to replicate code.
- - [ ] TODO: Build view for project creation - Examine Fantasy Calendar's view and perhaps Svelte
+ - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
+ - [ ] TODO: Build panel to manage project groups
+ - [ ] TODO: Build panel to manage projects within grups
+
+2022-04-19
+ - ProjectViewer and ProjectManager panels and modals appear to be fully functional. Next testing requires the viewer leaf so live changes can be seen.
+ - Updated ProjectViewer to use the table settings for alpha sorting of non-file-indexed projects. May make this a separate option.
+ - Use Display Text settings option was being ignored.
+ - Created the ProjectGroupViewerPanel
+ - Added methods to the WSProjectManager to handle addition and deletion of projects to project groups as well as moving them up and down.
 
 2022-04-18
  - Bug fixes galore
+ - CSS changes
 
 2022-04-17
  - Most of the manager and viewer modals are finished up, just need to debug them all and clean them up.
