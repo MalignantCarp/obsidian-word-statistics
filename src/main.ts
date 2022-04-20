@@ -5,7 +5,7 @@ import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 import { WSProject, WSProjectGroup } from './projects';
-import { ProjectManagerModal, ProjectViewerModal } from './ui';
+import { ProjectGroupManagerModal, ProjectGroupViewerModal, ProjectManagerModal, ProjectViewerModal } from './ui/modals';
 
 const PROJECT_PATH = "projects.json";
 
@@ -17,7 +17,11 @@ declare module "obsidian" {
 		): EventRef;
 		on(
 			name: "word-statistics-project-group-update",
-			callback: (project: WSProject) => any
+			callback: (project: WSProjectGroup) => any
+		): EventRef;
+		on(
+			name: "word-statistics-project-groups-changed",
+			callback: () => any
 		): EventRef;
 		on(
 			name: "word-statistics-project-files-update",
@@ -25,7 +29,8 @@ declare module "obsidian" {
 		): EventRef;
 
 		trigger(name: "word-statistics-project-update", project: WSProject): void;
-		trigger(name: "word-statistics-project-group-update", group: WSProjectGroup): void;
+		trigger(name: "word-statistics-project-group-updated", group: WSProjectGroup): void;
+		trigger(name: "word-statistics-project-groups-changed"): void;
 		trigger(name: "word-statistics-project-files-update", project: WSProject): void;
 	}
 }
@@ -41,7 +46,6 @@ export default class WordStatisticsPlugin extends Plugin {
 	projectLoad: boolean = false;
 
 	async onload() {
-		console.log("Obsidian Word Statistics.onload()");
 		await this.loadSettings();
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
@@ -66,11 +70,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 
-		this.registerInterval(window.setInterval(this.onInterval.bind(this), 500));
+		// this.registerInterval(window.setInterval(this.onStartup.bind(this), 1000));
+		this.app.workspace.onLayoutReady(this.onStartup.bind(this));
+		this.registerInterval(window.setInterval(this.onStatusBarUpdate.bind(this), 200));
 
 		// custom events
 		this.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
 		this.registerEvent(this.app.workspace.on("word-statistics-project-group-update", this.onProjectGroupUpdate.bind(this)));
+		this.registerEvent(this.app.workspace.on("word-statistics-project-groups-changed", this.onProjectGroupsChanged.bind(this)));
 		this.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectFilesUpdate.bind(this)));
 
 		this.statusBar = this.addStatusBarItem();
@@ -91,6 +98,22 @@ export default class WordStatisticsPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'open-project-group-manager',
+			name: 'Open Project Group Manager',
+			callback: () => {
+				this.openProjectGroupManager();
+			}
+		});
+
+		this.addCommand({
+			id: 'open-project-group-viewer',
+			name: 'Open Project Group Viewer',
+			callback: () => {
+				this.openProjectGroupViewer();
+			}
+		});
+
 		// this.addCommand({
 		// 	id: 'insert-project-table-modal',
 		// 	name: 'Insert Project Table Modal',
@@ -98,10 +121,11 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 		this.insertProjectTableModal();
 		// 	}
 		// });
+		console.log ("Obsidian Word Statistics loaded.")
 	}
 
 	onunload() {
-		console.log("Obsidian Word Statistics.onunload()");
+		console.log ("Obsidian Word Statistics unloaded.")
 	}
 
 	openProjectViewer() {
@@ -114,12 +138,24 @@ export default class WordStatisticsPlugin extends Plugin {
 		modal.open();
 	}
 
+	openProjectGroupViewer() {
+		let modal = new ProjectGroupViewerModal(this.app, this, this.collector.manager);
+		modal.open();
+	}
+
+	openProjectGroupManager() {
+		let modal = new ProjectGroupManagerModal(this.app, this, this.collector.manager);
+		modal.open();
+	}
+
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_PLUGIN_SETTINGS, await this.loadData());
+		console.log("Obsidian Word Statistics settings loaded.")
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		console.log("Obsidian Word Statistics settings saved.")
 	}
 
 	async loadSerialData(path: string) {
@@ -130,7 +166,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (await adapter.exists(loadPath)) {
 			let data = await adapter.read(loadPath);
 			// console.log(data);
-			return data
+			return data;
 		}
 		return undefined;
 	}
@@ -159,7 +195,13 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	async onInterval() {
+	async onStatusBarUpdate() {
+		if (this.hudLastUpdate < this.collector.lastUpdate) {
+			this.updateStatusBar();
+		}
+	}
+
+	async onStartup() {
 		if (!this.initialScan) {
 			// console.log("Initiating vault scan.");
 			await this.collector.scanVault();
@@ -175,10 +217,7 @@ export default class WordStatisticsPlugin extends Plugin {
 				this.collector.manager.updateAllProjects();
 			}
 			this.projectLoad = true;
-			// await this.collector.scanVault();
-		}
-		if (this.hudLastUpdate < this.collector.lastUpdate) {
-			this.updateStatusBar();
+			await this.collector.scanVault();
 		}
 	}
 
@@ -289,6 +328,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		// project has been updated, we now want to save all project data
 		let data = this.collector.manager.serialize();
 		this.saveSerialData(PROJECT_PATH, data);
+		console.log("WordStatisticsPlugin.onProjectUpdate() completed, called directly");
 	}
 
 	onProjectFilesUpdate(proj: WSProject) {
@@ -299,6 +339,12 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onProjectGroupUpdate(group: WSProjectGroup) {
 		this.onProjectUpdate(null);
+		console.log("called from onProjectGroupUpdate()");
+	}
+
+	onProjectGroupsChanged() {
+		this.onProjectUpdate(null);
+		console.log("called from onProjectGroupsChanged()");
 	}
 
 	RunCount(file: TFile, data: string) {

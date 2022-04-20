@@ -81,6 +81,7 @@ export class WSDataCollector {
     private files: WSFile[];
     manager: WSProjectManager;
     lastUpdate: number = 0;
+    queue: [Function, unknown[]][] = [];
 
     constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
         this.plugin = plugin;
@@ -106,7 +107,7 @@ export class WSDataCollector {
         this.files.forEach((file) => {
             file.tags.forEach((tag) => {
                 tags.add(tag);
-            })
+            });
         });
         return Array.from(tags);
     }
@@ -221,7 +222,14 @@ export class WSDataCollector {
     updateAllFiles() {
         this.files.forEach((file) => {
             this.forceUpdateFile(file);
-        })
+        });
+    }
+
+    async executeDeferredItems() {
+        while (this.queue.length > 0) {
+            let [func, pack] = this.queue.shift();
+            func(...pack);
+        };
     }
 
     updateFile(file: TFile) {
@@ -231,9 +239,9 @@ export class WSDataCollector {
         fi.setTitle(file.basename);
         let cache = this.plugin.app.metadataCache.getCache(file.path);
         if (cache === undefined || cache === null) {
-            console.log(`Unable to update '${fi.path}. Cache is ${cache}`);
-        }
-        if (cache != undefined && cache != null) {
+            console.log(`Unable to update '${fi.path}. Cache is ${cache}.`);
+            // this.queue.push([this.updateFile.bind(this), [file]]);
+        } else {
             fi.setTitle(cache.frontmatter?.['title'] || file.basename);
             // this.checkFMLongform(file, cache.frontmatter);
             let tagCache = cache.tags;
@@ -242,7 +250,7 @@ export class WSDataCollector {
             if (fmTags != null) {
                 fmTags.forEach((item) => {
                     tags.push(item);
-                })
+                });
             }
             if (tagCache != undefined && tagCache != null && tagCache.length > 0) {
                 tagCache.forEach((tag) => {
@@ -308,7 +316,8 @@ export class WSDataCollector {
 
     getWords(path: string): number {
         let fi = this.fileMap.get(path);
-        if (fi === null) {
+        if (fi === null || fi === undefined) {
+            console.log(`WSDataCollector.getWords(${path}) = ${fi}`);
             return undefined;
         }
         // console.log("GetWords(%s) = %s", path, fi.getWords());

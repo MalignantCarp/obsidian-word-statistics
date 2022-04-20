@@ -1,6 +1,18 @@
  - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
  - [ ] TODO: Build panel to manage project groups
- - [ ] TODO: Build panel to manage projects within grups
+ - [ ] TODO: Build panel to manage projects within groups
+ - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
+
+2022-04-20
+ - Data structure population is now deferred until layout is ready to ensure the vault is fully loaded before we start indexing.
+ - Finished the dropdown for the ProjectGroupViewer panel.
+ - Added commands to open the Project Group manager and viewers.
+ - Split the project group events into two separate events, one for when a group itself has changed and the other for when the list of groups has changed.
+ - BUGFIX: Project name validation wasn't triggered on window creation, even though it had an invalid name.
+ - Broke UI up into ui folder for easier organization
+ - Further work on Project Group manager. Lots of untested code.
+ - Need to further refine and breakdown UI code to minimize duplicate code and maximize usefulness of components and helper routines.
+
 
 2022-04-19
  - ProjectViewer and ProjectManager panels and modals appear to be fully functional. Next testing requires the viewer leaf so live changes can be seen.

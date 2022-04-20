@@ -1,4 +1,3 @@
-import { groupCollapsed, timeStamp } from "console";
 import { WSDataCollector } from "./data";
 import { WSFile } from "./files";
 import WordStatisticsPlugin from "./main";
@@ -188,9 +187,9 @@ export class WSProjectGroup {
     name: string;
     projects: WSProject[];
 
-    constructor(name: string, projects: WSProject[]) {
+    constructor(name: string, projects?: WSProject[]) {
         this.name = name;
-        this.projects = projects;
+        this.projects = projects || [];
     };
 
     private toObject() {
@@ -421,7 +420,7 @@ export class WSProjectManager {
         group.projects.forEach((project) => {
             this.updateProject(project);
         });
-        this.plugin.app.workspace.trigger("word-statistics-project-group-update", group);
+        this.plugin.app.workspace.trigger("word-statistics-project-group-updated", group);
     }
 
     addProjectToGroup(project: WSProject, group: WSProjectGroup) {
@@ -555,7 +554,7 @@ export class WSProjectManager {
         this.projectGroups.delete(group.name);
         group.name = name;
         this.projectGroups.set(name, group);
-        this.updateProjectGroup(group);
+        this.plugin.app.workspace.trigger("word-statistics-project-groups-changed");
     }
 
     deleteProject(proj: WSProject) {
@@ -598,7 +597,7 @@ export class WSProjectManager {
             return;
         }
         this.projectGroups.set(group.name, group);
-        this.updateProjectGroup(group);
+        this.plugin.app.workspace.trigger("word-statistics-project-groups-changed");
     }
 
     unregisterProjectGroup(group: WSProjectGroup) {
@@ -608,6 +607,15 @@ export class WSProjectManager {
             return;
         }
         this.projectGroups.delete(group.name);
-        this.updateProjectGroup(group);
+        this.plugin.app.workspace.trigger("word-statistics-project-groups-changed");
     }
+
+    static CanProjectMoveUpInGroup(project: WSProject, group: WSProjectGroup) {
+        return (group.projects.contains(project) && group.projects.indexOf(project) > 0);
+    }
+
+    static CanProjectMoveDownInGroup(project: WSProject, group: WSProjectGroup) {
+        return (group.projects.contains(project) && group.projects.indexOf(project) < (group.projects.length - 1));
+    }
+
 }
