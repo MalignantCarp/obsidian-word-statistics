@@ -1,6 +1,6 @@
-import WordStatisticsPlugin from "src/main";
-import { WSDataCollector } from "./collector";
-import { WSFile } from "./file";
+import type WordStatisticsPlugin from "src/main";
+import type { WSDataCollector } from "./collector";
+import type { WSFile } from "./file";
 import { WSProjectGroup } from "./group";
 import { PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "./project";
 

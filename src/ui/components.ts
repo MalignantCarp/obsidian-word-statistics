@@ -1,7 +1,7 @@
 import { App, ButtonComponent, ExtraButtonComponent, Setting } from "obsidian";
-import WordStatisticsPlugin from "src/main";
+import type WordStatisticsPlugin from "src/main";
 import { WSFile } from "src/model/file";
-import { WSProjectGroup } from "src/model/group";
+import type { WSProjectGroup } from "src/model/group";
 import { CanProjectMoveDownInGroup, CanProjectMoveUpInGroup, WSProjectManager } from "src/model/manager";
 import { PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "src/model/project";
 import { EditFileProjectModal, EditFolderProjectModal, EditTagProjectModal } from "./modals";
@@ -13,6 +13,16 @@ This can probably be broken into three components:
 The encapsulating ProjectElement and the FileList and FileItem components.
 This will allow us the best flexibility in terms of generating the HTMLElements.
 */
+
+export class FileWordCountElement extends HTMLDivElement {
+    constructor(public plugin: WordStatisticsPlugin, public parent: HTMLElement, public file: WSFile) {
+        super();
+        this.parent.append(this);
+        this.onemptied = () => {
+
+        }
+    }
+}
 
 export class ProjectFileItem {
     public container: HTMLDivElement;
@@ -74,8 +84,8 @@ export class ProjectFileList {
         this.footerName = this.footer.createDiv({ text: "Total Words", cls: "ws-footer-cell" });
         this.footerWords = this.footer.createDiv({ cls: "ws-footer-cell" });
         this.update();
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-file-word-count", this.update.bind(this)));
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-file-word-count", this.update.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
     }
 
     onProjectUpdate(project: WSProject) {

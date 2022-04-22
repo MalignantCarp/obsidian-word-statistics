@@ -3,6 +3,10 @@
  - [ ] TODO: Build panel to manage projects within groups
  - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
 
+2022-04-22
+ - Completed event system.
+ - UI system was becoming ungainly. Have started to develop parts of the UI using Svelte.
+
 2022-04-21
  - Added code to allow project groups to have descendents by using pathing (e.g., Group 1/Descendent 1) so that we can show hierarchy.
  - Added project group retrieval methods to get alpha-sorted name lists and project group lists.

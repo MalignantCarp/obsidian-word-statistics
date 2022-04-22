@@ -130,4 +130,8 @@ export class WSFile {
 	get words() {
 		return this.currentWords;
 	}
+
+	get totalWords() {
+		return this.currentWords;
+	}
 }

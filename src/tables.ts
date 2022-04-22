@@ -1,10 +1,10 @@
 
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
-import { WSDataCollector } from "./model/collector";
-import WordStatisticsPlugin from "./main";
-import { WSProject } from "./model/project";
-import { WSTableSettings } from "./settings";
-import { WSProjectManager } from "./model/manager";
+import type { WSDataCollector } from "./model/collector";
+import type WordStatisticsPlugin from "./main";
+import type { WSProject } from "./model/project";
+import type { WSTableSettings } from "./settings";
+import type { WSProjectManager } from "./model/manager";
 
 export default class ProjectTableModal extends Modal {
     plugin: WordStatisticsPlugin;
@@ -36,7 +36,7 @@ export default class ProjectTableModal extends Modal {
         // if there are no projects, this modal cannot be created and a notice is given instead advising there are no projects
         // so this should never return a null value
         if (this.project == null) {
-            this.project = this.manager.getProject(this.manager.getProjectNames()[0]); // get the first project in the project manager's list
+            this.project = this.manager.getProjectByName(this.manager.getProjectNames()[0]); // get the first project in the project manager's list
         }
         return this.project.name;
     }
@@ -55,7 +55,7 @@ export default class ProjectTableModal extends Modal {
                 cb.setValue(this.getProject()); // this should never be null
                 cb.onChange(async (value: string) => {
                     // value should always be valid as his is a modal, so no changes could be made, this this should never return null
-                    this.project = this.manager.getProject(value);
+                    this.project = this.manager.getProjectByName(value);
                 });
             });
         new Setting(contentEl)

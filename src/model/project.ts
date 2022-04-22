@@ -1,4 +1,4 @@
-import { WSDataCollector } from "./collector";
+import type { WSDataCollector } from "./collector";
 import { WSFile } from "./file";
 
 export enum WSPType {

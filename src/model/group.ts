@@ -1,5 +1,5 @@
-import { WSProjectManager } from "./manager";
-import { WSProject } from "./project";
+import type { WSProjectManager } from "./manager";
+import type { WSProject } from "./project";
 
 export class WSProjectGroup {
     name: string;

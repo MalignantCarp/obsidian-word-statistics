@@ -1,8 +1,9 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags, parseFrontMatterStringArray, parseFrontMatterEntry } from 'obsidian';
 import { WSFile } from './file';
-import WordStatisticsPlugin from '../main';
+import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
+import { WSEvents, WSFileEvent } from 'src/event';
 
 interface LongformDraft {
     name: string;
@@ -106,7 +107,7 @@ export class WSDataCollector {
             if (file.words != count) {
                 this.fileMap.get(path).setWords(count);
                 this.update();
-                this.plugin.app.workspace.trigger("word-statistics-file-word-count", file);
+                this.plugin.events.trigger(new WSFileEvent({type: WSEvents.File.WordsChanged, file}))
             }
             return;
         }

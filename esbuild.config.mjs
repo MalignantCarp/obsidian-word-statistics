@@ -9,6 +9,9 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
+import sveltePlugin from "esbuild-svelte";
+import sveltePreprocess from "svelte-preprocess";
+
 const prod = (process.argv[2] === 'production');
 
 esbuild.build({
@@ -28,5 +31,11 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
+	plugins: [
+		sveltePlugin({
+			compilerOptions: { css: true, dev: true },
+			preprocess: sveltePreprocess()
+		})
+	],
 	outfile: 'main.js',
 }).catch(() => process.exit(1));
