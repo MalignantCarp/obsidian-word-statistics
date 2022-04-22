@@ -1,20 +1,40 @@
 import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata, normalizePath, TFolder } from 'obsidian';
-import { WSDataCollector } from './data';
+import { WSDataCollector } from './model/collector';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import { WSProject, WSProjectGroup } from './projects';
 import { ProjectGroupManagerModal, ProjectGroupViewerModal, ProjectManagerModal, ProjectViewerModal } from './ui/modals';
+import { WSProject } from './model/project';
+import { WSProjectGroup } from './model/group';
+import { WSFile } from './model/file';
 
 const PROJECT_PATH = "projects.json";
 
 declare module "obsidian" {
 	interface Workspace {
 		on(
+			name: "word-statistics-file-word-count",
+			callback: (file: WSFile) => any
+		): EventRef;
+		on(
+			name: "word-statistics-file-update",
+			callback: (file: WSFile) => any
+		): EventRef;
+		on(
+			name: "word-statistics-file-renamed",
+			callback: (file: WSFile) => any
+		): EventRef;
+
+		on(
 			name: "word-statistics-project-update",
 			callback: (project: WSProject) => any
 		): EventRef;
+		on(
+			name: "word-statistics-project-files-update",
+			callback: (project: WSProject) => any
+		): EventRef;
+
 		on(
 			name: "word-statistics-project-group-update",
 			callback: (project: WSProjectGroup) => any
@@ -23,15 +43,16 @@ declare module "obsidian" {
 			name: "word-statistics-project-groups-changed",
 			callback: () => any
 		): EventRef;
-		on(
-			name: "word-statistics-project-files-update",
-			callback: (project: WSProject) => any
-		): EventRef;
+
+		trigger(name: "word-statistics-file-word-count", file: WSFile): void;
+		trigger(name: "word-statistics-file-update", file: WSFile): void;
+		trigger(name: "word-statistics-file-renamed", file: WSFile): void;
 
 		trigger(name: "word-statistics-project-update", project: WSProject): void;
+		trigger(name: "word-statistics-project-files-update", project: WSProject): void;
+
 		trigger(name: "word-statistics-project-group-updated", group: WSProjectGroup): void;
 		trigger(name: "word-statistics-project-groups-changed"): void;
-		trigger(name: "word-statistics-project-files-update", project: WSProject): void;
 	}
 }
 
@@ -75,10 +96,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerInterval(window.setInterval(this.onStatusBarUpdate.bind(this), 200));
 
 		// custom events
+		this.registerEvent(this.app.workspace.on("word-statistics-file-update", this.onFileUpdate.bind(this)));
+		this.registerEvent(this.app.workspace.on("word-statistics-file-word-count", this.onFileWordCount.bind(this)));
+
 		this.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
+		this.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectFilesUpdate.bind(this)));
+
 		this.registerEvent(this.app.workspace.on("word-statistics-project-group-update", this.onProjectGroupUpdate.bind(this)));
 		this.registerEvent(this.app.workspace.on("word-statistics-project-groups-changed", this.onProjectGroupsChanged.bind(this)));
-		this.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectFilesUpdate.bind(this)));
 
 		this.statusBar = this.addStatusBarItem();
 
@@ -117,8 +142,12 @@ export default class WordStatisticsPlugin extends Plugin {
 		// this.addCommand({
 		// 	id: 'insert-project-table-modal',
 		// 	name: 'Insert Project Table Modal',
-		// 	callback: () => {
-		// 		this.insertProjectTableModal();
+		// 	editorCheckCallback: (checking: boolean) => {
+		// 		if (checking) {
+		// 			return this.collector.manager.isEmpty;
+		// 		} else {
+		// 			this.insertProjectTableModal();
+		// 		}
 		// 	}
 		// });
 		console.log ("Obsidian Word Statistics loaded.")
@@ -235,7 +264,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	updateStatusBar() {
+	updateStatusBar(file?: WSFile, count?: number) {
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
 		if (view != null && view.file != null) {
@@ -245,7 +274,6 @@ export default class WordStatisticsPlugin extends Plugin {
 			let words = this.collector.getWords(path);
 			let totalWords = this.collector.totalWords;
 
-			// **Is this valid for mobile?**
 			let wordStr = Intl.NumberFormat().format(words) + " / " + Intl.NumberFormat().format(totalWords);
 			this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words"));
 		} else {
@@ -347,6 +375,19 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("called from onProjectGroupsChanged()");
 	}
 
+	onFileUpdate(file: WSFile) {
+		// file has been updated, what to do?
+	}
+
+	onFileWordCount(file: WSFile) {
+		// file word count has been updated, what to do?
+		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+		if (view != null && view.file != null && view.file.path == file.path) {
+			this.updateStatusBar();
+		}
+	}
+
 	RunCount(file: TFile, data: string) {
 		// need to have some kind of logging system so people can report the words/ms rate average
 		let startTime = Date.now();
@@ -355,6 +396,5 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.logSpeed(words, startTime, endTime);
 		this.collector.logWords(file.path, words);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
-		this.updateStatusBar();
 	}
 }

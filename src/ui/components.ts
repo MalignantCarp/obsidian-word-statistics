@@ -1,7 +1,9 @@
 import { App, ButtonComponent, ExtraButtonComponent, Setting } from "obsidian";
-import { WSFile } from "src/files";
 import WordStatisticsPlugin from "src/main";
-import { PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSProjectGroup, WSProjectManager, WSPType, WSTagProject } from "src/projects";
+import { WSFile } from "src/model/file";
+import { WSProjectGroup } from "src/model/group";
+import { CanProjectMoveDownInGroup, CanProjectMoveUpInGroup, WSProjectManager } from "src/model/manager";
+import { PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "src/model/project";
 import { EditFileProjectModal, EditFolderProjectModal, EditTagProjectModal } from "./modals";
 
 /*
@@ -11,6 +13,109 @@ This can probably be broken into three components:
 The encapsulating ProjectElement and the FileList and FileItem components.
 This will allow us the best flexibility in terms of generating the HTMLElements.
 */
+
+export class ProjectFileItem {
+    public container: HTMLDivElement;
+    public name: HTMLDivElement;
+    public words: HTMLDivElement;
+
+    constructor(public plugin: WordStatisticsPlugin, public parent: HTMLElement, public file: WSFile, public project?: WSProject) {
+        this.container = this.parent.createDiv({ cls: ["ws-project-file", "ws-table-row"] });
+        this.name = this.container.createDiv({ cls: ["ws-project-file-name", "ws-table-cell"] });
+        this.words = this.container.createDiv({ cls: ["ws-project-file-words", "ws-table-cell"] });
+        this.update();
+    }
+
+    clear() {
+        this.words = null;
+        this.name = null;
+        this.container.empty();
+        this.container = null;
+        this.file = null;
+        this.project = null;
+        this.plugin = null;
+        this.parent = null;
+    }
+
+    update() {
+        let indexed = this.project != null && this.project != undefined && this.project.type == WSPType.File;
+        let fp: WSFileProject;
+        if (indexed) {
+            fp = this.project as WSFileProject;
+        }
+        let fileName = this.plugin.settings.useDisplayText ? this.file.title : this.file.name;
+        if (indexed) {
+            fileName = fp.file.getLinkTitle(this.file);
+        }
+        this.name.setText(fileName);
+        this.words.setText(Intl.NumberFormat().format(this.file.words) + (this.file.words === 1 ? " word" : " words"));
+    }
+}
+
+export class ProjectFileList {
+    public container: HTMLDivElement;
+    public header: HTMLDivElement;
+    public headerName: HTMLDivElement;
+    public tableBody: HTMLDivElement;
+    public headerWords: HTMLDivElement;
+    public footer: HTMLDivElement;
+    public footerName: HTMLDivElement;
+    public footerWords: HTMLDivElement;
+    public items: ProjectFileItem[];
+    public itemMap: Map<WSFile, ProjectFileItem> = new Map<WSFile, ProjectFileItem>();
+
+    constructor(public app: App, public plugin: WordStatisticsPlugin, public manager: WSProjectManager, public parent: HTMLElement, public project: WSProject) {
+        this.container = this.parent.createDiv({ cls: ["ws-project", "ws-table"] });
+        this.header = this.container.createDiv({ cls: "ws-table-header" });
+        this.headerName = this.header.createDiv({ text: "File Name", cls: "ws-header-cell" });
+        this.headerWords = this.header.createDiv({ text: "Words", cls: "ws-header-cell" });
+        this.tableBody = this.container.createDiv({ cls: "ws-table-body" });
+        this.footer = this.container.createDiv({ cls: "ws-table-footer" });
+        this.footerName = this.footer.createDiv({ text: "Total Words", cls: "ws-footer-cell" });
+        this.footerWords = this.footer.createDiv({ cls: "ws-footer-cell" });
+        this.update();
+        this.plugin.registerEvent(this.app.workspace.on("word-statistics-file-word-count", this.update.bind(this)));
+        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
+    }
+
+    onProjectUpdate(project: WSProject) {
+        if (project == this.project) {
+            this.itemMap.clear();
+            while(this.items.length > 0) {
+                this.items.pop().clear();
+                this.tableBody.empty();
+                this.update();
+            }
+        }
+    }
+
+    clear() {
+        while (this.items.length > 0) {
+            this.items.pop().clear();
+        }
+        this.container.empty();
+        this.container = null;
+        this.header = null;
+        this.headerName = null;
+        this.headerWords = null;
+        this.tableBody = null;
+        this.footer = null;
+        this.footerName = null;
+        this.footerWords = null;
+    }
+
+    update(file?: WSFile) {
+        if (file instanceof WSFile) {
+            if (this.itemMap.has(file)) {
+                this.itemMap.get(file).update();
+            }
+        } else {
+
+        }
+        this.footerWords.setText(Intl.NumberFormat().format(this.project.totalWords) + (this.project.totalWords === 1 ? " word" : " words"));
+    }
+}
+
 export class ProjectElement {
     app: App;
     plugin: WordStatisticsPlugin;
@@ -116,6 +221,18 @@ export class ProjectList {
         this.rebuildProjects();
     }
 
+    clean() {
+        this.app = null;
+        this.plugin = null;
+        this.manager = null;
+        this.parent = null;
+        this.container.empty();
+        this.container = null;
+        this.type = null;
+        this.projects.clear();
+        this.projects = null;
+    }
+
     rebuildProjects() {
         const projects = this.manager.getProjectsByType(this.type);
         this.container.empty();
@@ -189,19 +306,19 @@ export class ProjectGroupProjectItem {
         this.setting.addExtraButton((button) => {
             this.up = button;
             button.setIcon('up-arrow');
-            button.setDisabled(WSProjectManager.CanProjectMoveUpInGroup(this.project, this.group));
+            button.setDisabled(CanProjectMoveUpInGroup(this.project, this.group));
             button.onClick(() => {
                 this.moveUpCB(this);
-                button.setDisabled(WSProjectManager.CanProjectMoveUpInGroup(this.project, this.group));
+                button.setDisabled(CanProjectMoveUpInGroup(this.project, this.group));
             });
         });
         this.setting.addExtraButton((button) => {
             this.down = button;
             button.setIcon('down-arrow');
-            button.setDisabled(WSProjectManager.CanProjectMoveDownInGroup(this.project, this.group));
+            button.setDisabled(CanProjectMoveDownInGroup(this.project, this.group));
             button.onClick(() => {
                 this.moveDownCB(this);
-                button.setDisabled(WSProjectManager.CanProjectMoveDownInGroup(this.project, this.group));
+                button.setDisabled(CanProjectMoveDownInGroup(this.project, this.group));
             });
         });
         this.setting.addExtraButton((button) => {
@@ -211,10 +328,24 @@ export class ProjectGroupProjectItem {
             });
         });
     }
+
+    clean() {
+        this.setting.clear();
+        this.setting = null;
+        this.container.empty();
+        this.container = null;
+        this.parent = null;
+        this.project = null;
+        this.group = null;
+        this.moveDownCB = null;
+        this.moveUpCB = null;
+        this.trashCB = null;
+    }
+
     update() {
         this.setting.setName(this.project.name);
-        this.up.setDisabled(WSProjectManager.CanProjectMoveUpInGroup(this.project, this.group));
-        this.down.setDisabled(WSProjectManager.CanProjectMoveDownInGroup(this.project, this.group));
+        this.up.setDisabled(CanProjectMoveUpInGroup(this.project, this.group));
+        this.down.setDisabled(CanProjectMoveDownInGroup(this.project, this.group));
     }
 }
 
@@ -232,15 +363,27 @@ export class ProjectGroupItem {
         this.headContainer = parent.createDiv();
         this.container = parent.createDiv();
         this.setting = new Setting(this.headContainer);
-        this.setting.setName("Projects")
-        this.setting.setDesc("This is where you can add projects to a project group.")
+        this.setting.setName("Projects");
+        this.setting.setDesc("This is where you can add projects to a project group.");
         this.setting.addButton((button) => {
             // [TODO] This needs to be completed
-        })
+        });
+    }
+
+    clean() {
+        this.setting.clear();
+        this.setting = null;
+        this.headContainer.empty();
+        this.headContainer = null;
+        this.container.empty();
+        this.container = null;
+        while (this.projects.length > 0) {
+            this.projects.pop().clean();
+        }
     }
 
     moveItemUp(item: ProjectGroupProjectItem) {
-        if (WSProjectManager.CanProjectMoveUpInGroup(item.project, item.group)) {
+        if (CanProjectMoveUpInGroup(item.project, item.group)) {
             let index = this.projects.indexOf(item);
             console.log("Up IN:", index, this.group.projects.indexOf(item.project));
             this.manager.moveProjectUpInGroup(item.project, item.group);
@@ -253,7 +396,7 @@ export class ProjectGroupItem {
     }
 
     moveItemDown(item: ProjectGroupProjectItem) {
-        if (WSProjectManager.CanProjectMoveDownInGroup(item.project, item.group)) {
+        if (CanProjectMoveDownInGroup(item.project, item.group)) {
             let index = this.projects.indexOf(item);
             console.log("Down IN:", index, this.group.projects.indexOf(item.project));
             this.manager.moveProjectDownInGroup(item.project, item.group);
@@ -276,7 +419,7 @@ export class ProjectGroupItem {
             this.projects.pop();
         }
         this.container.empty();
-        this.manager.getProjectsForGroup(this.group.name).forEach((project) => {
+        this.manager.getProjectsForGroupName(this.group.name).forEach((project) => {
             this.projects.push(new ProjectGroupProjectItem(this.container, this.group, project, this.moveItemUp.bind(this), this.moveItemDown.bind(this), this.trashItem.bind(this)));
         });
     }

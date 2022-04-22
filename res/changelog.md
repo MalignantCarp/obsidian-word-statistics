@@ -3,6 +3,19 @@
  - [ ] TODO: Build panel to manage projects within groups
  - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
 
+2022-04-21
+ - Added code to allow project groups to have descendents by using pathing (e.g., Group 1/Descendent 1) so that we can show hierarchy.
+ - Added project group retrieval methods to get alpha-sorted name lists and project group lists.
+ - Moved WSDataCollector to model/collector.ts
+ - Moved WSProjectManager to model/manager.ts
+ - Moved WSProjectGroup to model/group.ts
+ - Moved files.ts to model/file.ts
+ - Reorganized methods under WSProjectManager into a more logical order
+ - New CSS for div-based tables
+ - Started new ProjectFileItem and ProjectFileList components
+ - Added more events and supporting code for tracking file renames and file word count updates.
+ - Started building a new event system. This wukk allow for proper tracking across various UI elements by registering those elements with their respective files and creating handlers. The lead dispatcher will then handle the queue to clear any of those on respective events. I will also add a filter so that file/project/group-specific events only go to the place watching for them.
+
 2022-04-20
  - Data structure population is now deferred until layout is ready to ensure the vault is fully loaded before we start indexing.
  - Finished the dropdown for the ProjectGroupViewer panel.

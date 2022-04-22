@@ -1,8 +1,10 @@
 import { App, Modal, Notice, Setting, TextComponent, TFolder } from "obsidian";
 import { WSPErrors } from "src/errors";
-import { WSFile } from "src/files";
 import WordStatisticsPlugin from "src/main";
-import { PROJECT_TYPE_NAME, WSFileProject, WSFolderProject, WSProject, WSProjectGroup, WSProjectManager, WSPType, WSTagProject } from "src/projects";
+import { WSFile } from "src/model/file";
+import { WSProjectGroup } from "src/model/group";
+import { WSProjectManager } from "src/model/manager";
+import { PROJECT_TYPE_NAME, WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "src/model/project";
 import FileSuggestionModal from "src/suggester/file";
 import { FolderSuggestionModal } from "src/suggester/folder";
 import { TagSuggestionModal } from "src/suggester/tag";

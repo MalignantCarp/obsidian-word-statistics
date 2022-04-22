@@ -1,13 +1,8 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags, parseFrontMatterStringArray, parseFrontMatterEntry } from 'obsidian';
-import { WSFile } from './files';
-import WordStatisticsPlugin from './main';
-import { WSProjectManager } from './projects';
-import { WordCountForText } from './words';
-
-enum QIType {
-    Log = "QIT_LOG",
-    Delta = "QIT_DELTA"
-}
+import { WSFile } from './file';
+import WordStatisticsPlugin from '../main';
+import { WSProjectManager } from './manager';
+import { WordCountForText } from '../words';
 
 interface LongformDraft {
     name: string;
@@ -15,69 +10,11 @@ interface LongformDraft {
     scenes: string[];
 }
 
-class QueuedItem {
-    private type: QIType;
-    private id: number;
-    private path: string;
-    private count: number;
-
-    constructor(type: QIType, id: number, path: string, count: number) {
-        this.type = type;
-        this.id = id;
-        this.path = path;
-        this.count = count;
-    }
-
-    getType() {
-        return this.type;
-    }
-
-    getID() {
-        return this.id;
-    }
-
-    getPath() {
-        return this.path;
-    }
-
-    getCount() {
-        return this.count;
-    }
-}
-
-class Dispatcher {
-    private callbacks: Map<string, Function>;
-
-    constructor() {
-        this.callbacks = new Map<string, Function>();
-    }
-
-    addCallback(id: string, func: Function) {
-        if (!this.callbacks.has(id)) {
-            this.callbacks.set(id, func);
-        }
-    }
-
-    removeCallback(id: string) {
-        if (this.callbacks.has(id)) {
-            this.callbacks.delete(id);
-        }
-    }
-
-    dispatchMessage(msg: string) {
-        this.callbacks.forEach((func, id) => {
-            console.log(`Dispatching message '${msg}' for id ${id}`);
-            func(id, msg);
-        });
-    }
-}
-
 export class WSDataCollector {
     plugin: WordStatisticsPlugin;
     vault: Vault;
     mdCache: MetadataCache;
     private fileMap: Map<string, WSFile>;
-    private fileCallbacks: Map<string, Dispatcher>;
     private files: WSFile[];
     manager: WSProjectManager;
     lastUpdate: number = 0;
@@ -88,7 +25,6 @@ export class WSDataCollector {
         this.vault = vault;
         this.mdCache = metadataCache; // we will eventually use this to obtain content of embeds
         this.fileMap = new Map<string, WSFile>();
-        this.fileCallbacks = new Map<string, Dispatcher>();
         this.files = [];
         this.lastUpdate = 0;
         this.manager = new WSProjectManager(plugin, this);
@@ -110,44 +46,6 @@ export class WSDataCollector {
             });
         });
         return Array.from(tags);
-    }
-
-    addCallback(path: string, id: string, func: Function) {
-        if (this.fileCallbacks.has(path)) {
-            let disp = this.fileCallbacks.get(path);
-            disp.addCallback(id, func);
-        } else {
-            let disp = new Dispatcher();
-            disp.addCallback(id, func);
-            this.fileCallbacks.set(path, disp);
-        }
-    }
-
-    removeCallback(path: string, id: string) {
-        if (this.fileCallbacks.has(path)) {
-            this.fileCallbacks.get(path).removeCallback(id);
-        }
-    }
-
-    renameDispatcher(oldPath: string, newPath: string) {
-        if (this.fileCallbacks.has(oldPath)) {
-            if (this.fileCallbacks.has(newPath)) {
-                if (this.fileCallbacks.get(oldPath) != this.fileCallbacks.get(newPath)) {
-                    console.log(this.fileCallbacks.get(oldPath));
-                    console.log(this.fileCallbacks.get(newPath));
-                    throw (Error("Attempted to rename message dispatcher, but a different message dispatcher with that name already exists."));
-                }
-            }
-            this.fileCallbacks.set(newPath, this.fileCallbacks.get(oldPath));
-            this.fileCallbacks.delete(oldPath);
-        }
-    }
-
-    dispatchMessage(path: string, msg: string) {
-        if (this.fileCallbacks.has(path)) {
-            console.log(`Dispatching '${msg}' for '${path}.`);
-            this.fileCallbacks.get(path).dispatchMessage(msg);
-        }
     }
 
     get fileList() {
@@ -173,7 +71,7 @@ export class WSDataCollector {
             this.fileMap.set(file.path, fi);
             fi.name = file.basename;
             fi.path = file.path;
-            this.renameDispatcher(oldPath, file.path);
+            this.plugin.app.workspace.trigger("word-statistics-file-renamed", fi);
         } else {
             console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldPath, file.path);
             let fi = this.getFile(file.path);
@@ -204,8 +102,12 @@ export class WSDataCollector {
 
     logWords(path: string, count: number) {
         if (this.fileMap.has(path)) {
-            this.fileMap.get(path).setWords(count);
-            this.update();
+            let file = this.fileMap.get(path);
+            if (file.words != count) {
+                this.fileMap.get(path).setWords(count);
+                this.update();
+                this.plugin.app.workspace.trigger("word-statistics-file-word-count", file);
+            }
             return;
         }
         console.log(`ERROR: Attempted to log words for path '${path}' but path not found in file map.`);

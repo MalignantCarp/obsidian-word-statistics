@@ -1,5 +1,7 @@
-import { App, ButtonComponent, DropdownComponent, Setting } from "obsidian";
-import { PROJECT_TYPE_STRING, WSProject, WSProjectGroup, WSProjectManager, WSPType } from "src/projects";
+import { App, DropdownComponent, Setting } from "obsidian";
+import { WSProjectGroup } from "src/model/group";
+import { WSProjectManager } from "src/model/manager";
+import { PROJECT_TYPE_STRING, WSProject, WSPType } from "src/model/project";
 import WordStatisticsPlugin from "../main";
 import { ProjectElement, ProjectList } from "./components";
 import { EditFileProjectModal, EditFolderProjectModal, EditTagProjectModal } from "./modals";
@@ -31,6 +33,33 @@ export class ProjectManagerPanel {
         // cleanup?
     }
 
+    getModalForType(pType: WSPType) {
+        let modal: EditFileProjectModal | EditFolderProjectModal | EditTagProjectModal;
+        switch (pType) {
+            case WSPType.File:
+                modal = new EditFileProjectModal(this.app, this.plugin, this.manager);
+                break;
+            case WSPType.Folder:
+                modal = new EditFolderProjectModal(this.app, this.plugin, this.manager);
+                break;
+            case WSPType.Tag:
+                modal = new EditTagProjectModal(this.app, this.plugin, this.manager);
+                break;
+        }
+        if (modal === undefined || modal === null) {
+            console.error(`Failed to create modal for new ${pType}/${PROJECT_TYPE_STRING[pType]}`);
+            return;
+        }
+        modal.onClose = () => {
+            if (modal.cancelled) {
+                return;
+            }
+            this.manager.triggerProjectUpdate(modal.project);
+            //manager.updateProject(modal.project);
+        };
+        return modal;
+    }
+
     rebuild(project?: WSProject) {
         this.container.empty();
         new Setting(this.container)
@@ -38,7 +67,10 @@ export class ProjectManagerPanel {
             .setDesc("Create a new project based on a file index.")
             .addButton((button) => {
                 button.setButtonText("New File Index Project");
-                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.File);
+                button.onClick(() => {
+                    let modal = this.getModalForType(WSPType.File);
+                    modal.open();
+                });
             });
         this.fileProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.File);
         new Setting(this.container)
@@ -46,7 +78,10 @@ export class ProjectManagerPanel {
             .setDesc("Create a new project based on a folder.")
             .addButton((button) => {
                 button.setButtonText("New Folder Project");
-                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Folder);
+                button.onClick(() => {
+                    let modal = this.getModalForType(WSPType.Folder);
+                    modal.open();
+                });
             });
         this.folderProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.Folder);
         new Setting(this.container)
@@ -54,7 +89,10 @@ export class ProjectManagerPanel {
             .setDesc("Create a new project based on a tag.")
             .addButton((button) => {
                 button.setButtonText("New Tag Project");
-                SetupButtonClickCallback(this.app, this.plugin, this.manager, button, WSPType.Tag);
+                button.onClick(() => {
+                    let modal = this.getModalForType(WSPType.Tag);
+                    modal.open();
+                });
             });
         this.tagProjects = new ProjectList(this.app, this.plugin, this.manager, this.container, WSPType.Tag);
     }
@@ -206,51 +244,21 @@ export class ProjectGroupManagerPanel {
     clear() {
         // cleanup?
     }
-/*
-
-Because the code in the component this would use relies on the project group already existing, the workflow for
-this will need to be a bit different than the project manager.
-
-When you open the panel to manage project groups, you will get a list of project groups with the ability to add new
-ones via button, and the ability to modify existing ones from the list. Not sure yet if this will be three
- extra buttons or if one of them will be full sized or not.
-
-This is a unique element of the project system. While a project has name and an index, a project group has a name and
-a list of projects in a particular order.
-
-There may be a possibility to modify the basic project list component to have a + symbol next to it to have a callback
-into the ProjectGroupProjectListPanel to add the project to the group's list.
-
-*/
+    /*
+    
+    Because the code in the component this would use relies on the project group already existing, the workflow for
+    this will need to be a bit different than the project manager.
+    
+    When you open the panel to manage project groups, you will get a list of project groups with the ability to add new
+    ones via button, and the ability to modify existing ones from the list. Not sure yet if this will be three
+     extra buttons or if one of them will be full sized or not.
+    
+    This is a unique element of the project system. While a project has name and an index, a project group has a name and
+    a list of projects in a particular order.
+    
+    There may be a possibility to modify the basic project list component to have a + symbol next to it to have a callback
+    into the ProjectGroupProjectListPanel to add the project to the group's list.
+    
+    */
 
 }
-
-function SetupButtonClickCallback(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager, button: ButtonComponent, pType: WSPType) {
-    button.onClick(() => {
-        let modal: EditFileProjectModal | EditFolderProjectModal | EditTagProjectModal;
-        switch (pType) {
-            case WSPType.File:
-                modal = new EditFileProjectModal(app, plugin, manager);
-                break;
-            case WSPType.Folder:
-                modal = new EditFolderProjectModal(app, plugin, manager);
-                break;
-            case WSPType.Tag:
-                modal = new EditTagProjectModal(app, plugin, manager);
-                break;
-        }
-        if (modal === undefined || modal === null) {
-            console.error(`Failed to create modal for new ${pType}/${PROJECT_TYPE_STRING[pType]}`);
-            return;
-        }
-        modal.onClose = () => {
-            if (modal.cancelled) {
-                return;
-            }
-            manager.triggerProjectUpdate(modal.project);
-            //manager.updateProject(modal.project);
-        };
-        modal.open();
-    });
-}
-

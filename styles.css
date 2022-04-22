@@ -44,12 +44,14 @@ End borrow
 	--project-background: #eeeeeedd;
 	--project-zebra-bg: #aaaaaadd;
 	--total-line-color: #333333dd;
+	--ws-table-line-color: #333333dd;
 }
 
 .theme-dark {
 	--project-background: #00000022;
 	--project-zebra-bg: #FFFFFF0A;
 	--total-line-color: #eeeeeedd;
+	--ws-table-line-color: #eeeeeedd;
 }
 
 div.project {
@@ -67,16 +69,16 @@ summary.project-name {
 	font-weight: bold;
 }
 
-details.project > table > tr:nth-child(even) {
+details.project>table>tr:nth-child(even) {
 	background-color: var(--project-background);
 }
 
-details.project > table > tr:nth-child(odd) {
+details.project>table>tr:nth-child(odd) {
 	background-color: var(--project-zebra-bg);
 }
 
-details.project > table {
-    width: 100%;
+details.project>table {
+	width: 100%;
 	border-collapse: collapse;
 }
 
@@ -93,12 +95,61 @@ tr.total-line {
 	border-color: var(--total-line-color);
 }
 
-td.project-words, td.file-words {
+td.project-words,
+td.file-words {
 	font-weight: normal;
-    text-align: right;
+	text-align: right;
 	padding-right: 4px;
 }
 
 td.project-words {
 	font-weight: bolder;
+}
+
+
+.ws-table {
+	display: table;
+	width: 100%;
+}
+
+.ws-table-row {
+	display: table-row;
+}
+
+.ws-table > .ws-table-row:nth-child(even) {
+	background-color: var(--project-background);
+}
+
+.ws-table > .ws-table-row:nth-child(odd) {
+	background-color: var(--project-zebra-bg);
+}
+
+.ws-table-header {
+	display: table-header-group;
+	font-weight: bold;
+}
+
+.ws-table-body {
+	display: table-row-group;
+}
+
+.ws-table-footer {
+	display: table-footer-group;
+	font-weight: bold;
+}
+
+.ws-table-cell, .ws-header-cell, .ws-footer-cell {
+	display: table-cell;
+}
+
+.ws-header-cell {
+	border-bottom: 1px solid var(--ws-table-line-color);
+}
+
+.ws-footer-cell {
+	border-top: 1px solid var(--ws-table-line-color);
+}
+
+.ws-table-title {
+	display: table-caption;
 }

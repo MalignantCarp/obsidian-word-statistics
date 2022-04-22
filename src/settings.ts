@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import WordStatisticsPlugin from "./main";
-import { ProjectMap } from "./projects";
 
 export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showNumber: true,
