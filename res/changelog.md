@@ -3,6 +3,9 @@
  - [ ] TODO: Build panel to manage projects within groups
  - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
 
+2022-04-25
+ - New Svelte status bar and word counting widgets. Need to still make some tweaks (clarity re: file vs project counts) and add a tooltip to list the projects in the case of multiple projects.
+
 2022-04-22
  - Completed event system.
  - UI system was becoming ungainly. Have started to develop parts of the UI using Svelte.

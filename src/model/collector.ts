@@ -4,6 +4,7 @@ import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
 import { WSEvents, WSFileEvent } from 'src/event';
+import { writable, Writable } from 'svelte/store';
 
 interface LongformDraft {
     name: string;
@@ -20,6 +21,7 @@ export class WSDataCollector {
     manager: WSProjectManager;
     lastUpdate: number = 0;
     queue: [Function, unknown[]][] = [];
+    lastWords: number = 0;
 
     constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
         this.plugin = plugin;
@@ -32,6 +34,7 @@ export class WSDataCollector {
     }
 
     get totalWords() {
+        return this.lastWords;
         let words = 0;
         this.files.forEach((file) => {
             words += file.words;
@@ -101,13 +104,15 @@ export class WSDataCollector {
         }
     }
 
-    logWords(path: string, count: number) {
+    logWords(path: string, newCount: number) {
         if (this.fileMap.has(path)) {
             let file = this.fileMap.get(path);
-            if (file.words != count) {
-                this.fileMap.get(path).setWords(count);
+            let oldCount = file.words;
+            if (oldCount != newCount) {
+                this.lastWords += newCount - oldCount;
+                this.fileMap.get(path).setWords(newCount);
                 this.update();
-                this.plugin.events.trigger(new WSFileEvent({type: WSEvents.File.WordsChanged, file}))
+                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, {filter: file}));
             }
             return;
         }
@@ -264,7 +269,7 @@ export class WSDataCollector {
             // console.log(fi.getLinks());
             // console.log(fi.getBacklinks());
             let words = WordCountForText(await this.vault.cachedRead(file));
-            fi.setWords(words);
+            this.logWords(fi.path, words);
 
             //console.log(frontMatter.wordStatsProject);
             this.update();

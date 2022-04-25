@@ -4,11 +4,12 @@ import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } 
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import Count from "./ui/svelte/wordcountitem.svelte"
 import { ProjectGroupManagerModal, ProjectGroupViewerModal, ProjectManagerModal, ProjectViewerModal } from './ui/modals';
 import type { WSProject } from './model/project';
-import type { WSFile } from './model/file';
-import { Dispatcher, WSEvents, WSProjectEvent, WSProjectGroupEvent } from './event';
+import { WSFile } from './model/file';
+import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
+import StatusBarWidget from './ui/svelte/StatusBarWidget.svelte';
+import { writable, Writable } from 'svelte/store';
 
 const PROJECT_PATH = "projects.json";
 
@@ -18,9 +19,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	public debounceRunCount: Debouncer<[file: TFile, data: string]>;
 	public wordsPerMS: number[] = [];
 	private statusBar: HTMLElement;
-	wc: Count;
+	sbWidget: StatusBarWidget;
 	private collector: WSDataCollector;
-	private hudLastUpdate: number = 0;
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
 
@@ -49,17 +49,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 
-		// this.registerInterval(window.setInterval(this.onStartup.bind(this), 1000));
-		this.app.workspace.onLayoutReady(this.onStartup.bind(this));
-		this.registerInterval(window.setInterval(this.onStatusBarUpdate.bind(this), 200));
-
 		// custom events
 		this.events = new Dispatcher();
 
-		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this));
-		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this));
+		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), {filter: null});
+		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this), {filter:null});
 		this.statusBar = this.addStatusBarItem();
-		this.wc = new Count({target: this.statusBar, props: {counter: null, eventDispatcher: this.events, collector:this.collector, showTotal:true}});
+		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
+
+		// this.registerInterval(window.setInterval(this.onStartup.bind(this), 1000));
+		this.app.workspace.onLayoutReady(this.onStartup.bind(this));
+
 
 		this.addCommand({
 			id: 'open-project-manager',
@@ -178,12 +178,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	async onStatusBarUpdate() {
-		if (this.hudLastUpdate < this.collector.lastUpdate) {
-			this.updateStatusBar();
-		}
-	}
-
 	async onStartup() {
 		if (!this.initialScan) {
 			// console.log("Initiating vault scan.");
@@ -202,6 +196,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.projectLoad = true;
 			await this.collector.scanVault();
 		}
+		this.updateFocusedFile();
 	}
 
 	insertProjectTableModal() {
@@ -218,21 +213,16 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	updateStatusBar(file?: WSFile, count?: number) {
+	updateFocusedFile() {
+		let file: WSFile;
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
 		if (view != null && view.file != null) {
-			if (file === null || file === undefined) {
-				file = this.collector.getFileSafer(view.file.path);
-			}
-			this.wc.changeCounter(file, true);
+			file = this.collector.getFileSafer(view.file.path);
 		}
-		// } else {
-		// 	let totalWords = this.collector.totalWords;
-		// 	let wordStr = Intl.NumberFormat().format(totalWords);
-		// 	this.statusBar.setText(wordStr + " " + (totalWords == 1 ? "word" : "words") + " in vault.");
-		// }
-		this.hudLastUpdate = Date.now();
+		if (file instanceof WSFile) {
+			this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, {filter: file}));
+		}
 	}
 
 	onFileRename(file: TAbstractFile, data: string) {
@@ -272,7 +262,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	onLeafChange(leaf: WorkspaceLeaf) {
 		// console.log("onLeafChange(%s)", leaf.view.getViewType());
 		if (leaf.view.getViewType() === "markdown") {
-			this.updateStatusBar();
+			this.updateFocusedFile();
 			//console.log(leaf);
 			/*
 			let state = leaf.getViewState().state;
@@ -292,6 +282,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	async onFileOpen(file: TFile) {
 		//console.log("onFileOpen()");
 		//console.log(file);
+		let wFile = this.collector.getFileSafer(file.path);
 		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
 			this.debounceRunCount(file, await this.app.vault.cachedRead(file));
 		}
@@ -319,10 +310,6 @@ export default class WordStatisticsPlugin extends Plugin {
 	onFileWordCount(file: WSFile) {
 		// file word count has been updated, what to do?
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-
-		if (view != null && view.file != null && view.file.path == file.path) {
-			this.updateStatusBar(file);
-		}
 	}
 
 	RunCount(file: TFile, data: string) {

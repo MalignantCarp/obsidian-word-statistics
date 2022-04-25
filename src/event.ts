@@ -3,7 +3,13 @@ import type { WSProjectGroup } from "./model/group";
 import type { WSProject } from "./model/project";
 
 export namespace WSEvents {
+    export namespace Focus {
+        export const File = "ws-event-focus-file";
+        export const Project = "ws-event-focus-project"; // we probably won't use this; the project will depend on the focused file
+    }
+
     export namespace File {
+        export const Opened = "ws-event-file-opened";
         export const Created = "ws-event-file-created";
         export const Renamed = "ws-event-file-renamed";
         export const Deleted = "ws-event-file-deleted";
@@ -15,8 +21,7 @@ export namespace WSEvents {
         export const Renamed = "ws-event-project-renamed";
         export const Deleted = "ws-event-project-deleted";
         export const Created = "ws-event-project-created";
-        export const FileAdded = "ws-event-project-file-added";
-        export const FileDeleted = "ws-event-project-file-deleted";
+        export const FilesUpdated = "ws-event-project-files-updated";
         export const Updated = "ws-event-project-updated";
     }
 
@@ -30,13 +35,21 @@ export namespace WSEvents {
     }
 }
 
-type WSEventType = WSFileEventType | WSProjectEventType | WSGroupEventType;
-export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
-export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FileAdded | typeof WSEvents.Project.FileDeleted | typeof WSEvents.Project.Updated;
+type WSEventType = WSFocusEventType | WSFileEventType | WSProjectEventType | WSGroupEventType;
+export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project;
+export type WSFileEventType = typeof WSEvents.File.Opened | typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
+export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated;
 export type WSGroupEventType = typeof WSEvents.Group.Renamed | typeof WSEvents.Group.Deleted | typeof WSEvents.Group.Created | typeof WSEvents.Group.ProjectAdded | typeof WSEvents.Group.ProjectDeleted | typeof WSEvents.Group.Updated;
 
 interface WSEventInfo {
     type: WSEventType;
+    data?: any[];
+}
+
+export interface WSFocusEventInfo extends WSEventInfo {
+    type: WSFocusEventType;
+    file?: WSFile;
+    project?: WSProject;
 }
 
 export interface WSFileEventInfo extends WSEventInfo {
@@ -62,25 +75,31 @@ export interface WSEventFilter {
 }
 
 export abstract class WSEvent {
-    constructor(public info: WSEventInfo, public filter?: WSEventFilter) {
+    constructor(public info: WSEventInfo, public focus: WSEventFilter) {
+    }
+}
+
+export class WSFocusEvent extends WSEvent {
+    constructor(public info: WSFocusEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     }
 }
 
 export class WSFileEvent extends WSEvent {
-    constructor(public info: WSFileEventInfo, public filter?: WSEventFilter) {
-        super(info, filter);
+    constructor(public info: WSFileEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     };
 }
 
 export class WSProjectEvent extends WSEvent {
-    constructor(public info: WSProjectEventInfo, public filter?: WSEventFilter) {
-        super(info, filter);
+    constructor(public info: WSProjectEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     };
 }
 
 export class WSProjectGroupEvent extends WSEvent {
-    constructor(public info: WSGroupEventInfo, public filter?: WSEventFilter) {
-        super(info, filter);
+    constructor(public info: WSGroupEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     };
 }
 
@@ -100,7 +119,8 @@ class DispatcherEvent {
 
     fire(event: WSEvent) {
         this.callbacks.forEach(([cbRun, filter]) => {
-            if (filter != null || filter != undefined || filter == event.filter) {
+            if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter == event.focus) {
+                // console.log("Ping!", event.info.type, event.focus)
                 cbRun(event);
             }
         });
@@ -130,14 +150,14 @@ export class Dispatcher {
         }
     }
 
-    on(event: WSEventType, cbRun: Function, filter?: WSEventFilter) {
+    on(event: WSEventType, cbRun: Function, filter: WSEventFilter) {
         if (!this.events.has(event)) {
             this.events.set(event, new DispatcherEvent(event));
         }
         this.events.get(event).registerCallback(cbRun, filter);
     }
 
-    off(event: WSEventType, cbRun: Function, filter?: WSEventFilter) {
+    off(event: WSEventType, cbRun: Function, filter: WSEventFilter) {
         if (this.events.has(event)) {
             this.events.get(event).unregisterCallback(cbRun, filter);
         }

@@ -1,3 +1,4 @@
+import { WSEvents, WSProjectEvent, WSProjectGroupEvent } from "src/event";
 import type WordStatisticsPlugin from "src/main";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
@@ -123,26 +124,6 @@ export class WSProjectManager {
         console.log("WordStatistics.ProjectManager[err]: " + msg);
     }
 
-    /* ================
-        Event Triggers
-       ================ */
-
-    triggerProjectUpdate(project: WSProject) {
-        this.plugin.app.workspace.trigger("word-statistics-project-update", project);
-    }
-
-    triggerProjectGroupUpdated(group: WSProjectGroup) {
-        this.plugin.app.workspace.trigger("word-statistics-project-group-updated", group);
-    }
-
-    triggerProjectGroupsChanged() {
-        this.plugin.app.workspace.trigger("word-statistics-project-groups-changed");
-    }
-
-    triggerProjectFilesUpdate(project: WSProject) {
-        this.plugin.app.workspace.trigger("word-statistics-project-files-update", project);
-    }
-
     /* ==========
         Checkers
        ========== */
@@ -175,6 +156,17 @@ export class WSProjectManager {
                 return this.tagProjects as WSProject[];
         }
         return [];
+    }
+
+    getProjectsByFile(file: WSFile) {
+        let projects: WSProject[] = [];
+
+        this.projects.forEach(([type, project]) => {
+            if (project.files.contains(file)) {
+                projects.push(project)
+            }
+        })
+        return projects;
     }
 
     getProjectByName(name: string) {
@@ -219,7 +211,7 @@ export class WSProjectManager {
 
     updateProject(proj: WSProject) {
         proj.updateFiles();
-        this.triggerProjectFilesUpdate(proj);
+        this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.FilesUpdated, project: proj}, {filter: proj}))
     }
 
     updateProjectsForIndex(file: WSFile) {
@@ -349,6 +341,7 @@ export class WSProjectManager {
                 this.logError(`Invalid project type: ${proj.type} for project: ${proj}`);
                 break;
         }
+        this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Created, project:proj}, {filter:proj}))
     }
 
     unregisterProject(proj: WSProject) {
@@ -373,21 +366,24 @@ export class WSProjectManager {
                 break;
         }
         this.projects.delete(proj.name);
+        this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Deleted, project:proj}, {filter: proj}))
     }
 
-    renameProject(proj: WSProject, name: string) {
-        if (this.projects.has(name)) {
-            let [, existingProj] = this.projects.get(name);
+    renameProject(proj: WSProject, newName: string) {
+        if (this.projects.has(newName)) {
+            let [, existingProj] = this.projects.get(newName);
             if (existingProj != proj) {
-                console.log(`Attempted to rename project '${proj.name}' to '${name}', but a project with that name already exists.`);
+                console.log(`Attempted to rename project '${proj.name}' to '${newName}', but a project with that name already exists.`);
             }
             // else do nothing, as there is no need to rename it
             return;
         }
+        let oldName = proj.name;
         this.projects.delete(proj.name);
-        proj.name = name;
-        this.projects.set(name, [proj.type, proj]);
-        this.updateProject(proj);
+        proj.name = newName;
+        this.projects.set(newName, [proj.type, proj]);
+        this.plugin.events.trigger(new WSProjectEvent({type:WSEvents.Project.Renamed, project: proj, data:[oldName, newName]}, {filter: proj}))
+        // this.updateProject(proj);
     }
 
     deleteProject(proj: WSProject) {
@@ -413,7 +409,7 @@ export class WSProjectManager {
             return;
         }
         this.projectGroups.set(group.name, group);
-        this.triggerProjectGroupsChanged();
+        this.plugin.events.trigger(new WSProjectGroupEvent({type: WSEvents.Group.Created, group}, {filter: group}))
     }
 
     unregisterProjectGroup(group: WSProjectGroup) {
@@ -423,35 +419,37 @@ export class WSProjectManager {
             return;
         }
         this.projectGroups.delete(group.name);
-        this.triggerProjectGroupsChanged();
+        this.plugin.events.trigger(new WSProjectGroupEvent({type: WSEvents.Group.Deleted, group}, {filter: group}))
     }
 
-    renameProjectGroup(group: WSProjectGroup, name: string) {
-        if (this.projectGroups.has(name)) {
-            let existingGroup = this.projectGroups.get(name);
+    renameProjectGroup(group: WSProjectGroup, newName: string) {
+        if (this.projectGroups.has(newName)) {
+            let existingGroup = this.projectGroups.get(newName);
             if (existingGroup != group) {
-                console.log(`Attempted to rename project group '${group.name}' to '${name}', but a project with that name already exists.`);
+                console.log(`Attempted to rename project group '${group.name}' to '${newName}', but a project with that name already exists.`);
             }
             // else do nothing, as there is no need to rename it
             return;
         }
         this.projectGroups.delete(group.name);
-        group.name = name;
-        this.projectGroups.set(name, group);
-        this.triggerProjectGroupsChanged();
+        let oldName = group.name;
+        group.name = newName;
+        this.projectGroups.set(newName, group);
+        this.plugin.events.trigger(new WSProjectGroupEvent({type: WSEvents.Group.Renamed, group, data: [oldName, newName]}, {filter: group}))
     }
 
     updateProjectGroup(group: WSProjectGroup) {
         group.projects.forEach((project) => {
             this.updateProject(project);
         });
-        this.triggerProjectGroupUpdated(group);
+        this.plugin.events.trigger(new WSProjectGroupEvent({type: WSEvents.Group.Updated, group}, {filter: group}));
     }
 
     addProjectToGroup(project: WSProject, group: WSProjectGroup) {
         if (!group.projects.contains(project)) {
             group.projects.push(project);
             this.updateProjectGroup(group);
+            this.plugin.events.trigger(new WSProjectGroupEvent({type: WSEvents.Group.ProjectAdded, group, project}, {filter: group}));
         }
     }
 
@@ -459,6 +457,8 @@ export class WSProjectManager {
         if (group.projects.contains(project)) {
             group.projects.remove(project);
             this.updateProjectGroup(group);
+            this.plugin.events.trigger(new WSProjectGroupEvent({type: WSEvents.Group.ProjectDeleted, group, project}, {filter: group}));
+
         }
     }
 

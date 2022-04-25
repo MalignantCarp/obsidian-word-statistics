@@ -45,6 +45,7 @@ End borrow
 	--project-zebra-bg: #aaaaaadd;
 	--total-line-color: #333333dd;
 	--ws-table-line-color: #333333dd;
+	--ws-sb-error-color: #990000;
 }
 
 .theme-dark {
@@ -52,6 +53,7 @@ End borrow
 	--project-zebra-bg: #FFFFFF0A;
 	--total-line-color: #eeeeeedd;
 	--ws-table-line-color: #eeeeeedd;
+	--ws-sb-error-color: #990000;
 }
 
 div.project {
@@ -152,4 +154,18 @@ td.project-words {
 
 .ws-table-title {
 	display: table-caption;
+}
+
+.ws-status-bar {
+	display: flex;
+	justify-content:space-evenly;
+	column-gap: 1.5em;
+}
+
+span.ws-sb-error::before {
+	content: '!\20DD\20';
+}
+
+span.ws-sb-error {
+	color: var(--ws-sb-error-color);
 }
