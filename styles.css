@@ -166,27 +166,34 @@ td.project-words {
 	column-gap: 1.5em;
 }
 
+div.ws-project-list-item {
+	display: flex;
+	justify-content: space-evenly;
+	column-gap: 0.5em;
+}
+
+div.ws-project-list-item > div[class^=".ws-project-list-item-button"] {
+	margin-left: auto;
+}
+
 span.ws-sb-vault::before {
-	font-size: small;
-	content: 'V\20DE\20';
+	content: '\1F5C4\20';
 	color: var(--ws-sb-wc-highlight);
 }
 
 span.ws-sb-project::before {
-	font-size: small;
-	content: 'P\20DE\20';
+	content: '\1F5C0\20';
 	color: var(--ws-sb-wc-highlight);
 }
 
 span.ws-sb-file::before {
-	font-size: small;
-	content: 'F\20DE\20';
+	content: '\1F5CF\20';
 	color: var(--ws-sb-wc-highlight);
 }
 
 span.ws-sb-error::before {
-	font-size: x-small;
-	content: '!\20DD\20';
+	content: '\26A0\20';
+	color: var(--ws-sb-error-color);
 }
 
 span.ws-sb-error {

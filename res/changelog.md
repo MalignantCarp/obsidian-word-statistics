@@ -3,6 +3,10 @@
  - [ ] TODO: Build panel to manage projects within groups
  - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
 
+2022-04-27
+ - Changed the F, P, and V into unicode symbols for a sheet, a folder, and a filing cabinet. Also replaced the error ! in combining circle with the exclamation mark in a triangle unicode symbol. Need to find a better way to do these, but at least they are done with CSS in case anyone wants to come up with a different way.
+ - Added ProjectListItem.svelte for projects included in lists. This will take in multiple callbacks, which determine which buttons will appear. Button functionality currently includes edit, delete, move up, move down, add, and remove. Edit and delete are for main project lists. Add can be used for a list of projects to add to a group. Remove, move up, and move down can be used for project group listings, which allow for the removal or movement of the item in the list.
+
 2022-04-26
  - Added new Tooltip.svelte to handle tooltips for any widgets that may be necessary. They use the tooltip class so they will be themed with the Obsidian theme. The tooltip can take an optional bottom flag which will invert the offset for the tooltip so that it is brought up at least the height of the tooltip to ensure it doesn't go off the screen.
  - Added tooltip to show what projects contain a file when there is more than one. Ideally one should not be including the same file in multiple projects. Alternatives to this are welcome.

@@ -86,6 +86,6 @@
 	</Tooltip>
 {:else}
 	<div class="ws-project-counter">
-		{#if monitoring}<span class="ws-sb-project">{wordCount}</span>{:else if errMessage}<span class="ws-sb-error"><span class="ws-sb-error-sym" />{errMessage}</span>{/if}
+		{#if monitoring}<span class="ws-sb-project">{wordCount}</span>{/if}
 	</div>
 {/if}

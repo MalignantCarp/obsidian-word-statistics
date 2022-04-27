@@ -13,7 +13,6 @@ export function CanProjectMoveDownInGroup(project: WSProject, group: WSProjectGr
     return (group.projects.contains(project) && group.projects.indexOf(project) < (group.projects.length - 1));
 }
 
-
 export class WSProjectManager {
     tagProjects: WSTagProject[] = [];
     fileProjects: WSFileProject[] = [];
