@@ -56,5 +56,5 @@
 </script>
 
 <div class="ws-file-counter">
-	{#if monitoring && wordCount.length > 0}{wordCount}{:else if !monitoring}{errMessage}{/if}
+	{#if monitoring && wordCount.length > 0}<span class="ws-sb-file">{wordCount}</span>{:else if !monitoring}{errMessage}{/if}
 </div>

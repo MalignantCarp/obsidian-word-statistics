@@ -3,6 +3,11 @@
  - [ ] TODO: Build panel to manage projects within groups
  - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
 
+2022-04-26
+ - Added new Tooltip.svelte to handle tooltips for any widgets that may be necessary. They use the tooltip class so they will be themed with the Obsidian theme. The tooltip can take an optional bottom flag which will invert the offset for the tooltip so that it is brought up at least the height of the tooltip to ensure it doesn't go off the screen.
+ - Added tooltip to show what projects contain a file when there is more than one. Ideally one should not be including the same file in multiple projects. Alternatives to this are welcome.
+ - There is now a F, P, or V appended to the front of the respective word counts for Files, Projects, and the Vault to conserve space.
+
 2022-04-25
  - New Svelte status bar and word counting widgets. Need to still make some tweaks (clarity re: file vs project counts) and add a tooltip to list the projects in the case of multiple projects.
 

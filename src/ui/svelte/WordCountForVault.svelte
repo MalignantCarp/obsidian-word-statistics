@@ -38,4 +38,4 @@
 		wordCount = Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
 	}
 </script>
-<div class="ws-vault-counter">{#if monitoring && wordCount.length > 0}{wordCount} in vault{/if}</div>
+<div class="ws-vault-counter">{#if monitoring && wordCount.length > 0}<span class="ws-sb-vault">{wordCount}</span>{/if}</div>
