@@ -15,8 +15,6 @@
 	let errMessage = "";
 	let projects: WSProject[] = [];
 
-	let bottom = true;
-
 	onMount(() => {
 		registerEvents();
 		events.on(WSEvents.Focus.File, onFocus, { filter: null });
@@ -40,6 +38,7 @@
 				project = null;
 			} else {
 				project = projects[0];
+				errMessage = "";
 			}
 		} else {
 			project = null;
@@ -72,7 +71,7 @@
 </script>
 
 {#if errMessage}
-	<Tooltip bottom={bottom}>
+	<Tooltip>
 		<div slot="content" class="ws-sb-project-counter">
 			{#if monitoring}<span class="ws-sb-project">{wordCount}</span>{:else if errMessage}<span class="ws-sb-error"><span class="ws-sb-error-sym" />{errMessage}</span>{/if}
 		</div>

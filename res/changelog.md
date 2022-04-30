@@ -3,6 +3,11 @@
  - [ ] TODO: Build panel to manage projects within groups
  - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
 
+2022-04-29
+ - Created ProjectEditList.svelte and ProjectEditPanel.svelte
+ - Replaced the tooltip with one generated using svelte-PopperJS. Still some kinks to work out. It is still missing the arrow, but otherwise works about as well as the old one did. Included a CSS override to fix an issue caused by the transition when the keyframe transition animation runs. Without removing the animation, the tooltip gets stuck on the left edge of the Obsidian main window.
+ - Created a SuggestBox.svelte to eventually replace the entire suggester/*.ts.
+
 2022-04-27
  - Changed the F, P, and V into unicode symbols for a sheet, a folder, and a filing cabinet. Also replaced the error ! in combining circle with the exclamation mark in a triangle unicode symbol. Need to find a better way to do these, but at least they are done with CSS in case anyone wants to come up with a different way.
  - Added ProjectListItem.svelte for projects included in lists. This will take in multiple callbacks, which determine which buttons will appear. Button functionality currently includes edit, delete, move up, move down, add, and remove. Edit and delete are for main project lists. Add can be used for a list of projects to add to a group. Remove, move up, and move down can be used for project group listings, which allow for the removal or movement of the item in the list.

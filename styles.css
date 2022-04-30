@@ -210,3 +210,10 @@ div.ws-sb-tooltip > p {
 	margin-block-start: 0em;
 	margin-block-end: 0em;
 }
+.ws-tip-container {
+	padding-bottom: 8px;
+	display: block;
+}
+.ws-tooltip-tooltip.tooltip {
+	animation: none;
+}

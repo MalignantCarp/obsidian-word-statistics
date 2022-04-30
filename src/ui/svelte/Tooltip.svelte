@@ -1,35 +1,19 @@
-<script lang="ts">
-	export let bottom = false;
+<script>
+	import { createPopperActions } from "svelte-popperjs";
+	const [popperRef, popperContent] = createPopperActions({
+		placement: "top",
+		strategy: "fixed"
+	});
 
-	let x: number;
-	let y: number;
-	let mouseOver = false;
-	let clientHeight: number;
-
-	function onMouseOver(event: MouseEvent) {
-		mouseOver = true;
-		x = event.clientX - 5;
-		y = event.clientY - (bottom ? clientHeight : -clientHeight) - 10;
-	}
-
-	function onMouseMove(event: MouseEvent) {
-		x = event.clientX - 5;
-		y = event.clientY - (bottom ? clientHeight : -clientHeight) - 10;
-	}
-
-	function onMouseLeave(event?: MouseEvent) {
-		mouseOver = false;
-	}
-
-	function onFocus(event: FocusEvent) {}
-
-	function onBlur(event: FocusEvent) {}
+	let showTooltip = false;
 </script>
 
-<div on:mouseover={onMouseOver} on:focus={onFocus} on:mouseleave={onMouseLeave} on:mousemove={onMouseMove} on:blur={onBlur}>
+<div class="ws-tooltip-content" use:popperRef on:mouseenter={() => (showTooltip = true)} on:mouseleave={() => (showTooltip = false)}>
 	<slot name="content" />
 </div>
-
-{#if mouseOver && $$slots.tooltip}
-	<div bind:clientHeight style="top: {y}px; left: {x}px;" class="tooltip"><slot name="tooltip" /></div>
+{#if showTooltip}
+	<div class="ws-tooltip-tooltip tooltip" role="tooltip" use:popperContent>
+		<slot name="tooltip" />
+		<div class="tooltip-arrow" data-popper-arrow/>
+	</div>
 {/if}
