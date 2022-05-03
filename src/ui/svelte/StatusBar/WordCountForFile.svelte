@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { setIcon } from "obsidian";
 	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent } from "src/event";
 	import { WSFile } from "src/model/file";
 	import { onDestroy, onMount } from "svelte";
@@ -9,10 +10,12 @@
 	let wordCount: string = "";
 	let monitoring: boolean = false;
 	let errMessage: string = "No file loaded.";
+	let containerEl: HTMLElement;
 
 	onMount(() => {
 		registerEvents();
 		events.on(WSEvents.Focus.File, updateFile, { filter: null });
+		setIcon(containerEl, "document", 16);
 	});
 
 	onDestroy(() => {
@@ -55,6 +58,11 @@
 	}
 </script>
 
-<div class="ws-file-counter">
-	{#if monitoring && wordCount.length > 0}<span class="ws-sb-file">{wordCount}</span>{:else if !monitoring}{errMessage}{/if}
+<div class="ws-sb-counter-file">
+	<div class="ws-sb-icon" bind:this={containerEl} class:hidden={!(monitoring && wordCount.length > 0)}/>
+	{#if monitoring && wordCount.length > 0}
+		<div class="ws-sb-count-file">{wordCount}</div>
+	{:else if !monitoring}
+		{errMessage}
+	{/if}
 </div>

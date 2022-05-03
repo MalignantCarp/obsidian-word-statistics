@@ -10,6 +10,13 @@ export enum WSPType {
 
 export const PROJECT_TYPE_STRING = ["WSProject", "WSFileProject", "WSFolderProject", "WSTagProject"];
 export const PROJECT_TYPE_NAME = ["Project", "File Index Project", "Folder Project", "Tag Project"];
+export const PROJECT_TYPE_NAME_PLURAL = ["Projects", "File Index Projects", "Folder Projects", "Tag Projects"];
+export const PROJECT_INDEX_TYPE = ["Project", "File Index", "Folder", "Tag"]
+export const PROJECT_TYPE_DESCRIPTION = ["<##You should never see this message##>",
+			"These projects are indexed by a markdown file containing a list of links. Files within this project type will always appear in the order in which they appear in the index.",
+			"These projects are indexed by folder. Files within this project will appear in vault order or alphabetical order, depending on setting.",
+			"These projects are indexed by tag. Files within this project will appear in vault order or alphabetial oder, depending on setting."
+]
 
 export interface ProjectMap {
     fileProjects: string[];

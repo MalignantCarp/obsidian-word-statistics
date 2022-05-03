@@ -273,7 +273,7 @@ export class ProjectList {
                             return;
                         }
                         if (modal.nameChanged || modal.changed || modal.new) {
-                            this.manager.triggerProjectUpdate(project);
+                            // this.manager.triggerProjectUpdate(project);
                             this.rebuildProjects();
                             return;
                         }
@@ -285,7 +285,7 @@ export class ProjectList {
                 button.setIcon("trash").setTooltip("Delete project.");
                 button.onClick(() => {
                     this.manager.deleteProject(project);
-                    this.manager.triggerProjectUpdate(project);
+                    // this.manager.triggerProjectUpdate(project);
                     this.rebuildProjects();
                 });
             });

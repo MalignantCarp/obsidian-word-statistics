@@ -10,12 +10,11 @@
 	export let dataCollector: WSDataCollector;
 	export let projectManager: WSProjectManager;
 
-    let wcFile: WordCountForFile;
+	let wcFile: WordCountForFile;
 
-    export function getWatchFile() {
-        return wcFile.getWatchFile();
-    }
-
+	export function getWatchFile() {
+		return wcFile.getWatchFile();
+	}
 </script>
 
 <div class="ws-status-bar">

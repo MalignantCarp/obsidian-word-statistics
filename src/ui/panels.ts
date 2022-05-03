@@ -1,8 +1,8 @@
 import { App, DropdownComponent, Setting } from "obsidian";
 import { WSProjectGroup } from "src/model/group";
-import { WSProjectManager } from "src/model/manager";
+import type { WSProjectManager } from "src/model/manager";
 import { PROJECT_TYPE_STRING, WSProject, WSPType } from "src/model/project";
-import WordStatisticsPlugin from "../main";
+import type WordStatisticsPlugin from "../main";
 import { ProjectElement, ProjectList } from "./components";
 import { EditFileProjectModal, EditFolderProjectModal, EditTagProjectModal } from "./modals";
 
@@ -25,7 +25,7 @@ export class ProjectManagerPanel {
         this.fileProjects = null;
         this.folderProjects = null;
         this.tagProjects = null;
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.rebuild.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.rebuild.bind(this)));
         this.rebuild();
     }
 
@@ -54,7 +54,7 @@ export class ProjectManagerPanel {
             if (modal.cancelled) {
                 return;
             }
-            this.manager.triggerProjectUpdate(modal.project);
+            // this.manager.triggerProjectUpdate(modal.project);
             //manager.updateProject(modal.project);
         };
         return modal;
@@ -124,8 +124,8 @@ export class ProjectGroupViewerPanel {
         this.manager.collector.updateAllFiles();
         this.rebuildPanel();
         this.rebuildFileList();
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-group-update", this.onProjectGroupUpdate.bind(this)));
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-groups-changed", this.rebuildPanel.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-group-update", this.onProjectGroupUpdate.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-groups-changed", this.rebuildPanel.bind(this)));
     }
 
     rebuildPanel() {
@@ -205,8 +205,8 @@ export class ProjectViewerPanel {
         this.list = new Map<WSProject, ProjectElement>();
         this.manager.collector.updateAllFiles();
         this.rebuild();
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
-        this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-update", this.onProjectUpdate.bind(this)));
+        // this.plugin.registerEvent(this.app.workspace.on("word-statistics-project-files-update", this.onProjectUpdate.bind(this)));
     }
 
     clear() {

@@ -8,19 +8,18 @@ import { ProjectGroupManagerModal, ProjectGroupViewerModal, ProjectManagerModal,
 import type { WSProject } from './model/project';
 import { WSFile } from './model/file';
 import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
-import StatusBarWidget from './ui/svelte/StatusBarWidget.svelte';
-import { writable, Writable } from 'svelte/store';
+import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 
 const PROJECT_PATH = "projects.json";
 
 export default class WordStatisticsPlugin extends Plugin {
-	public settings: WSPluginSettings;
-	public events: Dispatcher;
-	public debounceRunCount: Debouncer<[file: TFile, data: string]>;
-	public wordsPerMS: number[] = [];
-	private statusBar: HTMLElement;
+	settings: WSPluginSettings;
+	events: Dispatcher;
+	debounceRunCount: Debouncer<[file: TFile, data: string]>;
+	wordsPerMS: number[] = [];
+	statusBar: HTMLElement;
 	sbWidget: StatusBarWidget;
-	private collector: WSDataCollector;
+	collector: WSDataCollector;
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
 
@@ -117,6 +116,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	openProjectManager() {
+		//let modal = this.collector.manager.modals.createProjectManagerModal();
 		let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
 		modal.open();
 	}

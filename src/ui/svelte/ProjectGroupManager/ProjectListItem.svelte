@@ -11,6 +11,7 @@
 	export let onMoveDown: (project: WSProject, group: WSProjectGroup) => void = null;
 	export let onAdd: (project: WSProject, group: WSProjectGroup) => void = null;
 	export let onRemove: (project: WSProject, group: WSProjectGroup) => void = null;
+	export let onAction: () => void;
 
 	$: projectName = project.name;
     $: canMoveUp = group instanceof WSProjectGroup ? CanProjectMoveUpInGroup(project, group) : false;
@@ -22,22 +23,27 @@
 
 	function cb_delete() {
 		onDelete(project);
+		onAction();
 	}
 
 	function cb_moveUp() {
 		onMoveUp(project, group);
+		onAction();
 	}
 
 	function cb_moveDown() {
 		onMoveDown(project, group);
+		onAction();
 	}
 
 	function cb_add() {
 		onAdd(project, group);
+		onAction();
 	}
 
 	function cb_remove() {
 		onRemove(project, group);
+		onAction();
 	}
 </script>
 

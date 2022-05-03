@@ -1,4 +1,4 @@
-import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags, parseFrontMatterStringArray, parseFrontMatterEntry } from 'obsidian';
+import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags, parseFrontMatterStringArray, parseFrontMatterEntry, TFolder } from 'obsidian';
 import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
@@ -50,6 +50,23 @@ export class WSDataCollector {
             });
         });
         return Array.from(tags);
+    }
+
+    getAllPaths() {
+        let paths:string[] = []
+        this.vault.getMarkdownFiles().forEach((file) => {
+            paths.push(file.path);
+        })
+        return paths.sort();
+    }
+
+    getAllFolders() {
+        let folders = this.plugin.app.vault.getAllLoadedFiles().filter((t) => t instanceof TFolder)
+        let paths: string[] = []
+        folders.forEach((folder) => {
+            paths.push(folder.path);
+        })
+        return paths.sort();
     }
 
     get fileList() {

@@ -1,7 +1,15 @@
  - [ ] Take a look at Longform to ensure it is possible to integrate a Longform project. Figure out a means of specifying something is a Longform project so that the interface for creating projects can accommodate this.
  - [ ] TODO: Build panel to manage project groups
  - [ ] TODO: Build panel to manage projects within groups
- - [ ] TODO: Break down some of the components into smaller pieces for more flexibility and re-use
+ 
+2022-05-02
+ - Updated to some dev dependencies
+ - Replaced the unicode icons with Obsidian setIcon calls for consistency across themes. Reorganized a bit of how the WordCountFor*.svelte files organized the DOM, and amended styles.css to match.
+ - Added a new ValidatedInput.svelte
+ - Replaced ProjectList/ProjectListItem with more specific versions, one for the Project List for the group manager, one for viewing, and one for the project manager. Used the Obsidian setIcon calls for styling those buttons, and use the div-style buttons with the extra button classes
+ - Reorganized the Svelte files so each major section of the interface is now in its own folder. Shared components are in the util folder.
+ - Started the ProjectManager and related Svelte files. Next up is testing and debugging, then the group manager, then the respective viewers.
+
 
 2022-04-29
  - Created ProjectEditList.svelte and ProjectEditPanel.svelte

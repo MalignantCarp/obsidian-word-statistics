@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { setIcon } from "obsidian";
 	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent } from "src/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSProject } from "src/model/project";
 	import { onDestroy, onMount } from "svelte";
-	import Tooltip from "./Tooltip.svelte";
+	import Tooltip from "../util/Tooltip.svelte";
 
 	export let events: Dispatcher;
 	export let manager: WSProjectManager;
@@ -14,10 +15,14 @@
 	let monitoring: boolean = false;
 	let errMessage = "";
 	let projects: WSProject[] = [];
+	let containerEl: HTMLElement;
+	let errorEl: HTMLElement;
 
 	onMount(() => {
 		registerEvents();
 		events.on(WSEvents.Focus.File, onFocus, { filter: null });
+		setIcon(containerEl, "folder", 16);
+		setIcon(errorEl, "alert-triangle", 16);
 	});
 
 	onDestroy(() => {
@@ -70,12 +75,16 @@
 	}
 </script>
 
-{#if errMessage}
+<div class="ws-sb-counter-project">
+	<div class="ws-sb-icon" bind:this={containerEl} class:hidden={errMessage || !monitoring} />
+	<div class="ws-sb-icon-error" bind:this={errorEl} class:hidden={!errMessage} />
+	{#if !errMessage && monitoring}
+		<div class="ws-sb-count-project">{wordCount}</div>
+	{/if}
+	{#if errMessage}
 	<Tooltip>
-		<div slot="content" class="ws-sb-project-counter">
-			{#if monitoring}<span class="ws-sb-project">{wordCount}</span>{:else if errMessage}<span class="ws-sb-error"><span class="ws-sb-error-sym" />{errMessage}</span>{/if}
-		</div>
-		<div class="ws-sb-tooltip" slot="tooltip">
+		<div slot="content" class="ws-sb-count-project error">{errMessage}</div>
+		<div slot="tooltip" class="ws-sb-tooltip">
 			<ul class="ws-sb-tooltip-list">
 				{#each projects as project}
 					<li>{project.name}</li>
@@ -83,8 +92,5 @@
 			</ul>
 		</div>
 	</Tooltip>
-{:else}
-	<div class="ws-project-counter">
-		{#if monitoring}<span class="ws-sb-project">{wordCount}</span>{/if}
-	</div>
-{/if}
+	{/if}
+</div>

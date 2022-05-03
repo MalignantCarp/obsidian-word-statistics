@@ -1,4 +1,6 @@
 <script lang="ts">
+import { setIcon } from "obsidian";
+import { onMount } from "svelte";
 	import { createPopperActions } from "svelte-popperjs";
 
 	export let placeholder: string;
@@ -69,11 +71,23 @@
 		filteredOptions = [];
 		highlightIndex = null;
 	}
+
+	$: isValid = options.contains(searchString);
+
+	let icon: HTMLElement;
+
+	onMount(() => {
+		setIcon(icon, "alert-circle", 16);
+	});
 </script>
 
 <svelte:window on:keydown={onKeyNav} />
-<div class="setting-item-control">
+<div class="setting-item-control ws-suggest">
+	<i class="ws-text-icon" bind:this={icon} class:hidden={isValid} />
 	<input type="text" bind:this={inputComponent} bind:value={searchString} spellcheck="false" {placeholder} use:popperRef on:input={filterOptions} />
+	<div class="ws-suggest validation" class:hidden={isValid}>
+        <div>Please make a selection from the available options.</div>
+	</div>
 </div>
 <div class="suggestion-container" use:popperContent={extraOpts}>
 	<div class="suggestion">
