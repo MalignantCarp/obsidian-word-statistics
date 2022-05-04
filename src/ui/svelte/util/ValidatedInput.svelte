@@ -5,7 +5,7 @@
 	export let placeholder: string;
 	export let validate: (text: string) => [boolean, string];
 
-	let inputText: string;
+	let inputText: string = "";
 	let icon: HTMLElement;
 
 	$: [isValid, validationMessage] = validate(inputText);
@@ -25,15 +25,21 @@
 		return inputText;
 	}
 
+	export function setText(text: string) {
+		inputText = text;
+	}
+
 	export function isValidated(): boolean {
 		return isValid;
 	}
 </script>
 
 <div class="setting-item-control ws-text-validated">
-	<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
-	<input type="text" class:invalid={isValid} bind:value={inputText} spellcheck="false" {placeholder} />
-	<div class="ws-validation-messages">
-        <div>{validationMessage}</div>
+	<div class="ws-text-validator">
+		<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
+		<input class="ws-text" type="text" class:invalid={!isValid} bind:value={inputText} spellcheck="false" {placeholder} />
+	</div>
+	<div class="ws-text-validated ws-validation-error">
+		<div>{validationMessage}</div>
 	</div>
 </div>

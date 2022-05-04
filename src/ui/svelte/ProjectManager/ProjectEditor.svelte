@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { WSProjectManager } from "src/model/manager";
 	import { PROJECT_INDEX_TYPE, PROJECT_TYPE_DESCRIPTION, PROJECT_TYPE_NAME, WSProject, WSPType } from "src/model/project";
+import { onMount } from "svelte";
 	import SuggestBox from "../util/SuggestBox.svelte";
 	import ValidatedInput from "../util/ValidatedInput.svelte";
 
@@ -20,10 +21,17 @@ import type { WSProjectManager } from "src/model/manager";
 
     $: project = _project instanceof WSProject ? _project : null;
 
-	let title = (project instanceof WSProject ? "Edit " : "New ") + PROJECT_TYPE_NAME[type];
-    let placeholder = project instanceof WSProject ? project.name : "Project Name"
+	let title: string;
 
-	$: canSave = suggestBox.getSelectedOption() != null && projectName.isValidated();
+	onMount (() => {
+		title = (project instanceof WSProject ? "Edit " : "New ") + PROJECT_TYPE_NAME[type];
+    	if (project instanceof WSProject) {
+			suggestBox.setInitial(project.index);
+			projectName.setText(project.name);
+		}
+	})
+
+	$: canSave = suggestBox instanceof SuggestBox && suggestBox.getSelectedOption() != null && projectName.isValidated();
 
 	function onSave() {
         manager.projectEditorCallback(type, projectName.getText(), suggestBox.getSelectedOption());
@@ -48,14 +56,14 @@ import type { WSProjectManager } from "src/model/manager";
 		<div class="setting-item-name">Project Name</div>
 		<div class="setting-item-description">Enter the name of the project here. Project name cannot be blank and must be unique.</div>
 	</div>
-	<ValidatedInput placeholder={placeholder} validate={validateProjectName} bind:this={projectName} />
+	<svelte:component this={ValidatedInput} placeholder={"Project Name"} validate={validateProjectName} bind:this={projectName} />
 </div>
 <div class="setting-item">
 	<div class="setting-item-info">
 		<div class="setting-item-name">{projectType}</div>
 		<div class="setting-item-description">{projectDesc}</div>
 	</div>
-	<SuggestBox {options} placeholder={optionPlaceholder} bind:this={suggestBox} />
+	<svelte:component this={SuggestBox} {options} placeholder={optionPlaceholder} bind:this={suggestBox} />
 </div>
 <div class="setting-item">
 	<div class="setting-item-control">

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { WSProjectManager } from "src/model/manager";
-	import {PROJECT_TYPE_DESCRIPTION, PROJECT_TYPE_NAME, PROJECT_TYPE_NAME_PLURAL, WSProject, WSPType } from "src/model/project";
+	import { PROJECT_TYPE_DESCRIPTION, PROJECT_TYPE_NAME_PLURAL, WSProject, WSPType } from "src/model/project";
 	import ProjectEditList from "./ProjectEditList.svelte";
 
 	export let manager: WSProjectManager;
@@ -9,7 +9,6 @@
 	export let getProjectList: () => WSProject[];
 
 	const name = PROJECT_TYPE_NAME_PLURAL[type];
-	const typeName = PROJECT_TYPE_NAME[type];
 	const description = PROJECT_TYPE_DESCRIPTION[type];
 
 	function onClick() {
@@ -25,10 +24,8 @@
 			<div class="setting-item-description">{description}</div>
 		</div>
 		<div class="setting-item-control">
-			<button on:click={onClick}>New {typeName}</button>
+			<button on:click={onClick}>New Project</button>
 		</div>
 	</div>
-	<div class="setting-item">
-		<ProjectEditList {manager} {getProjectList}/>
-	</div>
+	<ProjectEditList {manager} {getProjectList} />
 </div>

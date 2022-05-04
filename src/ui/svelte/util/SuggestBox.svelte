@@ -1,6 +1,6 @@
 <script lang="ts">
-import { setIcon } from "obsidian";
-import { onMount } from "svelte";
+	import { setIcon } from "obsidian";
+	import { onMount } from "svelte";
 	import { createPopperActions } from "svelte-popperjs";
 
 	export let placeholder: string;
@@ -76,28 +76,41 @@ import { onMount } from "svelte";
 
 	let icon: HTMLElement;
 
+	export function setInitial(text: string) {
+		searchString = text;
+	}
+
+	$: {
+		if (icon) {
+			icon.empty();
+			setIcon(icon, isValid ? "checkmark" : "alert-circle", 16);
+		}
+	}
+
 	onMount(() => {
-		setIcon(icon, "alert-circle", 16);
+		setIcon(icon, isValid ? "checkmark" : "alert-circle", 16);
 	});
 </script>
 
 <svelte:window on:keydown={onKeyNav} />
 <div class="setting-item-control ws-suggest">
-	<i class="ws-text-icon" bind:this={icon} class:hidden={isValid} />
-	<input type="text" bind:this={inputComponent} bind:value={searchString} spellcheck="false" {placeholder} use:popperRef on:input={filterOptions} />
-	<div class="ws-suggest validation" class:hidden={isValid}>
-        <div>Please make a selection from the available options.</div>
+	<div class="ws-suggest-box">
+		<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
+		<input class= "ws-suggest-text" type="text" class:invalid={!isValid} bind:this={inputComponent} bind:value={searchString} spellcheck="false" {placeholder} use:popperRef on:input={filterOptions} />
+	</div>
+	<div class="ws-suggest ws-validation-error" class:hidden={isValid}>
+		<div>Please make a selection from the available options.</div>
 	</div>
 </div>
 <div class="suggestion-container" use:popperContent={extraOpts}>
 	<div class="suggestion">
 		{#if filteredOptions}
 			{#each filteredOptions as option}
-				<div class="suggestion-item">{option}</div>
+				<div class="suggestion-item">{@html option}</div>
 			{/each}
 		{:else}
 			{#each options as option, i}
-				<div class="suggestion-item" class:is-selected={highlightIndex === i}>{option}</div>
+				<div class="suggestion-item" class:is-selected={highlightIndex === i}>{@html option}</div>
 			{/each}
 		{/if}
 	</div>

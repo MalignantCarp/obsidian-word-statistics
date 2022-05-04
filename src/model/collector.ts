@@ -170,33 +170,37 @@ export class WSDataCollector {
             fi.setTitle(cache.frontmatter?.['title'] || file.basename);
             // this.checkFMLongform(file, cache.frontmatter);
             let tagCache = cache.tags;
-            let tags: string[] = [];
             let fmTags = parseFrontMatterTags(cache.frontmatter);
+            let oldTags = fi.tags;
+            let newTags = new Set<string>();
             if (fmTags != null) {
                 fmTags.forEach((item) => {
-                    tags.push(item);
+                    newTags.add(item);
                 });
             }
             if (tagCache != undefined && tagCache != null && tagCache.length > 0) {
                 tagCache.forEach((tag) => {
-                    tags.push(tag.tag);
+                    newTags.add(tag.tag);
                 });
             }
-            let oldTags = fi.tags;
-            let newTags: string[] = [];
-            tags.forEach((tag) => {
-                if (oldTags.contains(tag)) {
-                    oldTags.remove(tag);
-                } else {
-                    newTags.push(tag);
+            let tagsToDelete: string[] = []
+            let tagsToAdd: string[] = []
+            oldTags.forEach((oldTag) => {
+                if (!newTags.has(oldTag)) {
+                    tagsToDelete.push(oldTag);
                 }
             });
-            fi.setTags(tags);
+            newTags.forEach((newTag) => {
+                if (!oldTags.contains(newTag)) {
+                    tagsToAdd.push(newTag);
+                }
+            })
+            fi.setTags(Array.from(newTags));
             // Now we need to alert any projects that use a tag that was changed (added/deleted) to update
-            oldTags.forEach((tag) => {
+            tagsToDelete.forEach((tag) => {
                 this.manager.updateProjectsForTag(tag);
             });
-            newTags.forEach((tag) => {
+            tagsToAdd.forEach((tag) => {
                 this.manager.updateProjectsForTag(tag);
             });
             if (this.manager.isIndexFile(fi)) {

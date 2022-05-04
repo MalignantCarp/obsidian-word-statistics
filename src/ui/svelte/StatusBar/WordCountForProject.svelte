@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
-	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent } from "src/event";
+	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent, WSProjectEvent } from "src/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSProject } from "src/model/project";
@@ -17,10 +17,12 @@
 	let projects: WSProject[] = [];
 	let containerEl: HTMLElement;
 	let errorEl: HTMLElement;
+	let focus: WSFile;
 
 	onMount(() => {
 		registerEvents();
 		events.on(WSEvents.Focus.File, onFocus, { filter: null });
+		events.on(WSEvents.Project.FilesUpdated, onProjectsUpdated, { filter: null });
 		setIcon(containerEl, "folder", 16);
 		setIcon(errorEl, "alert-triangle", 16);
 	});
@@ -28,13 +30,31 @@
 	onDestroy(() => {
 		unregisterEvents();
 		events.off(WSEvents.Focus.File, onFocus, { filter: null });
+		events.off(WSEvents.Project.FilesUpdated, onProjectsUpdated, { filter: null });
 	});
 
-	function onFocus(event: WSFocusEvent) {
-		let file = event.info.file;
+	function onProjectsUpdated(event: WSProjectEvent) {
 		unregisterEvents();
-		if (file instanceof WSFile) {
-			projects = manager.getProjectsByFile(file);
+		projects = manager.getProjectsByFile(focus);
+		if (projects.length > 1) {
+			errMessage = `File in ${projects.length} project${projects.length == 1 ? "" : "s"}`;
+			project = null;
+		} else if (projects.length === 0) {
+			errMessage = "";
+			project = null;
+		} else {
+			project = projects[0];
+			errMessage = "";
+		}
+		registerEvents();
+		updateCount();
+	}
+
+	function onFocus(event: WSFocusEvent) {
+		focus = event.info.file;
+		unregisterEvents();
+		if (focus instanceof WSFile) {
+			projects = manager.getProjectsByFile(focus);
 			if (projects.length > 1) {
 				errMessage = `File in ${projects.length} project${projects.length == 1 ? "" : "s"}`;
 				project = null;
@@ -82,15 +102,15 @@
 		<div class="ws-sb-count-project">{wordCount}</div>
 	{/if}
 	{#if errMessage}
-	<Tooltip>
-		<div slot="content" class="ws-sb-count-project error">{errMessage}</div>
-		<div slot="tooltip" class="ws-sb-tooltip">
-			<ul class="ws-sb-tooltip-list">
-				{#each projects as project}
-					<li>{project.name}</li>
-				{/each}
-			</ul>
-		</div>
-	</Tooltip>
+		<Tooltip>
+			<div slot="content" class="ws-sb-count-project error">{errMessage}</div>
+			<div slot="tooltip" class="ws-sb-tooltip">
+				<ul class="ws-sb-tooltip-list">
+					{#each projects as project}
+						<li>{project.name}</li>
+					{/each}
+				</ul>
+			</div>
+		</Tooltip>
 	{/if}
 </div>

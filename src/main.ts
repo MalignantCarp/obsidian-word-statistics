@@ -51,7 +51,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		// custom events
 		this.events = new Dispatcher();
 
+		// Commenting these out so current projects will stick around after reload
+		// this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), {filter:null});
+		// this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), {filter:null});
+		// this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), {filter:null});
+		// this event currently doesn't ever fire
 		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), {filter: null});
+
+		// this event currently doesn't ever fire
 		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this), {filter:null});
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
@@ -116,8 +123,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	openProjectManager() {
-		//let modal = this.collector.manager.modals.createProjectManagerModal();
-		let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
+		let modal = this.collector.manager.modals.createProjectManagerModal();
+		//let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
 		modal.open();
 	}
 

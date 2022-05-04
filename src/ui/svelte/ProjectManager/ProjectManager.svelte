@@ -11,5 +11,5 @@
 	<hr />
 	<ProjectEditPanel type={WSPType.Folder} {manager} getProjectList={manager.getFolderProjects.bind(manager)} />
 	<hr />
-	<ProjectEditPanel type={WSPType.Tag} {manager} getProjectList={manager.getFolderProjects.bind(manager)} />
+	<ProjectEditPanel type={WSPType.Tag} {manager} getProjectList={manager.getTagProjects.bind(manager)} />
 </div>

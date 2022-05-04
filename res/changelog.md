@@ -2,6 +2,17 @@
  - [ ] TODO: Build panel to manage project groups
  - [ ] TODO: Build panel to manage projects within groups
  
+2022-05-03
+ - Fixed display on the new ProjectManager interface. This will need to be redesigned at some point as it will no doubt become too ungainly once there are numerous projects, and some people will probably gravitate to only a particular type of project.
+ - Fixed ProjectEditListItem, which was not displaying anything.
+ - Re-added the some CSS to styles.css that was inadvertently deleted when purging some unused CSS.
+ - BUGFIX: WSDataCollector.updateFile() wasn't updating tag addition and deletions properly.
+ - BUGFIX: WordCountForProject statusbar widget wasn't updating properly.
+ - BUGFIX: ProjectEditList and ProjectEditListItem were not handling deletion properly, so the list of projects was not updating correctly.
+ - BUGFIX: SuggestBox and ValidatedInput had certain display issues that have been fixed.
+ - [ ] BUG: SuggestBox key navigation doesn't work, nor does selecting an option
+
+
 2022-05-02
  - Updated to some dev dependencies
  - Replaced the unicode icons with Obsidian setIcon calls for consistency across themes. Reorganized a bit of how the WordCountFor*.svelte files organized the DOM, and amended styles.css to match.
@@ -9,7 +20,6 @@
  - Replaced ProjectList/ProjectListItem with more specific versions, one for the Project List for the group manager, one for viewing, and one for the project manager. Used the Obsidian setIcon calls for styling those buttons, and use the div-style buttons with the extra button classes
  - Reorganized the Svelte files so each major section of the interface is now in its own folder. Shared components are in the util folder.
  - Started the ProjectManager and related Svelte files. Next up is testing and debugging, then the group manager, then the respective viewers.
-
 
 2022-04-29
  - Created ProjectEditList.svelte and ProjectEditPanel.svelte
