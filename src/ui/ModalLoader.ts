@@ -22,6 +22,11 @@ class ProjectManagerModal extends Modal {
         let { contentEl } = this;
         this.panel = new ProjectManager({target: contentEl, props: {manager: this.manager}});
     }
+
+    onClose() {
+		let {contentEl} = this;
+		contentEl.empty();
+	}    
 }
 
 // =======================
@@ -41,6 +46,11 @@ class FileProjectModal extends Modal {
         let { contentEl } = this;
         this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.File, onClose: this.close.bind(this), _project: this.project } });
     }
+
+    onClose() {
+		let {contentEl} = this;
+		contentEl.empty();
+	}    
 }
 
 class FolderProjectModal extends Modal {
@@ -56,6 +66,11 @@ class FolderProjectModal extends Modal {
         let { contentEl } = this;
         this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.Folder, onClose: this.close.bind(this), _project: this.project } });
     }
+
+    onClose() {
+		let {contentEl} = this;
+		contentEl.empty();
+	}    
 }
 
 class TagProjectModal extends Modal {
@@ -71,6 +86,11 @@ class TagProjectModal extends Modal {
         let { contentEl } = this;
         this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.Tag, onClose: this.close.bind(this), _project: this.project } });
     }
+
+    onClose() {
+		let {contentEl} = this;
+		contentEl.empty();
+	}    
 }
 
 export class ModalLoader {

@@ -358,12 +358,13 @@ export class WSProjectManager {
 
     createProject(type: WSPType, projectName: string, projectIndex: string) {
         let project: WSProject;
-        if (project.type === WSPType.File) {
+
+        if (type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
             project = new WSFileProject(this.collector, projectName, file);
-        } else if (project.type === WSPType.Folder) {
+        } else if (type === WSPType.Folder) {
             project = new WSFolderProject(this.collector, projectName, projectIndex);
-        } else if (project.type === WSPType.Tag) {
+        } else if (type === WSPType.Tag) {
             project = new WSTagProject(this.collector, projectName, projectIndex);
         } else {
             this.logError(`Attempted to create a project with an invalid type: ${type}`);

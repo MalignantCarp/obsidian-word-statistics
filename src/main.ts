@@ -1,10 +1,9 @@
-import { App, debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, MetadataCache, Vault, MarkdownPreviewView, TAbstractFile, Notice, CachedMetadata, normalizePath, TFolder } from 'obsidian';
+import { debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, CachedMetadata, normalizePath, TFolder } from 'obsidian';
 import { WSDataCollector } from './model/collector';
-import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS, DEFAULT_TABLE_SETTINGS } from './settings';
+import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import { ProjectGroupManagerModal, ProjectGroupViewerModal, ProjectManagerModal, ProjectViewerModal } from './ui/modals';
 import type { WSProject } from './model/project';
 import { WSFile } from './model/file';
 import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
@@ -52,9 +51,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.events = new Dispatcher();
 
 		// Commenting these out so current projects will stick around after reload
-		// this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), {filter:null});
-		// this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), {filter:null});
-		// this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), {filter:null});
+		this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), {filter:null});
+		this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), {filter:null});
+		this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), {filter:null});
 		// this event currently doesn't ever fire
 		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), {filter: null});
 
@@ -63,7 +62,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
 
-		// this.registerInterval(window.setInterval(this.onStartup.bind(this), 1000));
 		this.app.workspace.onLayoutReady(this.onStartup.bind(this));
 
 
@@ -118,8 +116,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	openProjectViewer() {
-		let modal = new ProjectViewerModal(this.app, this, this.collector.manager);
-		modal.open();
+		// let modal = new ProjectViewerModal(this.app, this, this.collector.manager);
+		// modal.open();
 	}
 
 	openProjectManager() {
@@ -129,13 +127,13 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	openProjectGroupViewer() {
-		let modal = new ProjectGroupViewerModal(this.app, this, this.collector.manager);
-		modal.open();
+		// let modal = new ProjectGroupViewerModal(this.app, this, this.collector.manager);
+		// modal.open();
 	}
 
 	openProjectGroupManager() {
-		let modal = new ProjectGroupManagerModal(this.app, this, this.collector.manager);
-		modal.open();
+		// let modal = new ProjectGroupManagerModal(this.app, this, this.collector.manager);
+		// modal.open();
 	}
 
 	async loadSettings() {

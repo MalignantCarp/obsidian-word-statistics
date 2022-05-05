@@ -7,6 +7,7 @@
 	--ws-sb-wc-highlight: #006666;
 	--ws-validation-error: #990000;
 	--ws-validation-success: #009900;
+	--ws-table-highlight: #00000015;
 }
 
 .theme-dark {
@@ -18,6 +19,7 @@
 	--ws-sb-wc-highlight: #00AAAA;
 	--ws-validation-error: #990000;
 	--ws-validation-success: #009900;
+	--ws-table-highlight: #ffffff15;
 }
 
 .ws-status-bar {
@@ -62,10 +64,12 @@
 	margin-block-start: 0em;
 	margin-block-end: 0em;
 }
+
 .ws-tip-container {
 	padding-bottom: 8px;
 	display: block;
 }
+
 .ws-tooltip-tooltip.tooltip {
 	animation: none;
 }
@@ -81,57 +85,154 @@
 .ws-text-icon.hidden {
 	display: none;
 }
-.ws-text.invalid,
-.ws-suggest-text.invalid {
+
+.ws-suggest-box-container .ws-input.invalid,
+.ws-validated-input-container .ws-input.invalid {
 	border-color: var(--ws-validation-error);
 }
 
-.setting-item-control.ws-text-validated {
+.ws-suggest-box-container,
+.ws-validated-input-container {
 	display: grid;
+	align-items: start;
+	column-gap: 0.25em;
+	row-gap: 0.5em;
 }
 
-.ws-text-validator {
+.ws-suggest-box-container .ws-text-icon,
+.ws-validated-input-container .ws-text-icon {
 	grid-row-start: 1;
 	grid-row-end: 1;
-	display: flex;
-	align-items: flex-end;
-	justify-content: space-evenly;
-	column-gap: 0.25em;
+	grid-column-start: 1;
+	grid-column-end: 1;
+	justify-self: center;
+	align-self: center;
 }
 
-.ws-suggest.validation.hidden {
+.ws-suggest-box-container .ws-input,
+.ws-validated-input-container .ws-input {
+	grid-row-start: 1;
+	grid-row-end: 1;
+	grid-column-start: 2;
+	grid-column-end: 2;
+	justify-self: start;
+	align-self: start;
+}
+
+.ws-suggest-box-container .ws-validation-error,
+.ws-validated-input-container .ws-validation-error {
+	grid-row-start: 2;
+	grid-row-end: 2;
+	grid-column-start: 2;
+	grid-column-end: 2;
+	justify-self: start;
+	align-self: start;
+}
+
+.ws-validation-error {
+	font-size: small;
+	line-height: 115%;
+	text-align:left;
+}
+
+.ws-suggest.validation.hidden,
+.ws-validation-error .hidden {
 	display: none;
-}
-
-.setting-item-control.ws-suggest {
-	display:grid;
 }
 
 .ws-validation-error {
 	color: var(--ws-validation-error);
 }
 
-.ws-suggest-box {
-	grid-row-start: 1;
-	grid-row-end: 1;
-	display: flex;
-	align-items: flex-end;
-	justify-content: space-evenly;
-	column-gap: 0.25em;
-}
-
-.ws-project-edit-panel .setting-item {
-	justify-content: stretch;
-	align-items: center;
-	column-gap: 0.5rem;
-}
-
-.ws-project-edit-panel .setting-item .setting-item-info {
+.ws-project-editor .setting-item .setting-item-info {
 	display: flex;
 	flex-direction: column;
 }
 
-.suggestion-item:hover,
-.suggestion-item.is-active {
+.ws-project-editor .setting-item {
+	display: grid;
+	align-items: start;
+}
+
+.ws-project-editor .setting-item .setting-item-info {
+	grid-row-start: 1;
+	grid-row-end: 1;
+	grid-column-start: 1;
+	grid-column-end: 1;
+}
+
+.ws-project-editor .setting-item .setting-item-control {
+	grid-row-start: 1;
+	grid-row-end: 1;
+	grid-column-start: 2;
+	grid-column-end: 2;
+}
+
+.ws-suggest-box .suggestion-item:hover {
 	background-image: linear-gradient(#ffffff15, #ffffff15);
+}
+
+.suggestion-container.ws-suggest-box {
+	animation: none;
+}
+
+.ws-project-edit-panel-header {
+	display: grid;
+}
+
+.ws-project-edit-panel-header h3 {
+	grid-row-start: 1;
+	grid-row-end: 1;
+	grid-column-start: 1;
+	grid-column-end: 1;
+	margin-block-start: 0;
+	margin-block-end: 0;
+}
+
+.ws-project-edit-panel-header .ws-project-edit-description {
+	grid-row-start: 2;
+	grid-row-end: 2;
+	grid-column-start: 1;
+	grid-column-end: 1;
+}
+
+.ws-project-edit-panel-header button {
+	grid-row-start: 2;
+	grid-row-end: 2;
+	grid-column-start: 2;
+	grid-column-end: 2;
+}
+
+.ws-project-edit-list {
+	background-image: linear-gradient(#00000015, #00000015);	
+	padding: 4px;
+	box-shadow: inset 2px 2px 4px #00000030;
+	border: 1px solid #00000030;
+}
+
+.ws-project-edit-list-item:nth-child(1) {
+	padding-top: 8px;
+}
+
+.ws-project-edit-list-item {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	font-weight:bold;
+	padding: 4px 2px;
+	text-indent: 1em;
+}
+
+.ws-project-edit-list-item:nth-child(even) {
+	background-image: linear-gradient(var(--ws-table-highlight), var(--ws-table-highlight));
+}
+
+.ws-project-edit-list-item-button-container {
+	display: flex;
+	flex-direction: row;
+}
+
+.ws-project-edit-list-item-buttons-container .clickable-icon {
+	justify-self: center;
+	align-self: center;
 }

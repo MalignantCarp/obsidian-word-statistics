@@ -26,10 +26,10 @@
 	}
 </script>
 
-<div class="ws-project-edit-list-item setting-item">
-	<div class="setting-item-name">{projectName}</div>
-	<div class="setting-item-control">
-		<div class="setting-editor-extra-setting-button clickable-icon" bind:this={editButton} on:click={cb_edit} />
-		<div class="setting-editor-extra-setting-button clickable-icon" bind:this={deleteButton} on:click={cb_delete} />
+<div class="ws-project-edit-list-item">
+	<div class="name">{projectName}</div>
+	<div class="ws-project-edit-list-item-button-container">
+		<div class="clickable-icon" bind:this={editButton} on:click={cb_edit} />
+		<div class="clickable-icon" bind:this={deleteButton} on:click={cb_delete} />
 	</div>
 </div>

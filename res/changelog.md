@@ -2,6 +2,18 @@
  - [ ] TODO: Build panel to manage project groups
  - [ ] TODO: Build panel to manage projects within groups
  
+2022-05-04
+ - BUGFIX: SuggestBox key navigation doesn't work.
+ - BUGFIX: ProjectEditor modal Save button was always disabled.
+ - Removed old Suggester
+ - Added onClose() methods to the modals
+ - BUGFIX: Save button was not working due to a bug in WSProjectManager.CreateProject(), which was trying to access type from the project (uninstantiated).
+ - ValidatedInput is fully working.
+ - SuggestBox is fully working.
+ - Thus ProjectEditor and ProjectManager are fully working.
+ - ProjectManager has a new layout, which should mitigate any issues with having lots of projects between the different project types. Quite likely this interface will change once there are a lot of projects to manage.
+ - Removed the comments preventing ProjectManager from saving new project data.
+
 2022-05-03
  - Fixed display on the new ProjectManager interface. This will need to be redesigned at some point as it will no doubt become too ungainly once there are numerous projects, and some people will probably gravitate to only a particular type of project.
  - Fixed ProjectEditListItem, which was not displaying anything.
@@ -10,7 +22,7 @@
  - BUGFIX: WordCountForProject statusbar widget wasn't updating properly.
  - BUGFIX: ProjectEditList and ProjectEditListItem were not handling deletion properly, so the list of projects was not updating correctly.
  - BUGFIX: SuggestBox and ValidatedInput had certain display issues that have been fixed.
- - [ ] BUG: SuggestBox key navigation doesn't work, nor does selecting an option
+ - [-] BUG: SuggestBox key navigation doesn't work, nor does selecting an option
 
 
 2022-05-02

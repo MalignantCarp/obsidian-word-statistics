@@ -7,18 +7,20 @@
 
 	let inputText: string = "";
 	let icon: HTMLElement;
+	export let isValid: boolean;
+	let validationMessage: string;
 
 	$: [isValid, validationMessage] = validate(inputText);
 
 	$: {
 		if (icon) {
 			icon.empty();
-			setIcon(icon, isValid ? "checkmark" : "alert-circle", 16);
+			setIcon(icon, isValid ? "check-small" : "alert-circle", 16);
 		}
 	}
 
 	onMount(() => {
-		setIcon(icon, isValid ? "checkmark" : "alert-circle", 16);
+		setIcon(icon, isValid ? "check-small" : "alert-circle", 16);
 	});
 
 	export function getText(): string {
@@ -34,12 +36,12 @@
 	}
 </script>
 
-<div class="setting-item-control ws-text-validated">
-	<div class="ws-text-validator">
+<div class="setting-item-control ws-validated-input">
+	<div class="ws-validated-input-container">
 		<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
-		<input class="ws-text" type="text" class:invalid={!isValid} bind:value={inputText} spellcheck="false" {placeholder} />
-	</div>
-	<div class="ws-text-validated ws-validation-error">
-		<div>{validationMessage}</div>
+		<input class="ws-input" type="text" class:invalid={!isValid} bind:value={inputText} spellcheck="false" {placeholder} />
+		<div class="ws-validation-error">
+			<div class="ws-validation-message" class:hidden={isValid}>{validationMessage}</div>
+		</div>
 	</div>
 </div>

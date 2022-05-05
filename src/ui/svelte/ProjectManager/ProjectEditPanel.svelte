@@ -18,14 +18,11 @@
 </script>
 
 <div class="ws-project-edit-panel">
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">{name}</div>
-			<div class="setting-item-description">{description}</div>
-		</div>
-		<div class="setting-item-control">
-			<button on:click={onClick}>New Project</button>
-		</div>
+	<div class="ws-project-edit-panel-header">
+		<h3>{name}</h3>
+		<div class="ws-project-edit-description">{description}</div>
+		<button on:click={onClick}>New Project</button>
 	</div>
+	<hr />
 	<ProjectEditList {manager} {getProjectList} />
 </div>

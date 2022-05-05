@@ -11,6 +11,7 @@
 
 	let highlightIndex: number = null;
 	let inputComponent: HTMLInputElement;
+	let suggestionBox: HTMLElement;
 
 	const [popperRef, popperContent] = createPopperActions({
 		placement: "bottom-start"
@@ -47,23 +48,29 @@
 		filteredOptions = filtered;
 	}
 
-	function setInputValue(text: string) {
+	function setSuggestion(text: string) {
 		searchString = clearSearchHighlight(text);
+		console.log("setInputValue(" + text + ")");
 		highlightIndex = null;
 		inputComponent.focus();
 	}
 
 	function onKeyNav(event: KeyboardEvent) {
-		let list: string[] = options;
-		if (filteredOptions.length > 0) {
-			list = filteredOptions;
-		}
-		if (event.key == "ArrowDown" && highlightIndex <= list.length - 1) {
-			highlightIndex === null ? (highlightIndex = 0) : (highlightIndex += 1);
-		} else if (event.key == "ArrowUp" && highlightIndex != null) {
-			highlightIndex > 0 ? (highlightIndex -= 1) : (highlightIndex = 0);
-		} else if (event.key == "Enter") {
-			setInputValue(list[highlightIndex]);
+		if (inputComponent.isShown() && showOptions) {
+			let list: string[] = options;
+			if (filteredOptions.length > 0) {
+				list = filteredOptions;
+			}
+			console.log(showOptions, event.key, highlightIndex, list.length);
+			if (event.key == "ArrowDown" && (highlightIndex === null || highlightIndex < list.length - 1)) {
+				highlightIndex === null ? (highlightIndex = 0) : (highlightIndex += 1);
+			} else if (event.key == "ArrowDown" && highlightIndex === list.length - 1) {
+				highlightIndex = 0;
+			} else if (event.key == "ArrowUp" && highlightIndex != null) {
+				highlightIndex > 0 ? (highlightIndex -= 1) : (highlightIndex = list.length - 1);
+			} else if (event.key == "Enter") {
+				setSuggestion(list[highlightIndex]);
+			}
 		}
 	}
 
@@ -72,46 +79,85 @@
 		highlightIndex = null;
 	}
 
+	$: showOptions = focus && (searchString.length > 0 ? filteredOptions.length > 0 : options.length > 0);
+
+	$: if (showOptions && suggestionBox) {
+		suggestionBox.focus();
+	}
+
+	export let isValid: boolean;
+
 	$: isValid = options.contains(searchString);
 
 	let icon: HTMLElement;
+	let focus = false;
+
+	export function isValidated() {
+		return isValid;
+	}
 
 	export function setInitial(text: string) {
 		searchString = text;
 	}
 
+	function onFocus() {
+		focus = true;
+	}
+
+	function onBlur() {
+		focus = false;
+	}
+
+	function onMouseDown(event: MouseEvent) {
+		event.preventDefault();
+	}
+
 	$: {
 		if (icon) {
 			icon.empty();
-			setIcon(icon, isValid ? "checkmark" : "alert-circle", 16);
+			setIcon(icon, isValid ? "check-small" : "alert-circle", 16);
 		}
 	}
 
 	onMount(() => {
-		setIcon(icon, isValid ? "checkmark" : "alert-circle", 16);
+		setIcon(icon, isValid ? "check-small" : "alert-circle", 16);
 	});
 </script>
 
 <svelte:window on:keydown={onKeyNav} />
-<div class="setting-item-control ws-suggest">
-	<div class="ws-suggest-box">
+<div class="setting-item-control ws-suggest-box">
+	<div class="ws-suggest-box-container">
 		<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
-		<input class= "ws-suggest-text" type="text" class:invalid={!isValid} bind:this={inputComponent} bind:value={searchString} spellcheck="false" {placeholder} use:popperRef on:input={filterOptions} />
-	</div>
-	<div class="ws-suggest ws-validation-error" class:hidden={isValid}>
-		<div>Please make a selection from the available options.</div>
+		<input
+			class="ws-input"
+			type="text"
+			class:invalid={!isValid}
+			on:focus={onFocus}
+			on:blur={onBlur}
+			bind:this={inputComponent}
+			bind:value={searchString}
+			spellcheck="false"
+			{placeholder}
+			use:popperRef
+			on:input={filterOptions}
+		/>
+		<div class="ws-validation-error">
+			<div class="ws-validation-message" class:hidden={isValid}>Please select an option from the list.</div>
+		</div>
 	</div>
 </div>
-<div class="suggestion-container" use:popperContent={extraOpts}>
-	<div class="suggestion">
-		{#if filteredOptions}
-			{#each filteredOptions as option}
-				<div class="suggestion-item">{@html option}</div>
-			{/each}
-		{:else}
-			{#each options as option, i}
-				<div class="suggestion-item" class:is-selected={highlightIndex === i}>{@html option}</div>
-			{/each}
-		{/if}
+{#if showOptions}
+	<div class="suggestion-container ws-suggest-box" on:mousedown={onMouseDown} use:popperContent={extraOpts} bind:this={suggestionBox}>
+		<div class="suggestion">
+			{#if filteredOptions.length > 0}
+				{#each filteredOptions as option, i}
+					<div class="suggestion-item" on:click={() => setSuggestion(option)} class:is-selected={highlightIndex === i}>{@html option}</div>
+				{/each}
+			{:else}
+				{#each options as option, i}
+					<div class="suggestion-item" on:click={() => setSuggestion(option)} class:is-selected={highlightIndex === i}>{@html option}</div>
+				{/each}
+			{/if}
+		</div>
 	</div>
-</div>
+{/if}
