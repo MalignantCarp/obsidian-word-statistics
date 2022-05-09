@@ -148,6 +148,15 @@ export class WSProjectManager {
         Project Methods
        ================= */
 
+    getAllProjects(): WSProject[] {
+        let projects: WSProject[] = []
+        projects.push(...this.fileProjects);
+        projects.push(...this.folderProjects);
+        projects.push(...this.tagProjects);
+        projects.sort((a,b) => a.name > b.name ? 1 : (b.name > a.name ? -1 : 0));
+        return projects;
+    }
+
     getProjectsByType(type: WSPType): WSProject[] {
         switch (type) {
             case WSPType.File:
@@ -252,6 +261,14 @@ export class WSProjectManager {
         });
     }
 
+    updateProjectsForFile(file: WSFile) {
+        this.projects.forEach(([type, project]) => {
+            if (project.files.contains(file)) {
+                this.updateProject(project);
+            }
+        })
+    }
+
     updateAllProjects() {
         this.projects.forEach(([, proj]) => {
             this.updateProject(proj);
@@ -339,18 +356,21 @@ export class WSProjectManager {
             let fp = <WSFileProject>project;
             if (file != fp.file) {
                 fp.file = file;
+                this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project}, {filter: project}));
                 this.updateProject(project);
             }
         } else if (project.type === WSPType.Folder) {
             let fp = <WSFolderProject>project;
             if (fp.folder != projectIndex) {
                 fp.folder = projectIndex;
+                this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project}, {filter: project}));
                 this.updateProject(project);
             }
         } else if (project.type === WSPType.Tag) {
             let tp = <WSTagProject>project;
             if (tp.tag != projectIndex) {
                 tp.tag = projectIndex;
+                this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project}, {filter: project}));
                 this.updateProject(project);
             }
         }

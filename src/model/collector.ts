@@ -5,6 +5,7 @@ import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
 import { WSEvents, WSFileEvent } from 'src/event';
 import { writable, Writable } from 'svelte/store';
+import type { WSFileProject } from './project';
 
 interface LongformDraft {
     name: string;
@@ -92,7 +93,7 @@ export class WSDataCollector {
             this.fileMap.set(file.path, fi);
             fi.name = file.basename;
             fi.path = file.path;
-            this.plugin.app.workspace.trigger("word-statistics-file-renamed", fi);
+            this.plugin.events.trigger(new WSFileEvent({type: WSEvents.File.Renamed, file: fi}, {filter: fi}))
         } else {
             console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldPath, file.path);
             let fi = this.getFile(file.path);
@@ -106,6 +107,16 @@ export class WSDataCollector {
             let fi = this.fileMap.get(file.path);
             this.fileMap.delete(file.path);
             this.update();
+            this.manager.updateProjectsForFile(fi);
+            if (this.manager.isIndexFile(fi)) {
+                // this is used as an index to a project, so we need to set that project index to null
+                let projects = this.manager.getProjectsByFile(fi) as WSFileProject[];
+                projects.forEach((proj) => {
+                    proj.file = null;
+                    this.manager.updateProject(proj);
+                })
+            }
+            this.plugin.events.trigger(new WSFileEvent({type: WSEvents.File.Deleted, file: fi}, {filter: fi}))
         } else {
             console.log("!!! onDelete('%s'): File does not exist. Nothing to delete.", file.path);
         }
@@ -209,11 +220,11 @@ export class WSDataCollector {
                 let newLinks: [WSFile, string][] = [];
                 for (let i = 0; i < links.length; i++) {
                     let link = links[i];
-                    let linkPath = getLinkpath(link.link);
+                    // let linkPath = getLinkpath(link.link);
                     let linkedFile = this.mdCache.getFirstLinkpathDest(link.link, file.path);
                     // if there is no link, we don't want to add it to the list
                     if (linkedFile != null) {
-                        let lFile = this.getFile(linkedFile.path);
+                        let lFile = this.getFileSafer(linkedFile.path);
                         let dText = link.displayText == lFile.name ? null : link.displayText;
                         newLinks.push([lFile, dText || lFile.title]);
                     }

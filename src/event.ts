@@ -72,6 +72,7 @@ export interface WSGroupEventInfo extends WSEventInfo {
 
 export interface WSEventFilter {
     filter: WSFile | WSProject | WSProjectGroup;
+    msg?: string;
 }
 
 export abstract class WSEvent {
@@ -118,10 +119,16 @@ class DispatcherEvent {
     }
 
     fire(event: WSEvent) {
+        // console.log("Ping!", event.info.type, event.focus)
         this.callbacks.forEach(([cbRun, filter]) => {
-            if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter == event.focus) {
-                // console.log("Ping!", event.info.type, event.focus)
+            // console.log("Pong!", filter);
+            if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter?.filter == event.focus?.filter) {
+                // console.log("Dispatching event.")
                 cbRun(event);
+            // } else {
+            //     console.log("Ignoring event:", (filter == null || filter == undefined), (filter?.filter == null || filter?.filter == undefined), filter == event.focus);
+            //     console.log("Focus: ", event.focus)
+            //     console.log("Filter: ", filter?.filter)
             }
         });
     }

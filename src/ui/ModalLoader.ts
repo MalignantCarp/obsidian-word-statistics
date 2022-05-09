@@ -1,9 +1,49 @@
-import { Modal } from "obsidian";
+import { ButtonComponent, Modal, Setting } from "obsidian";
 import type WordStatisticsPlugin from "src/main";
 import type { WSProjectManager } from "src/model/manager";
 import { WSProject, WSPType } from "src/model/project";
-import ProjectEditor from "./svelte/ProjectManager/ProjectEditor.svelte";
-import ProjectManager from "./svelte/ProjectManager/ProjectManager.svelte";
+import ProjectEditor from "./svelte/ProjectManagerModal/ProjectEditor.svelte";
+import ProjectManager from "./svelte/ProjectManagerModal/ProjectManager.svelte";
+
+class ConfirmationModal extends Modal {
+    confirmation: boolean = false;
+
+    constructor(public plugin: WordStatisticsPlugin, public message: string, public cb: Function) {
+        super(plugin.app);
+    }
+
+    onDelete(event?: MouseEvent) {
+        this.confirmation = true;
+        this.close();
+    }
+
+    onCancel(event?: MouseEvent) {
+        this.confirmation = false;
+        this.close();
+    }
+
+    onOpen() {
+        let { contentEl } = this;
+        new Setting(contentEl)
+            .setName("Deletion Confirmation")
+            .setDesc(this.message);
+        new Setting(contentEl).addButton((button) => {
+            button.setButtonText("Delete");
+            button.onClick(this.onDelete.bind(this));
+        })
+            .addButton((button) => {
+                button.setButtonText("Cancel");
+                button.onClick(this.onCancel.bind(this));
+            });
+    }
+
+    onClose() {
+        let { contentEl } = this;
+        contentEl.empty();
+        this.cb();
+    }
+}
+
 
 // =======================
 //  Project Manager Modal
@@ -20,13 +60,16 @@ class ProjectManagerModal extends Modal {
 
     onOpen() {
         let { contentEl } = this;
-        this.panel = new ProjectManager({target: contentEl, props: {manager: this.manager}});
+        this.panel = new ProjectManager({ target: contentEl, props: { manager: this.manager } });
     }
 
     onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}    
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
 }
 
 // =======================
@@ -48,9 +91,12 @@ class FileProjectModal extends Modal {
     }
 
     onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}    
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
 }
 
 class FolderProjectModal extends Modal {
@@ -68,9 +114,12 @@ class FolderProjectModal extends Modal {
     }
 
     onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}    
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
 }
 
 class TagProjectModal extends Modal {
@@ -88,9 +137,12 @@ class TagProjectModal extends Modal {
     }
 
     onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}    
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
 }
 
 export class ModalLoader {
@@ -130,6 +182,10 @@ export class ModalLoader {
         } else if (project.type === WSPType.Tag) {
             return this.createTagProjectModal(project);
         }
+    }
+
+    createConfirmationModal(message: string, cb: Function) {
+        return new ConfirmationModal(this.plugin, message, cb);
     }
 
 }

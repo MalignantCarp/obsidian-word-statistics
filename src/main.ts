@@ -8,6 +8,7 @@ import type { WSProject } from './model/project';
 import { WSFile } from './model/file';
 import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
+import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
 
 const PROJECT_PATH = "projects.json";
 
@@ -27,13 +28,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
 		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
-		// console.log("Data collector and project manager instantiated:");
-		// console.log(this.collector);
-		// console.log(this.collector?.manager);
 
 		this.debounceRunCount = debounce(
 			(file: TFile, data: string) => this.RunCount(file, data),
-			200,
+			250,
 			false
 		);
 		// there has to be a better event to hook onto here, this seems silly
@@ -50,50 +48,26 @@ export default class WordStatisticsPlugin extends Plugin {
 		// custom events
 		this.events = new Dispatcher();
 
-		// Commenting these out so current projects will stick around after reload
-		this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), {filter:null});
-		this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), {filter:null});
-		this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), {filter:null});
-		// this event currently doesn't ever fire
-		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), {filter: null});
+		this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), { filter: null });
 
 		// this event currently doesn't ever fire
-		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this), {filter:null});
+		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this), { filter: null });
+
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
 
-		this.app.workspace.onLayoutReady(this.onStartup.bind(this));
-
+		this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
+			return new ProjectManagementView(leaf, this);
+		});
 
 		this.addCommand({
 			id: 'open-project-manager',
 			name: 'Open Project Manager',
 			callback: () => {
 				this.openProjectManager();
-			}
-		});
-
-		this.addCommand({
-			id: 'open-project-viewer',
-			name: 'Open Project Viewer',
-			callback: () => {
-				this.openProjectViewer();
-			}
-		});
-
-		this.addCommand({
-			id: 'open-project-group-manager',
-			name: 'Open Project Group Manager',
-			callback: () => {
-				this.openProjectGroupManager();
-			}
-		});
-
-		this.addCommand({
-			id: 'open-project-group-viewer',
-			name: 'Open Project Group Viewer',
-			callback: () => {
-				this.openProjectGroupViewer();
 			}
 		});
 
@@ -108,32 +82,35 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 		}
 		// 	}
 		// });
+		if (this.app.workspace.layoutReady) {
+			this.onStartup();
+			this.initializeProjectManagementLeaf();
+		} else {
+			this.app.workspace.onLayoutReady(this.onStartup.bind(this));
+			this.app.workspace.onLayoutReady(this.initializeProjectManagementLeaf.bind(this));
+		}
+
 		console.log("Obsidian Word Statistics loaded.");
 	}
 
 	onunload() {
+		this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
 		console.log("Obsidian Word Statistics unloaded.");
 	}
 
-	openProjectViewer() {
-		// let modal = new ProjectViewerModal(this.app, this, this.collector.manager);
-		// modal.open();
+	initializeProjectManagementLeaf() {
+		if (this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length) {
+			return;
+		}
+		this.app.workspace.getRightLeaf(false).setViewState({
+			type: PROJECT_MANAGEMENT_VIEW.type,
+		});
 	}
 
 	openProjectManager() {
 		let modal = this.collector.manager.modals.createProjectManagerModal();
 		//let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
 		modal.open();
-	}
-
-	openProjectGroupViewer() {
-		// let modal = new ProjectGroupViewerModal(this.app, this, this.collector.manager);
-		// modal.open();
-	}
-
-	openProjectGroupManager() {
-		// let modal = new ProjectGroupManagerModal(this.app, this, this.collector.manager);
-		// modal.open();
 	}
 
 	async loadSettings() {
@@ -226,7 +203,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			file = this.collector.getFileSafer(view.file.path);
 		}
 		if (file instanceof WSFile) {
-			this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, {filter: file}));
+			this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
 		}
 	}
 

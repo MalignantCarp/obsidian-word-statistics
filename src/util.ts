@@ -1,3 +1,11 @@
+export const FormatWords = (words: number) : string => {
+    return Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
+}
+
+export const FormatWordsNumOnly = (words: number) : string => {
+    return Intl.NumberFormat().format(words);
+}
+
 export const FindRawText = (el: Node): string => {
     /* This function returns the raw text found within the given node's childNodes, unless contained in <pre> or <code> blocks.
     This function should only be run on <p> and similar text-bearing elements and not text nodes, or it will return nothing.

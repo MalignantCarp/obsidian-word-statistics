@@ -97,7 +97,7 @@
 
 <div class="ws-sb-counter-project">
 	<div class="ws-sb-icon" bind:this={containerEl} class:hidden={errMessage || !monitoring} />
-	<div class="ws-sb-icon-error" bind:this={errorEl} class:hidden={!errMessage} />
+	<div class="ws-sb-icon error" bind:this={errorEl} class:hidden={!errMessage} />
 	{#if !errMessage && monitoring}
 		<div class="ws-sb-count-project">{wordCount}</div>
 	{/if}

@@ -50,9 +50,9 @@
 
 	function setSuggestion(text: string) {
 		searchString = clearSearchHighlight(text);
-		console.log("setInputValue(" + text + ")");
 		highlightIndex = null;
 		inputComponent.focus();
+		focus = false;
 	}
 
 	function onKeyNav(event: KeyboardEvent) {
@@ -61,14 +61,14 @@
 			if (filteredOptions.length > 0) {
 				list = filteredOptions;
 			}
-			console.log(showOptions, event.key, highlightIndex, list.length);
+
 			if (event.key == "ArrowDown" && (highlightIndex === null || highlightIndex < list.length - 1)) {
 				highlightIndex === null ? (highlightIndex = 0) : (highlightIndex += 1);
 			} else if (event.key == "ArrowDown" && highlightIndex === list.length - 1) {
 				highlightIndex = 0;
 			} else if (event.key == "ArrowUp" && highlightIndex != null) {
 				highlightIndex > 0 ? (highlightIndex -= 1) : (highlightIndex = list.length - 1);
-			} else if (event.key == "Enter") {
+			} else if (event.key == "Enter" && highlightIndex != null) {
 				setSuggestion(list[highlightIndex]);
 			}
 		}
@@ -133,6 +133,7 @@
 			type="text"
 			class:invalid={!isValid}
 			on:focus={onFocus}
+			on:input={onFocus}
 			on:blur={onBlur}
 			bind:this={inputComponent}
 			bind:value={searchString}

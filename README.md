@@ -1,3 +1,6 @@
+# Caution
+__Please be aware that any modification of your files outside of Obsidian could break project and statistic storage. Please ensure you regularly backup your data.__
+
 # Obsidian Word Statistics
 
 This will be a plugin for Obsidian (https://obsidian.md) that tracks word count statistics.
@@ -31,12 +34,12 @@ One caveat to note is that the word counts stored for a particular document will
 
 ## Features
 - [x] Basic word counting
-- [x] Custom status bar for word counts - currently shows current note words/total words
+- [x] Custom status bar for word counts
 - [?] Project-based counting
     - [ ] Compatibility with Longform project index
 - [ ] Historical statistics on a per-project basis
 - [ ] Project groups
-- [ ] Project manager view
+- [x] Project manager view
 - [ ] Statistics view
 - [ ] Per-project statistics tables via code blocks
 - [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
@@ -51,7 +54,6 @@ One caveat to note is that the word counts stored for a particular document will
     - [ ] Legacy editor? (Maybe; since the legacy editor will eventually be removed, not sure there is a huge userbase for whom this would be a useful feature.)
 
 ## Planned Features
-- [ ] Per-section breakdown of notes (i.e., utilizing headings to break up counting)
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.
 
 ## Future Possibilities
