@@ -9,6 +9,7 @@ import { WSFile } from './model/file';
 import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
+import { ParseProjectManagerContent } from './model/manager';
 
 const PROJECT_PATH = "projects.json";
 
@@ -172,7 +173,9 @@ export default class WordStatisticsPlugin extends Plugin {
 			let projects = await this.loadSerialData(PROJECT_PATH);
 			if (projects) {
 				// console.log(projects);
-				this.collector.manager.populateFromSerialized(projects);
+				//this.collector.manager.populateFromSerialized(projects);
+				let contentLoad = ParseProjectManagerContent(this.collector.manager, projects);
+				this.collector.manager.loadProjectManagerData(contentLoad);
 				this.collector.manager.updateAllProjects();
 			}
 			this.projectLoad = true;

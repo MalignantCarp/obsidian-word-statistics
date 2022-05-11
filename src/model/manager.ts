@@ -3,8 +3,8 @@ import type WordStatisticsPlugin from "src/main";
 import { ModalLoader } from "src/ui/ModalLoader";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
-import { WSProjectGroup } from "./group";
-import { PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "./project";
+import { IProjectGroupV0, LoadProjectGroupFromSerial, WSProjectGroup } from "./group";
+import { IProjectV0, IProjectV1, LoadProjectFromSerial, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject } from "./project";
 
 export function CanProjectMoveUpInGroup(project: WSProject, group: WSProjectGroup) {
     return (group.projects.contains(project) && group.projects.indexOf(project) > 0);
@@ -12,6 +12,164 @@ export function CanProjectMoveUpInGroup(project: WSProject, group: WSProjectGrou
 
 export function CanProjectMoveDownInGroup(project: WSProject, group: WSProjectGroup) {
     return (group.projects.contains(project) && group.projects.indexOf(project) < (group.projects.length - 1));
+}
+
+interface ProjectManagerJSON {
+    tagProjects: string[],
+    fileProjects: string[],
+    folderProjects: string[],
+    projectGroups: string[],
+}
+
+export interface IProjectManagerV0 {
+    tagProjects: IProjectV0[],
+    fileProjects: IProjectV0[],
+    folderProjects: IProjectV0[],
+    projectGroups: IProjectGroupV0[];
+}
+
+export interface IProjectManagerV1 {
+    tagProjects: IProjectV1[],
+    fileProjects: IProjectV1[],
+    folderProjects: IProjectV1[],
+    projectGroups: IProjectGroupV0[];
+}
+
+export interface IProjectManager {
+    tagProjects: WSTagProject[],
+    fileProjects: WSFileProject[],
+    folderProjects: WSFolderProject[],
+    projectGroups: WSProjectGroup[];
+}
+
+function ProcessAllContent(manager: WSProjectManager, content: IProjectManagerV0 | IProjectManagerV1): IProjectManager {
+    let tagProjects: WSTagProject[] = [];
+    let fileProjects: WSFileProject[] = [];
+    let folderProjects: WSFolderProject[] = [];
+    let projectGroups: WSProjectGroup[] = [];
+
+    content.tagProjects.forEach((info) => {
+        let proj = LoadProjectFromSerial(manager.collector, info);
+        if (proj instanceof WSTagProject) {
+            tagProjects.push(proj);
+        } else {
+            console.log(`Error processing project manager content for project '${info.name}'. Deserialization returned invalid type '${typeof (proj)}'`);
+        }
+    });
+
+    content.fileProjects.forEach((info) => {
+        let proj = LoadProjectFromSerial(manager.collector, info);
+        if (proj instanceof WSFileProject) {
+            fileProjects.push(proj);
+        } else {
+            console.log(`Error processing project manager content for project '${info.name}'. Deserialization returned invalid type '${typeof (proj)}'`);
+        }
+    });
+
+    content.folderProjects.forEach((info) => {
+        let proj = LoadProjectFromSerial(manager.collector, info);
+        if (proj instanceof WSFolderProject) {
+            folderProjects.push(proj);
+        } else {
+            console.log(`Error processing project manager content for project '${info.name}'. Deserialization returned invalid type '${typeof (proj)}'`);
+        }
+    });
+
+    content.projectGroups.forEach((info) => {
+        let [error, group] = LoadProjectGroupFromSerial(manager, info);
+        if (!error && group instanceof WSProjectGroup) {
+            projectGroups.push(group);
+        }
+    });
+
+    return { tagProjects, fileProjects, folderProjects, projectGroups };
+}
+
+function ParseProjectManagerContentV0(manager: WSProjectManager, data: string) {
+    try {
+        // console.log("Attempting to parse data into ProjectManagerJSON");
+        let content = JSON.parse(data) as ProjectManagerJSON;
+        // console.log(content);
+        // console.log("Attempting to parse Tag Projects into IProjectV0");
+        let tagProjects: IProjectV0[] = [];
+        content.tagProjects.forEach((value) => {
+            tagProjects.push(JSON.parse(value) as IProjectV0);
+        });
+        // console.log(tagProjects);
+        // console.log("Attempting to parse File Projects into IProjectV0");
+        let fileProjects: IProjectV0[] = [];
+        content.fileProjects.forEach((value) => {
+            fileProjects.push(JSON.parse(value) as IProjectV0);
+        });
+        // console.log(fileProjects);
+        // console.log("Attempting to parse Folder Projects into IProjectV0");
+        let folderProjects: IProjectV0[] = [];
+        content.folderProjects.forEach((value) => {
+            folderProjects.push(JSON.parse(value) as IProjectV0);
+        });
+        // console.log(folderProjects);
+        // console.log("Attempting to parse Project Groups into IProjectGroupV0");
+        let projectGroups: IProjectGroupV0[] = [];
+        content.projectGroups.forEach((value) => {
+            projectGroups.push(JSON.parse(value) as IProjectGroupV0);
+        });
+        // console.log(projectGroups);
+        return ProcessAllContent(manager, { tagProjects, fileProjects, folderProjects, projectGroups });
+    } catch (error) {
+        console.log("Error parsing project manager content (V0):", error);
+        return undefined;
+    }
+}
+
+function ParseProjectManagerContentV1(manager: WSProjectManager, data: string) {
+    try {
+        // console.log("Attempting to parse data into ProjectManagerJSON");
+        let content = JSON.parse(data) as ProjectManagerJSON;
+        // console.log(content);
+        // console.log("Attempting to parse Tag Projects into IProjectV0");
+        let tagProjects: IProjectV1[] = [];
+        content.tagProjects.forEach((value) => {
+            tagProjects.push(JSON.parse(value) as IProjectV1);
+        });
+        // console.log(tagProjects);
+        // console.log("Attempting to parse File Projects into IProjectV0");
+        let fileProjects: IProjectV1[] = [];
+        content.fileProjects.forEach((value) => {
+            fileProjects.push(JSON.parse(value) as IProjectV1);
+        });
+        // console.log(fileProjects);
+        // console.log("Attempting to parse Folder Projects into IProjectV0");
+        let folderProjects: IProjectV1[] = [];
+        content.folderProjects.forEach((value) => {
+            folderProjects.push(JSON.parse(value) as IProjectV1);
+        });
+        // console.log(folderProjects);
+        // console.log("Attempting to parse Project Groups into IProjectGroupV0");
+        let projectGroups: IProjectGroupV0[] = [];
+        content.projectGroups.forEach((value) => {
+            projectGroups.push(JSON.parse(value) as IProjectGroupV0);
+        });
+        // console.log(projectGroups);
+        return ProcessAllContent(manager, { tagProjects, fileProjects, folderProjects, projectGroups });
+    } catch (error) {
+        console.log("Error parsing project manager content (V0):", error);
+        return undefined;
+    }
+}
+
+export function ParseProjectManagerContent(manager: WSProjectManager, data: string) {
+    let content: IProjectManager;
+
+    content = content = ParseProjectManagerContentV1(manager, data);
+    if (content === undefined) {
+        console.log("Failed to load as V1, falling back to V0.");
+        content = ParseProjectManagerContentV0(manager, data);
+    }
+    if (content === undefined) {
+        console.log("Failed to load project manager");
+        return null;
+    }
+    return content;
 }
 
 export class WSProjectManager {
@@ -71,30 +229,6 @@ export class WSProjectManager {
         return JSON.stringify(this.toObject());
     }
 
-    populateFromSerialized(serialized: string) {
-        const man: ReturnType<WSProjectManager["toObject"]> = JSON.parse(serialized);
-
-        man.fileProjects.forEach(obj => {
-            let proj = WSFileProject.fromSerialized(this.collector, obj);
-            this.registerProject(proj);
-        });
-
-        man.folderProjects.forEach(obj => {
-            let proj = WSFolderProject.fromSerialized(this.collector, obj);
-            this.registerProject(proj);
-        });
-
-        man.tagProjects.forEach(obj => {
-            let proj = WSTagProject.fromSerialized(this.collector, obj);
-            this.registerProject(proj);
-        });
-
-        man.projectGroups.forEach(obj => {
-            let grp = WSProjectGroup.fromSerialized(this, obj);
-            this.registerProjectGroup(grp);
-        });
-    }
-
     validateProjectLoad(projects: WSProject[]) {
         let names: string[] = [];
         projects.forEach((proj) => {
@@ -107,12 +241,30 @@ export class WSProjectManager {
         return true;
     }
 
-    loadProjects(projects: WSProject[]) {
-        if (this.validateProjectLoad(projects)) {
-            projects.forEach((proj: WSProject) => {
-                this.registerProject(proj);
-                this.updateProject(proj);
-            });
+    validateProjectGroupLoad(groups: WSProjectGroup[]) {
+        let names: string[] = [];
+        groups.forEach((group) => {
+            if (names.contains(group.name)) {
+                console.log(`Project Group name already in use: ${group.name}`);
+                return false;
+            }
+            names.push(group.name);
+        });
+        return true;
+    }
+
+    loadProjectManagerData(data: IProjectManager) {
+        if (this.validateProjectLoad(data.fileProjects as WSProject[]) && this.validateProjectLoad(data.folderProjects as WSProject[]) && this.validateProjectLoad(data.tagProjects as WSProject[])) {
+            if (this.validateProjectGroupLoad(data.projectGroups)) {
+                [data.fileProjects, data.folderProjects, data.tagProjects].forEach((projectLoad) => {
+                    projectLoad.forEach((proj) => {
+                        this.registerProject(proj);
+                    })
+                })
+                data.projectGroups.forEach((group) => {
+                    this.registerProjectGroup(group);
+                })
+            }
         }
     }
 
@@ -149,11 +301,11 @@ export class WSProjectManager {
        ================= */
 
     getAllProjects(): WSProject[] {
-        let projects: WSProject[] = []
+        let projects: WSProject[] = [];
         projects.push(...this.fileProjects);
         projects.push(...this.folderProjects);
         projects.push(...this.tagProjects);
-        projects.sort((a,b) => a.name > b.name ? 1 : (b.name > a.name ? -1 : 0));
+        projects.sort((a, b) => a.name > b.name ? 1 : (b.name > a.name ? -1 : 0));
         return projects;
     }
 
@@ -266,7 +418,7 @@ export class WSProjectManager {
             if (project.files.contains(file)) {
                 this.updateProject(project);
             }
-        })
+        });
     }
 
     updateAllProjects() {
@@ -356,54 +508,54 @@ export class WSProjectManager {
             let fp = <WSFileProject>project;
             if (file != fp.file) {
                 fp.file = file;
-                this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project}, {filter: project}));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
                 this.updateProject(project);
             }
         } else if (project.type === WSPType.Folder) {
             let fp = <WSFolderProject>project;
             if (fp.folder != projectIndex) {
                 fp.folder = projectIndex;
-                this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project}, {filter: project}));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
                 this.updateProject(project);
             }
         } else if (project.type === WSPType.Tag) {
             let tp = <WSTagProject>project;
             if (tp.tag != projectIndex) {
                 tp.tag = projectIndex;
-                this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project}, {filter: project}));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
                 this.updateProject(project);
             }
         }
     }
 
-    createProject(type: WSPType, projectName: string, projectIndex: string) {
+    createProject(type: WSPType, projectName: string, projectIndex: string, projectCategory: WSPCategory) {
         let project: WSProject;
 
         if (type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
-            project = new WSFileProject(this.collector, projectName, file);
+            project = new WSFileProject(this.collector, projectName, file, projectCategory);
         } else if (type === WSPType.Folder) {
-            project = new WSFolderProject(this.collector, projectName, projectIndex);
+            project = new WSFolderProject(this.collector, projectName, projectIndex, projectCategory);
         } else if (type === WSPType.Tag) {
-            project = new WSTagProject(this.collector, projectName, projectIndex);
+            project = new WSTagProject(this.collector, projectName, projectIndex, projectCategory);
         } else {
             this.logError(`Attempted to create a project with an invalid type: ${type}`);
             return;
         }
         this.registerProject(project);
-        this.updateProject(project);
+        // return (project);
     }
 
-    projectEditorCallback(type: WSPType, projectName?: string, projectIndex?: string, project?: WSProject) {
-        if (project instanceof WSProject) {
-            if (project.name != projectName) {
-                this.renameProject(project, projectName);
-            }
-            this.updateProjectIndex(project, projectIndex);
-        } else {
-            this.createProject(type, projectName, projectIndex);
-        }
-    }
+    // projectEditorCallback(type: WSPType, projectName?: string, projectIndex?: string, project?: WSProject) {
+    //     if (project instanceof WSProject) {
+    //         if (project.name != projectName) {
+    //             this.renameProject(project, projectName);
+    //         }
+    //         this.updateProjectIndex(project, projectIndex);
+    //     } else {
+    //         this.createProject(type, projectName, projectIndex);
+    //     }
+    // }
 
     registerProject(proj: WSProject) {
         if (this.projects.has(proj.name)) {
@@ -415,6 +567,7 @@ export class WSProjectManager {
         switch (proj.type) {
             case WSPType.File:
                 this.fileProjects.push(<WSFileProject>proj);
+                this.collector.forceUpdateFile((<WSFileProject>proj).file);
                 break;
             case WSPType.Folder:
                 this.folderProjects.push(<WSFolderProject>proj);
@@ -428,6 +581,7 @@ export class WSProjectManager {
                 break;
         }
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Created, project: proj }, { filter: proj }));
+        this.updateProject(proj);
     }
 
     unregisterProject(proj: WSProject) {
@@ -586,14 +740,14 @@ export class WSProjectManager {
         let empty = name.length === 0;
         let valid = this.checkProjectName(name);
         let error = empty ? "Project name must not be blank." : !valid ? "Project name must be unique." : "";
-        return [!empty && valid, error]
+        return [!empty && valid, error];
     }
 
     validateProjectGroupName(name: string): [boolean, string] {
         let empty = name.length === 0;
         let valid = this.checkProjectGroupName(name);
         let error = empty ? "Project Group name must not be blank." : !valid ? "Project Group name must be unique." : "";
-        return [!empty && valid, error]
+        return [!empty && valid, error];
     }
 
 }

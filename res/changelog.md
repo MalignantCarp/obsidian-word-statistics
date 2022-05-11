@@ -1,5 +1,14 @@
 ## Changelog
-### 2022-05-08
+### 2022-05-10
+ - Fixed last changelog date.
+ - BUGFIX: Total line and word count were not aligned properly in Project Management View.
+ - BUG: When deleting the final project in the list, somehow that project duplicated and was stored, resulting in exceptions on load.
+ - Redesigned project, project group, and project manager serialization to ease validation and help loading outdated formats should that become an issue.
+ - Added category to the project. Right now the available categories are None, Writing, and Worldbuilding.
+ - BUGFIX: Newly-created file index projects have no files even when they have links (file wasn't updated to collect links until next time that file is updated)
+ - BUGFIX: Word count was not updating for project while typing.
+
+### 2022-05-09
  - Cleared out old modals, components, panels, and validation modules.
  - Fixed missing headings in changelog.
  - Began work on the Project Management View panel, which will replace all of the viewers and managers designed for the previous rendition of the plugin. Currently it displays (rather hideously) the projects and their files. A tooltip when hovering over a file name will show the full vault path for the file. This will be moved to an info panel in the next iteration.

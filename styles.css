@@ -318,11 +318,11 @@
 	background: inherit;
 }
 
-table.ws-pm-project-list-item-files > tbody > tr.ws-pm-file-item > td.ws-pm-file-item-name {
+table.ws-pm-project-list-item-files > :is(tbody,tfoot) > tr.ws-pm-file-item > td.ws-pm-file-item-name {
 	text-align: left;
 }
 
-table.ws-pm-project-list-item-files > tbody > tr.ws-pm-file-item > td.ws-pm-file-item-word-count {
+table.ws-pm-project-list-item-files > :is(tbody,tfoot) > tr.ws-pm-file-item > td.ws-pm-file-item-word-count {
 	text-align: right;
 }
 

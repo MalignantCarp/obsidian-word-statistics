@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
 	import { WSEvents } from "src/event";
+	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSFileProject, WSProject, WSPType } from "src/model/project";
-	import { FormatWords, FormatWordsNumOnly } from "src/util";
+	import { FormatWords } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import { createPopperActions } from "svelte-popperjs";
 	import PmProjectListFileItem from "./PMProjectListFileItem.svelte";
@@ -23,12 +24,15 @@
 	let open = false;
 	let showMenu = false;
 
+	let projectWordCount: number = project.totalWords;
+
 	const [menuPopperRef, menuPopperContent] = createPopperActions({
 		placement: "bottom-start"
 	});
 
 	onMount(() => {
 		registerEvents();
+		onFileUpdate();
 	});
 
 	onDestroy(() => {
@@ -48,10 +52,19 @@
 	}
 
 	let invalidState = false;
+	let files: WSFile[] = [];
+
+	function onWordCountUpdate() {
+		project = project;
+		projectWordCount = project.totalWords;
+	}
 
 	function onProjectUpdate() {
 		if (project instanceof WSFileProject) {
 			invalidState = project.file === null;
+		}
+		if (!invalidState) {
+			projectWordCount = project.totalWords;
 		}
 	}
 
@@ -61,6 +74,13 @@
 
 	function onFileUpdate() {
 		project = project;
+		files =
+			project.type === WSPType.File
+				? project.files
+				: project.files.sort((a, b) =>
+						a.name.localeCompare(b.name, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true })
+				  );
+		projectWordCount = project.totalWords;
 	}
 
 	function openMenu(event: MouseEvent) {
@@ -138,14 +158,14 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each project.files as file}
-					<PmProjectListFileItem {project} {manager} {file} />
+				{#each files as file}
+					<PmProjectListFileItem {project} {manager} {file} {onWordCountUpdate} />
 				{/each}
 			</tbody>
 			<tfoot>
 				<tr class="ws-pm-file-item table-footer">
-					<td class="ws-pm-file-item-name">Total</td>
-					<td class="ws-pm-file-item-word-count">{FormatWords(project.totalWords)}</td>
+					<td class="ws-pm-file-item-name">{project.files.length} file{project.files.length != 1 ? "s" : ""}</td>
+					<td class="ws-pm-file-item-word-count">{FormatWords(projectWordCount)}</td>
 				</tr>
 			</tfoot>
 		</table>

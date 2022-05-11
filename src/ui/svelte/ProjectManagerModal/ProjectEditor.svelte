@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { WSProjectManager } from "src/model/manager";
-	import { PROJECT_INDEX_TYPE, PROJECT_TYPE_DESCRIPTION, PROJECT_TYPE_NAME, WSProject, WSPType } from "src/model/project";
+	import { PROJECT_CATEGORY_NAME, PROJECT_INDEX_TYPE, PROJECT_TYPE_DESCRIPTION, PROJECT_TYPE_NAME, WSProject, WSPType } from "src/model/project";
 	import { onMount } from "svelte";
 	import SuggestBox from "../util/SuggestBox.svelte";
 	import ValidatedInput from "../util/ValidatedInput.svelte";
@@ -13,10 +13,13 @@
 	let suggestBox: SuggestBox;
 	let projectName: ValidatedInput;
 
+	let categoryEl: HTMLSelectElement;
+
 	let projectType = PROJECT_TYPE_NAME[type];
 	let projectDesc = PROJECT_TYPE_DESCRIPTION[type];
 
-	const options = type === WSPType.File ? manager.collector.getAllPaths() : type === WSPType.Folder ? manager.collector.getAllFolders() : manager.collector.getAllTags();
+	const options =
+		type === WSPType.File ? manager.collector.getAllPaths() : type === WSPType.Folder ? manager.collector.getAllFolders() : manager.collector.getAllTags();
 	const optionPlaceholder = PROJECT_INDEX_TYPE[type];
 
 	$: project = _project instanceof WSProject ? _project : null;
@@ -36,7 +39,17 @@
 	let validIndex: boolean;
 
 	function onSave() {
-		manager.projectEditorCallback(type, projectName.getText(), suggestBox.getSelectedOption(), project);
+		//manager.projectEditorCallback(type, projectName.getText(), suggestBox.getSelectedOption(), project);
+		if (_project === null) {
+			manager.createProject(type, projectName.getText(), suggestBox.getSelectedOption(), categoryEl.selectedIndex);
+		} else {
+			if (_project.name != projectName.getText()) {
+				manager.renameProject(_project, projectName.getText());
+			}
+			if (_project.index != suggestBox.getSelectedOption()) {
+				manager.updateProjectIndex(_project, suggestBox.getSelectedOption());
+			}
+		}
 		onClose();
 	}
 
@@ -67,6 +80,19 @@
 			<div class="setting-item-description">{projectDesc}</div>
 		</div>
 		<svelte:component this={SuggestBox} {options} placeholder={optionPlaceholder} bind:this={suggestBox} bind:isValid={validIndex} />
+	</div>
+	<div class="setting-item">
+		<div class="setting-item-info">
+			<div class="setting-item-name">Category</div>
+			<div class="setting-item-description">Choose a category for this project. Defaults to None.</div>
+		</div>
+		<div class="setting-item-control">
+			<select class="ws-project-editor-project-category dropdown" bind:this={categoryEl}>
+				{#each PROJECT_CATEGORY_NAME as category, i}
+					<option value={i} selected={i===0}>{category}</option>
+				{/each}
+			</select>
+		</div>
 	</div>
 	<div class="setting-item">
 		<div class="setting-item-control">

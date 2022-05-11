@@ -11,6 +11,8 @@
 	export let manager: WSProjectManager;
 	export let file: WSFile;
 
+	export let onWordCountUpdate: () => void;
+
 	const [popperRef, popperContent] = createPopperActions({
 		placement: "top",
 		strategy: "absolute"
@@ -34,6 +36,7 @@
 
 	function onWords() {
 		file = file;
+		onWordCountUpdate();
 	}
 
 	function getTitle() {
