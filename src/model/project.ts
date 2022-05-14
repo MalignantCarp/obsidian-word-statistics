@@ -150,7 +150,7 @@ export abstract class WSProject {
     }
 
     serialize() {
-        return JSON.stringify(this.toObject(), null, '\t');
+        return JSON.stringify(this.toObject());
     }
 
     get totalWords() {

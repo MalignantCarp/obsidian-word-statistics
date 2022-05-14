@@ -23,6 +23,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	collector: WSDataCollector;
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
+	focusFile: WSFile = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -207,6 +208,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		if (file instanceof WSFile) {
 			this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
+			this.focusFile = file;
 		}
 	}
 

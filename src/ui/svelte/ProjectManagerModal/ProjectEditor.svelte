@@ -31,6 +31,7 @@
 		if (project instanceof WSProject) {
 			suggestBox.setInitial(project.index);
 			projectName.setText(project.name);
+			categoryEl.selectedIndex = project.category;
 		}
 	});
 

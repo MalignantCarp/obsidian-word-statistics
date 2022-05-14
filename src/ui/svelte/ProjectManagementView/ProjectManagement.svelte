@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { setIcon } from "obsidian";
+	import { Plugin, setIcon } from "obsidian";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSPType } from "src/model/project";
 	import { onMount } from "svelte";
 
 	import { createPopperActions } from "svelte-popperjs";
+import PmFileInfo from "./PMFileInfo.svelte";
 	import PmProjectList from "./PMProjectList.svelte";
 
 	const [menuPopperRef, menuPopperContent] = createPopperActions({
@@ -165,6 +166,7 @@
 			{/each}
 		{/if}
 	</div>
+	<PmFileInfo {manager} defaultFile={manager.plugin.focusFile}/>
 </div>
 {#if showMenu}
 	<div use:menuPopperContent class="ws-project-management menu" bind:this={mainMenu}>

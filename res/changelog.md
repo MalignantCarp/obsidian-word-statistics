@@ -1,4 +1,9 @@
 ## Changelog
+### 2022-05-13
+ - BUGFIX: Project Category is not auto-selected.
+ - Added a File Info Panel to the Project Management View.
+ - BUG: File Info Panel resizes depending on number of projects, which results in a potentially large file list being displaced, which in turn moves the file info panel top up or down respectively. This usually results in a rapid glitch where it infinitely expands and contracts. Need to determine the best solution to this. Setting a minimum and maximum height are not working as a solution.
+
 ### 2022-05-10
  - Fixed last changelog date.
  - BUGFIX: Total line and word count were not aligned properly in Project Management View.

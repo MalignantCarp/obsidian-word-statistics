@@ -73,6 +73,7 @@
 	}
 
 	function onFileUpdate() {
+		console.log("onFileUpdate in PMProjectListItem.svelte for project ", project.name);
 		project = project;
 		files =
 			project.type === WSPType.File

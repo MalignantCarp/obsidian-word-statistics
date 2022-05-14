@@ -1,24 +1,16 @@
 <script lang="ts">
-	import { WSEvents } from "src/event";
+	import { WSEvents, WSFocusEvent } from "src/event";
 	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSFileProject, WSProject } from "src/model/project";
 	import { FormatWordsNumOnly } from "src/util";
 	import { onDestroy, onMount } from "svelte";
-	import { createPopperActions } from "svelte-popperjs";
 
 	export let project: WSProject;
 	export let manager: WSProjectManager;
 	export let file: WSFile;
 
 	export let onWordCountUpdate: () => void;
-
-	const [popperRef, popperContent] = createPopperActions({
-		placement: "top",
-		strategy: "absolute"
-	});
-
-	let showInfo = false;
 
 	function RegisterEvents() {
 		manager.plugin.events.on(WSEvents.File.Renamed, onRename, { filter: file });
@@ -55,17 +47,17 @@
 	});
 
 	$: title = getTitle();
+
+	function onMouseEnter() {
+		manager.plugin.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.FileItem, file }, { filter: null }));
+	}
+
+	function onMouseLeave() {
+		manager.plugin.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.FileItem, file: null }, { filter: null }));
+	}
 </script>
 
-<tr class="ws-pm-file-item">
-	<td class="ws-pm-file-item-name" use:popperRef on:mouseenter={() => (showInfo = true)} on:mouseleave={() => (showInfo = false)}>
-		{title}
-		{#if showInfo}
-			<div class="ws-pm-file-info tooltip mod-top" use:popperContent>
-				{file.path}
-				<div class="tooltip-arrow" />
-			</div>
-		{/if}
-	</td>
+<tr class="ws-pm-file-item" on:mouseenter={onMouseEnter} on:mouseleave={onMouseLeave}>
+	<td class="ws-pm-file-item-name">{title}</td>
 	<td class="ws-pm-file-item-word-count">{FormatWordsNumOnly(file.words)}</td>
 </tr>

@@ -46,6 +46,6 @@ export class WSProjectGroup {
     }
 
     serialize() {
-        return JSON.stringify(this.toObject(), null, '\t');
+        return JSON.stringify(this.toObject());
     }
 }

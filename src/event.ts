@@ -6,6 +6,7 @@ export namespace WSEvents {
     export namespace Focus {
         export const File = "ws-event-focus-file";
         export const Project = "ws-event-focus-project"; // we probably won't use this; the project will depend on the focused file
+        export const FileItem = "ws-event-focus-file-item";
     }
 
     export namespace File {
@@ -36,7 +37,7 @@ export namespace WSEvents {
 }
 
 type WSEventType = WSFocusEventType | WSFileEventType | WSProjectEventType | WSGroupEventType;
-export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project;
+export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project | typeof WSEvents.Focus.FileItem;
 export type WSFileEventType = typeof WSEvents.File.Opened | typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
 export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated;
 export type WSGroupEventType = typeof WSEvents.Group.Renamed | typeof WSEvents.Group.Deleted | typeof WSEvents.Group.Created | typeof WSEvents.Group.ProjectAdded | typeof WSEvents.Group.ProjectDeleted | typeof WSEvents.Group.Updated;
