@@ -14,6 +14,8 @@
 	let projectName: ValidatedInput;
 
 	let categoryEl: HTMLSelectElement;
+	let wordGoalFile: HTMLInputElement;
+	let wordGoalProject: HTMLInputElement;
 
 	let projectType = PROJECT_TYPE_NAME[type];
 	let projectDesc = PROJECT_TYPE_DESCRIPTION[type];
@@ -32,6 +34,8 @@
 			suggestBox.setInitial(project.index);
 			projectName.setText(project.name);
 			categoryEl.selectedIndex = project.category;
+			wordGoalProject.value = project.wordGoal.toString();
+			wordGoalFile.value = project.wordGoalFile.toString();
 		}
 	});
 
@@ -42,7 +46,7 @@
 	function onSave() {
 		//manager.projectEditorCallback(type, projectName.getText(), suggestBox.getSelectedOption(), project);
 		if (_project === null) {
-			manager.createProject(type, projectName.getText(), suggestBox.getSelectedOption(), categoryEl.selectedIndex);
+			manager.createProject(type, projectName.getText(), suggestBox.getSelectedOption(), categoryEl.selectedIndex, parseInt(wordGoalProject.value) || 0, parseInt(wordGoalFile.value) || 0);
 		} else {
 			if (_project.name != projectName.getText()) {
 				manager.renameProject(_project, projectName.getText());
@@ -50,6 +54,7 @@
 			if (_project.index != suggestBox.getSelectedOption()) {
 				manager.updateProjectIndex(_project, suggestBox.getSelectedOption());
 			}
+			manager.updateProjectGoals(_project, parseInt(wordGoalProject.value) || 0, parseInt(wordGoalFile.value) || 0);
 		}
 		onClose();
 	}
@@ -93,6 +98,24 @@
 					<option value={i} selected={i===0}>{category}</option>
 				{/each}
 			</select>
+		</div>
+	</div>
+	<div class="setting-item">
+		<div class="setting-item-info">
+			<div class="setting-item-name">Word Goal</div>
+			<div class="setting-item-description">Choose a goal word count for this project (0 for no goal, max is {Intl.NumberFormat().format(1000000000)}).</div>
+		</div>
+		<div class="setting-item-control">
+			<input type="number" min="0" max="1000000000" step="1000" bind:this={wordGoalProject}>
+		</div>
+	</div>
+	<div class="setting-item">
+		<div class="setting-item-info">
+			<div class="setting-item-name">Word Goal (File)</div>
+			<div class="setting-item-description">Choose a goal word count for each file in this project (0 for no goal, max is {Intl.NumberFormat().format(1000000)}).</div>
+		</div>
+		<div class="setting-item-control">
+			<input type="number" min="0" max="1000000" step="100" bind:this={wordGoalFile}>
 		</div>
 	</div>
 	<div class="setting-item">

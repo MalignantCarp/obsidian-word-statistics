@@ -7,6 +7,7 @@ export class WSFile {
 	tags: string[];
 	links: Map<WSFile, string>;
 	backlinks: WSFile[];
+	wordGoal: number;
 
 	constructor(name: string, path: string) {
 		this.name = name;
@@ -17,6 +18,7 @@ export class WSFile {
 		this.tags = [];
 		this.links = new Map<WSFile, string>();
 		this.backlinks = [];
+		this.wordGoal = 0;
 	}
 
 	clearTags() {

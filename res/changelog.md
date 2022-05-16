@@ -1,4 +1,11 @@
 ## Changelog
+### 2022-05-15
+ - BUGFIX: File Info Panel resizes depending on number of projects.
+ - SuggestBox now uses a fuzzy search (utilizing farzher's fuzzysort package).
+ - Added wordGoal on a file, project, and group basis. Project also has a file goal, groups have project and file goals. The more specific will always override the more general, so a word goal specified on a file will take precedent over the file word goal set on a project or project group.
+ - Updated Project Editor to handle both the project and file word goals.
+ - YAML 'word-goal' can be used on a per-file basis.
+
 ### 2022-05-13
  - BUGFIX: Project Category is not auto-selected.
  - Added a File Info Panel to the Project Management View.

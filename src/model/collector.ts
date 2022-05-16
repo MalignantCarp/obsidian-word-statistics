@@ -1,10 +1,10 @@
-import { Vault, MetadataCache, TFile, TAbstractFile, getLinkpath, CachedMetadata, FrontMatterCache, parseFrontMatterTags, parseFrontMatterStringArray, parseFrontMatterEntry, TFolder } from 'obsidian';
+import { Vault, MetadataCache, TFile, TAbstractFile, parseFrontMatterTags, parseFrontMatterEntry, TFolder } from 'obsidian';
+import type {FrontMatterCache} from 'obsidian';
 import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
 import { WSEvents, WSFileEvent } from 'src/event';
-import { writable, Writable } from 'svelte/store';
 import type { WSFileProject } from './project';
 
 interface LongformDraft {
@@ -54,19 +54,19 @@ export class WSDataCollector {
     }
 
     getAllPaths() {
-        let paths:string[] = []
+        let paths: string[] = [];
         this.vault.getMarkdownFiles().forEach((file) => {
             paths.push(file.path);
-        })
+        });
         return paths.sort();
     }
 
     getAllFolders() {
-        let folders = this.plugin.app.vault.getAllLoadedFiles().filter((t) => t instanceof TFolder)
-        let paths: string[] = []
+        let folders = this.plugin.app.vault.getAllLoadedFiles().filter((t) => t instanceof TFolder);
+        let paths: string[] = [];
         folders.forEach((folder) => {
             paths.push(folder.path);
-        })
+        });
         return paths.sort();
     }
 
@@ -93,7 +93,7 @@ export class WSDataCollector {
             this.fileMap.set(file.path, fi);
             fi.name = file.basename;
             fi.path = file.path;
-            this.plugin.events.trigger(new WSFileEvent({type: WSEvents.File.Renamed, file: fi}, {filter: fi}))
+            this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.Renamed, file: fi }, { filter: fi }));
         } else {
             console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldPath, file.path);
             let fi = this.getFile(file.path);
@@ -114,9 +114,9 @@ export class WSDataCollector {
                 projects.forEach((proj) => {
                     proj.file = null;
                     this.manager.updateProject(proj);
-                })
+                });
             }
-            this.plugin.events.trigger(new WSFileEvent({type: WSEvents.File.Deleted, file: fi}, {filter: fi}))
+            this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.Deleted, file: fi }, { filter: fi }));
         } else {
             console.log("!!! onDelete('%s'): File does not exist. Nothing to delete.", file.path);
         }
@@ -140,7 +140,7 @@ export class WSDataCollector {
                 this.lastWords += newCount - oldCount;
                 this.fileMap.get(path).setWords(newCount);
                 this.update();
-                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, {filter: file}));
+                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
             }
             return;
         }
@@ -178,7 +178,12 @@ export class WSDataCollector {
             console.log(`Unable to update '${fi.path}. Cache is ${cache}.`);
             // this.queue.push([this.updateFile.bind(this), [file]]);
         } else {
-            fi.setTitle(cache.frontmatter?.['title'] || file.basename);
+            fi.setTitle(parseFrontMatterEntry(cache.frontmatter, "title") || file.basename);
+            let wordGoal = parseInt(parseFrontMatterEntry(cache.frontmatter, "word-goal"));
+            if (wordGoal != null && !isNaN(+wordGoal)) {
+                fi.wordGoal = wordGoal;
+            }
+            //fi.setTitle(cache.frontmatter?.['title'] || file.basename);
             // this.checkFMLongform(file, cache.frontmatter);
             let tagCache = cache.tags;
             let fmTags = parseFrontMatterTags(cache.frontmatter);
@@ -194,8 +199,8 @@ export class WSDataCollector {
                     newTags.add(tag.tag);
                 });
             }
-            let tagsToDelete: string[] = []
-            let tagsToAdd: string[] = []
+            let tagsToDelete: string[] = [];
+            let tagsToAdd: string[] = [];
             oldTags.forEach((oldTag) => {
                 if (!newTags.has(oldTag)) {
                     tagsToDelete.push(oldTag);
@@ -205,7 +210,7 @@ export class WSDataCollector {
                 if (!oldTags.contains(newTag)) {
                     tagsToAdd.push(newTag);
                 }
-            })
+            });
             fi.setTags(Array.from(newTags));
             // Now we need to alert any projects that use a tag that was changed (added/deleted) to update
             tagsToDelete.forEach((tag) => {

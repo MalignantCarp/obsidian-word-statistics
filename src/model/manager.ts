@@ -3,8 +3,8 @@ import type WordStatisticsPlugin from "src/main";
 import { ModalLoader } from "src/ui/ModalLoader";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
-import { IProjectGroupV0, LoadProjectGroupFromSerial, WSProjectGroup } from "./group";
-import { IProjectV0, IProjectV1, LoadProjectFromSerial, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject } from "./project";
+import { LoadProjectGroupFromSerial, WSProjectGroup, type IProjectGroupV0 } from "./group";
+import { LoadProjectFromSerial, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, type IProjectV0, type IProjectV1 } from "./project";
 
 export function CanProjectMoveUpInGroup(project: WSProject, group: WSProjectGroup) {
     return (group.projects.contains(project) && group.projects.indexOf(project) > 0);
@@ -12,6 +12,36 @@ export function CanProjectMoveUpInGroup(project: WSProject, group: WSProjectGrou
 
 export function CanProjectMoveDownInGroup(project: WSProject, group: WSProjectGroup) {
     return (group.projects.contains(project) && group.projects.indexOf(project) < (group.projects.length - 1));
+}
+
+export function GetFileWordGoal(file: WSFile, project?: WSProject, group?: WSProjectGroup) {
+    if (file.wordGoal > 0) {
+        return file.wordGoal;
+    }
+    if (project?.wordGoalFile > 0) {
+        return project.wordGoalFile;
+    }
+    if (group?.wordGoalFile > 0) {
+        return group.wordGoalFile;
+    }
+    return null;
+}
+
+export function GetProjectWordGoal(project: WSProject, group?: WSProjectGroup) {
+    if (project.wordGoal > 0) {
+        return project.wordGoal;
+    }
+    if (group?.wordGoalProject > 0)  {
+        return group.wordGoalProject;
+    }
+    return null;
+}
+
+export function GetGroupWordGoal(group: WSProjectGroup) {
+    if (group.wordGoal > 0) {
+        return group.wordGoal;
+    }
+    return null;
 }
 
 interface ProjectManagerJSON {
@@ -502,6 +532,16 @@ export class WSProjectManager {
         Project Management
        ==================== */
 
+    updateProjectGoals(project: WSProject, wordGoal: number, wordGoalFile: number) {
+        let oldGoal = project.wordGoal;
+        let oldFileGoal = project.wordGoalFile;
+        project.wordGoal = wordGoal;
+        project.wordGoalFile = wordGoalFile;
+        if (oldGoal != project.wordGoal || oldFileGoal != project.wordGoalFile) {
+            this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project: project}, {filter: project}));
+        }
+    }
+
     updateProjectIndex(project: WSProject, projectIndex: string) {
         if (project.type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
@@ -528,16 +568,16 @@ export class WSProjectManager {
         }
     }
 
-    createProject(type: WSPType, projectName: string, projectIndex: string, projectCategory: WSPCategory) {
+    createProject(type: WSPType, projectName: string, projectIndex: string, projectCategory: WSPCategory, wordGoal: number, wordGoalFile: number) {
         let project: WSProject;
 
         if (type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
-            project = new WSFileProject(this.collector, projectName, file, projectCategory);
+            project = new WSFileProject(this.collector, projectName, file, projectCategory, wordGoal, wordGoalFile);
         } else if (type === WSPType.Folder) {
-            project = new WSFolderProject(this.collector, projectName, projectIndex, projectCategory);
+            project = new WSFolderProject(this.collector, projectName, projectIndex, projectCategory, wordGoal, wordGoalFile);
         } else if (type === WSPType.Tag) {
-            project = new WSTagProject(this.collector, projectName, projectIndex, projectCategory);
+            project = new WSTagProject(this.collector, projectName, projectIndex, projectCategory, wordGoal, wordGoalFile);
         } else {
             this.logError(`Attempted to create a project with an invalid type: ${type}`);
             return;

@@ -3,6 +3,9 @@ import type { WSProject } from "./project";
 
 export interface IProjectGroupV0 {
     name: string;
+    wordGoal: number,
+    wordGoalProject: number,
+    wordGoalFile: number,
     projects: string[];
 }
 
@@ -31,10 +34,16 @@ export function LoadProjectGroupFromSerial(manager: WSProjectManager, groupInfo:
 export class WSProjectGroup {
     name: string;
     projects: WSProject[];
+    wordGoal: number;
+    wordGoalProject: number;
+    wordGoalFile: number;
 
     constructor(name: string, projects?: WSProject[]) {
         this.name = name;
         this.projects = projects || [];
+        this.wordGoal = 0;
+        this.wordGoalProject = 0;
+        this.wordGoalFile = 0;
     };
 
     private toObject() {
@@ -42,7 +51,7 @@ export class WSProjectGroup {
         this.projects.forEach((proj: WSProject) => {
             projList.push(proj.name);
         });
-        return { name: this.name, projects: projList };
+        return { name: this.name, wordGoal: this.wordGoal, wordGoalProject: this.wordGoalProject, wordGoalFile: this.wordGoalFile, projects: projList };
     }
 
     serialize() {

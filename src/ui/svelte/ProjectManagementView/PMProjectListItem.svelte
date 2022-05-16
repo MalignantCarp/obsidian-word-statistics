@@ -73,7 +73,7 @@
 	}
 
 	function onFileUpdate() {
-		console.log("onFileUpdate in PMProjectListItem.svelte for project ", project.name);
+		// console.log("onFileUpdate in PMProjectListItem.svelte for project ", project.name);
 		project = project;
 		files =
 			project.type === WSPType.File
@@ -154,7 +154,7 @@
 		<table class="ws-pm-project-list-item-files" class:hidden={!open}>
 			<thead>
 				<tr class="ws-pm-file-item table-header">
-					<th class="ws-pm-file-item-name">File Path</th>
+					<th class="ws-pm-file-item-name">File</th>
 					<th class="ws-pm-file-item-word-count">Word Count</th>
 				</tr>
 			</thead>

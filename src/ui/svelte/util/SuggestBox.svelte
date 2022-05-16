@@ -2,6 +2,7 @@
 	import { setIcon } from "obsidian";
 	import { onMount } from "svelte";
 	import { createPopperActions } from "svelte-popperjs";
+	import * as fuzzysort from 'fuzzysort';
 
 	export let placeholder: string;
 	export let options: string[];
@@ -29,7 +30,7 @@
 	}
 
 	function searchHighlight(text: string): string {
-		return text.replace(new RegExp("^" + searchString), "<span class='suggestion-highlight'>" + searchString + "</span>");
+		return text.replace(new RegExp(searchString), "<span class='suggestion-highlight'>" + searchString + "</span>");
 	}
 
 	function clearSearchHighlight(text: string): string {
@@ -39,11 +40,11 @@
 	function filterOptions() {
 		let filtered: string[] = [];
 		if (searchString) {
-			options.forEach(option => {
-				if (option.toLowerCase().startsWith(searchString.toLowerCase())) {
-					filtered.push(searchHighlight(option));
-				}
-			});
+			let results = fuzzysort.go(searchString, options, {all:true});
+			results.forEach((result) => {
+				// console.log(result);
+				filtered.push(fuzzysort.highlight(result, "<span class='suggestion-highlight'>", "</span>"));
+			})
 		}
 		filteredOptions = filtered;
 	}
