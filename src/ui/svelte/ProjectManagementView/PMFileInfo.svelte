@@ -1,4 +1,5 @@
 <script lang="ts">
+import { setIcon } from "obsidian";
 	import { WSEvents, WSFocusEvent, WSProjectEvent } from "src/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
@@ -12,6 +13,8 @@
 	let projects: WSProject[] = [];
 	let defaultProjects: WSProject[] = manager.getProjectsByFile(defaultFile);
 
+	let backIcon: HTMLElement;
+
 	onMount(() => {
 		registerEvents();
 	});
@@ -22,6 +25,12 @@
 
 	$: focusFile = file instanceof WSFile ? file : defaultFile;
 	$: focusProjects = file instanceof WSFile ? projects : defaultProjects;
+
+	$: if (backIcon) {
+		backIcon.empty();
+		setIcon(backIcon, "left-arrow-with-tail", 16);
+	}
+
 
 	function registerEvents() {
 		manager.plugin.events.on(WSEvents.Focus.File, onFileFocus, null);
@@ -93,11 +102,18 @@
 			}
 		}
 	}
+
+	function onClickBack() {
+		manager.plugin.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.FileItem, file: null }, { filter: null }));
+	}
 </script>
 
 <div class="ws-pm-file-info">
 	{#if focusFile instanceof WSFile}
-		<div class="ws-pm-file-info-header">{file instanceof WSFile ? "Hovered Project File Info" : "Open File Info"}</div>
+		<div class="group">
+			<div class="ws-pm-file-info-header">{file instanceof WSFile ? "Selected Project File Info" : "Open File Info"}</div>
+			<i class="back-icon" bind:this={backIcon} on:click={onClickBack} aria-label="Back to open file" class:hidden={!(file instanceof WSFile)}>
+		</div>
 		<table class="ws-file-info" class:hover={file instanceof WSFile}>
 			<tr>
 				<td>Name</td>

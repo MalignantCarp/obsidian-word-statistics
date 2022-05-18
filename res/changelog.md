@@ -1,4 +1,9 @@
 ## Changelog
+### 2022-05-17
+ - Eliminated the project menu in the PMProjectListItem and changed the menu button into an edit and a delete button.
+ - Changed the hover-selection of files for the PMFileInfo panel and changed it to click. Added a back button to go back to the current file. This also eliminates the need for fixed height on the info panel, so it can now show as many projects as it needs to.
+ - BUGFIX: Deleting the final project in the list, the project is duplicated in the list. This bug was actually specific to tag projects, as push was being used instead of remove. Copy and paste bug.
+
 ### 2022-05-15
  - BUGFIX: File Info Panel resizes depending on number of projects.
  - SuggestBox now uses a fuzzy search (utilizing farzher's fuzzysort package).

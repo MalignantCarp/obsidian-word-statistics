@@ -48,16 +48,12 @@
 
 	$: title = getTitle();
 
-	function onMouseEnter() {
+	function onClick() {
 		manager.plugin.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.FileItem, file }, { filter: null }));
-	}
-
-	function onMouseLeave() {
-		manager.plugin.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.FileItem, file: null }, { filter: null }));
 	}
 </script>
 
-<tr class="ws-pm-file-item" on:mouseenter={onMouseEnter} on:mouseleave={onMouseLeave}>
+<tr class="ws-pm-file-item" on:click={onClick}>
 	<td class="ws-pm-file-item-name">{title}</td>
 	<td class="ws-pm-file-item-word-count">{FormatWordsNumOnly(file.words)}</td>
 </tr>

@@ -123,12 +123,12 @@
 
 	$: if (editIcon) {
 		editIcon.empty();
-		setIcon(editIcon, "pencil", 16);
+		setIcon(editIcon, "pencil", 12);
 	}
 
 	$: if (deleteIcon) {
 		deleteIcon.empty();
-		setIcon(deleteIcon, "trash", 16);
+		setIcon(deleteIcon, "trash", 12);
 	}
 
 	function onPageClick(event: MouseEvent) {
@@ -147,7 +147,8 @@
 		</div>
 		<div class="group">
 			<div class="ws-pm-project-list-item-word-count" class:hidden={open}>{FormatWords(project.totalWords)}</div>
-			<i class="menu-icon" bind:this={menuIcon} on:click={openMenu} use:menuPopperRef />
+			<i class="edit-icon" bind:this={editIcon} on:click={editProject} />
+			<i class="delete-icon" bind:this={deleteIcon} on:click={deleteProject} />
 		</div>
 	</div>
 	{#if !invalidState}
@@ -174,15 +175,3 @@
 		<div class="error">Project is missing index.</div>
 	{/if}
 </div>
-{#if showMenu}
-	<div use:menuPopperContent class="ws-pm-project-list-item menu" bind:this={editMenu}>
-		<div class="menu-item" on:click={editProject}>
-			<div class="menu-item-icon" bind:this={editIcon} />
-			<div class="menu-item-title">Edit Project</div>
-		</div>
-		<div class="menu-item" on:click={deleteProject}>
-			<div class="menu-item-icon" bind:this={deleteIcon} />
-			<div class="menu-item-title">Delete Project</div>
-		</div>
-	</div>
-{/if}

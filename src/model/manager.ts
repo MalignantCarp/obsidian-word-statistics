@@ -31,7 +31,7 @@ export function GetProjectWordGoal(project: WSProject, group?: WSProjectGroup) {
     if (project.wordGoal > 0) {
         return project.wordGoal;
     }
-    if (group?.wordGoalProject > 0)  {
+    if (group?.wordGoalProject > 0) {
         return group.wordGoalProject;
     }
     return null;
@@ -289,11 +289,11 @@ export class WSProjectManager {
                 [data.fileProjects, data.folderProjects, data.tagProjects].forEach((projectLoad) => {
                     projectLoad.forEach((proj) => {
                         this.registerProject(proj);
-                    })
-                })
+                    });
+                });
                 data.projectGroups.forEach((group) => {
                     this.registerProjectGroup(group);
-                })
+                });
             }
         }
     }
@@ -538,7 +538,7 @@ export class WSProjectManager {
         project.wordGoal = wordGoal;
         project.wordGoalFile = wordGoalFile;
         if (oldGoal != project.wordGoal || oldFileGoal != project.wordGoalFile) {
-            this.plugin.events.trigger(new WSProjectEvent({type: WSEvents.Project.Updated, project: project}, {filter: project}));
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: project }, { filter: project }));
         }
     }
 
@@ -626,7 +626,6 @@ export class WSProjectManager {
 
     unregisterProject(proj: WSProject) {
         if (!this.projects.has(proj.name)) {
-            console.log(this.projects, proj, proj.name);
             this.logError(`Tried to unregister project '${proj.name}', but it is not registered.`);
             throw Error();
         }
@@ -638,7 +637,7 @@ export class WSProjectManager {
                 this.folderProjects.remove(<WSFolderProject>proj);
                 break;
             case WSPType.Tag:
-                this.tagProjects.push(<WSTagProject>proj);
+                this.tagProjects.remove(<WSTagProject>proj);
                 break;
             default:
                 console.log(proj);
