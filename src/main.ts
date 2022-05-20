@@ -1,4 +1,4 @@
-import { debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, CachedMetadata, normalizePath, TFolder } from 'obsidian';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder } from 'obsidian';
 import { WSDataCollector } from './model/collector';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
@@ -6,7 +6,7 @@ import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 import type { WSProject } from './model/project';
 import { WSFile } from './model/file';
-import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
+import { Dispatcher, WSEvents, WSFocusEvent, WSPathEvent, WSProjectEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
 import { ParseProjectManagerContent } from './model/manager';
@@ -55,8 +55,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), { filter: null });
 		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), { filter: null });
 
-		// this event currently doesn't ever fire
-		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Path.Set, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Path.Cleared, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Path.Titled, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Path.Updated, this.saveProjects.bind(this), { filter: null });
 
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
@@ -282,7 +284,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	saveProjects(evt: WSProjectEvent | WSProjectGroupEvent) {
+	saveProjects(evt: WSProjectEvent | WSPathEvent) {
 		// project has been updated, we now want to save all project data
 		let data = this.collector.manager.serialize();
 		this.saveSerialData(PROJECT_PATH, data);

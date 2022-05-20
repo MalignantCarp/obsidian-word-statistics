@@ -1,6 +1,5 @@
-import type { WSFile } from "./model/file";
-import type { WSProjectGroup } from "./model/group";
-import type { WSProject } from "./model/project";
+import type { WSFile } from "./file";
+import type { WSPath, WSProject } from "./project";
 
 export namespace WSEvents {
     export namespace Focus {
@@ -26,21 +25,19 @@ export namespace WSEvents {
         export const Updated = "ws-event-project-updated";
     }
 
-    export namespace Group {
-        export const Renamed = "ws-event-group-renamed";
-        export const Deleted = "ws-event-group-deleted";
-        export const Created = "ws-event-group-created";
-        export const ProjectAdded = "ws-event-group-project-added";
-        export const ProjectDeleted = "ws-event-group-project-deleted";
-        export const Updated = "ws-event-group-updated";
+    export namespace Path {
+        export const Titled = "ws-event-path-titled";
+        export const Cleared = "ws-event-path-deleted";
+        export const Set = "ws-event-path-created";
+        export const Updated = "ws-event-path-updated";
     }
 }
 
-type WSEventType = WSFocusEventType | WSFileEventType | WSProjectEventType | WSGroupEventType;
+type WSEventType = WSFocusEventType | WSFileEventType | WSProjectEventType | WSPathEventType;
 export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project | typeof WSEvents.Focus.FileItem;
 export type WSFileEventType = typeof WSEvents.File.Opened | typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
 export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated;
-export type WSGroupEventType = typeof WSEvents.Group.Renamed | typeof WSEvents.Group.Deleted | typeof WSEvents.Group.Created | typeof WSEvents.Group.ProjectAdded | typeof WSEvents.Group.ProjectDeleted | typeof WSEvents.Group.Updated;
+export type WSPathEventType = typeof WSEvents.Path.Titled | typeof WSEvents.Path.Set | typeof WSEvents.Path.Cleared | typeof WSEvents.Path.Updated;
 
 interface WSEventInfo {
     type: WSEventType;
@@ -65,14 +62,14 @@ export interface WSProjectEventInfo extends WSEventInfo {
     file?: WSFile;
 }
 
-export interface WSGroupEventInfo extends WSEventInfo {
-    type: WSGroupEventType;
-    group: WSProjectGroup;
+export interface WSPathEventInfo extends WSEventInfo {
+    type: WSPathEventType;
+    path: WSPath;
     project?: WSProject;
 }
 
 export interface WSEventFilter {
-    filter: WSFile | WSProject | WSProjectGroup;
+    filter: WSFile | WSProject | WSPath;
     msg?: string;
 }
 
@@ -99,8 +96,8 @@ export class WSProjectEvent extends WSEvent {
     };
 }
 
-export class WSProjectGroupEvent extends WSEvent {
-    constructor(public info: WSGroupEventInfo, public focus: WSEventFilter) {
+export class WSPathEvent extends WSEvent {
+    constructor(public info: WSPathEventInfo, public focus: WSEventFilter) {
         super(info, focus);
     };
 }

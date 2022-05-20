@@ -1,4 +1,7 @@
 ## Changelog
+### 2022-05-19
+ - Taking a slightly different route, eliminating the file/folder/tag grouping of project groups and opting for a path-based tree of projects to allow custom organization. The new system will utilize a basic path structure, and paths are set on a per-project basis. The UI will allow certain modifications to these paths—including giving them titles (and eventually icons) and word goals for the folder, contained groups, and files—but they are otherwise largely immutable and based entirely upon their presence under the path field of the projects. If a particular path has settings and has its final project deleted, then if the user has opted in via settings, the empty paths will be removed. Otherwise, they will remain.
+
 ### 2022-05-17
  - Eliminated the project menu in the PMProjectListItem and changed the menu button into an edit and a delete button.
  - Changed the hover-selection of files for the PMFileInfo panel and changed it to click. Added a back button to go back to the current file. This also eliminates the need for fixed height on the info panel, so it can now show as many projects as it needs to.

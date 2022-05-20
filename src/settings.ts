@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import WordStatisticsPlugin from "./main";
+import type WordStatisticsPlugin from "./main";
 
 export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showNumber: true,
@@ -10,11 +10,13 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
+	clearEmptyPaths: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
 };
 
 export interface WSPluginSettings {
 	useDisplayText: boolean;
+	clearEmptyPaths: boolean;
 	tableSettings: WSTableSettings;
 };
 
@@ -50,6 +52,17 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					this.plugin.settings.useDisplayText = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Clear Empty Paths')
+			.setDesc('If there are no projects using a project path, and that project path has been set with goals or other content, remove the path when the last project within is deleted.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.clearEmptyPaths)
+				.onChange(async (value) => {
+					this.plugin.settings.clearEmptyPaths = value;
+					await this.plugin.saveSettings();
+				}));
+
 		containerEl.createEl('h3', { text: 'Insert Table Settings' });
 		new Setting(containerEl)
 			.setName('Display number')

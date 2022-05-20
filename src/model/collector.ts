@@ -4,7 +4,7 @@ import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
-import { WSEvents, WSFileEvent } from 'src/event';
+import { WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
 
 interface LongformDraft {
