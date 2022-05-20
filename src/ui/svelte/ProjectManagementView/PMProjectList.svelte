@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { WSEvents } from "src/event";
+	import { WSEvents } from "src/model/event";
 	import type { WSProjectManager } from "src/model/manager";
 	import { PROJECT_TYPE_NAME_PLURAL, WSProject, WSPType } from "src/model/project";
 	import { onDestroy, onMount } from "svelte";

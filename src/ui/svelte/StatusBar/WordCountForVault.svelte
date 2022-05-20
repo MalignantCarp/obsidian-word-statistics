@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
-	import { Dispatcher, WSEvents, WSFileEvent } from "src/event";
+	import { Dispatcher, WSEvents, WSFileEvent } from "src/model/event";
 	import { WSDataCollector } from "src/model/collector";
 	import { onDestroy, onMount } from "svelte";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Dispatcher } from "src/event";
+	import type { Dispatcher } from "src/model/event";
 	import type { WSDataCollector } from "src/model/collector";
 	import type { WSProjectManager } from "src/model/manager";
 	import WordCountForFile from "./WordCountForFile.svelte";

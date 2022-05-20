@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
-	import { WSEvents } from "src/event";
+	import { WSEvents } from "src/model/event";
 	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSFileProject, WSProject, WSPType } from "src/model/project";
