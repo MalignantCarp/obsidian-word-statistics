@@ -6,6 +6,8 @@
 
 	export let placeholder: string;
 	export let options: string[];
+	export let optional: boolean = false;
+	export let customValidation: (text: string) => [boolean, string] = null;
 
 	let searchString = "";
 	let filteredOptions: string[] = [];
@@ -27,6 +29,10 @@
 
 	export function getSelectedOption() {
 		return options.contains(searchString) ? searchString : null;
+	}
+
+	export function getSearchString() {
+		return searchString;
 	}
 
 	function searchHighlight(text: string): string {
@@ -88,7 +94,8 @@
 
 	export let isValid: boolean;
 
-	$: isValid = options.contains(searchString);
+	$: isValid = options.contains(searchString) || optional || (customValidation != null && customValidation(searchString)[0]);
+	$: validationMessage = customValidation === null ? "Please select an option from the list." : customValidation(searchString)[1];
 
 	let icon: HTMLElement;
 	let focus = false;
@@ -144,7 +151,7 @@
 			on:input={filterOptions}
 		/>
 		<div class="ws-validation-error">
-			<div class="ws-validation-message" class:hidden={isValid}>Please select an option from the list.</div>
+			<div class="ws-validation-message" class:hidden={isValid}>{validationMessage}</div>
 		</div>
 	</div>
 </div>

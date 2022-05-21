@@ -1,9 +1,9 @@
 import type { WSDataCollector } from "./collector";
 import { WSFile } from "./file";
+import type { WSProjectManager } from "./manager";
 
 export enum WSPType {
-    Null = 0,
-    File,
+    File = 0,
     Folder,
     Tag
 }
@@ -16,11 +16,11 @@ export enum WSPCategory {
 
 export const PROJECT_CATEGORY_NAME = ["None", "Writing", "Worldbuilding"];
 
-export const PROJECT_TYPE_STRING = ["WSProject", "WSFileProject", "WSFolderProject", "WSTagProject"];
-export const PROJECT_TYPE_NAME = ["Project", "File Index Project", "Folder Project", "Tag Project"];
-export const PROJECT_TYPE_NAME_PLURAL = ["Projects", "File Index Projects", "Folder Projects", "Tag Projects"];
-export const PROJECT_INDEX_TYPE = ["Project", "File Index", "Folder", "Tag"];
-export const PROJECT_TYPE_DESCRIPTION = ["<##You should never see this message##>",
+export const PROJECT_TYPE_STRING = ["WSFileProject", "WSFolderProject", "WSTagProject"];
+export const PROJECT_TYPE_NAME = ["File Index Project", "Folder Project", "Tag Project"];
+export const PROJECT_TYPE_NAME_PLURAL = ["File Index Projects", "Folder Projects", "Tag Projects"];
+export const PROJECT_INDEX_TYPE = ["File Index", "Folder", "Tag"];
+export const PROJECT_TYPE_DESCRIPTION = [
     "These projects are indexed by a file. Files within this project type will always appear in the order in which they appear in the index markdown file.",
     "These projects are indexed by a folder. Files within this project will appear in vault order or alphabetical order, depending on setting.",
     "These projects are indexed by a tag. Files within this project will appear in vault order or alphabetial oder, depending on setting."
@@ -28,7 +28,7 @@ export const PROJECT_TYPE_DESCRIPTION = ["<##You should never see this message##
 
 export interface ProjectMap {
     projects: WSProject[],
-    folders: WSPath[]
+    folders: WSPath[];
 }
 
 export interface IPathV0 {
@@ -38,7 +38,7 @@ export interface IPathV0 {
     wordGoalForFolder: number,
     wordGoalForProjects: number,
     wordGoalForFiles: number,
-    iconID: string
+    iconID: string;
 }
 
 export interface IProjectV0 {
@@ -66,6 +66,14 @@ export interface IProjectV1 {
 /* Assuming we will at some point have a new version of the spec, this makes the most sense for loading.
    If the current version load routine returns null, can always fallback on prior version.
 */
+
+export function SortProjectList(projects: WSProject[]) {
+    return projects.sort((a, b) => a.fullPath.localeCompare(b.fullPath, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
+}
+
+export function SortPathList(paths: WSPath[]) {
+    return paths.sort((a,b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
+}
 
 function LoadProjectV0FromSerial(collector: WSDataCollector, projInfo: IProjectV0): WSProject {
     switch (projInfo.pType) {
@@ -130,18 +138,19 @@ export function LoadPathFromSerial(folderInfo: IPathV0): WSPath {
 export class WSPath {
     constructor(
         public path: string,
-        public title: string,
+        public _title: string,
         public category: WSPCategory,
         public wordGoalForPath?: number,
         public wordGoalForProjects?: number,
         public wordGoalForFiles?: number,
-        public iconID: string = ""
+        public iconID: string = "",
+        private children: WSPath[] = []
     ) { }
 
     private toObject() {
         return {
             path: this.path,
-            title: this.title,
+            title: this._title,
             category: this.category,
             wordGoalForFolder: this.wordGoalForPath || 0,
             wordGoalForProjects: this.wordGoalForProjects || 0,
@@ -152,6 +161,84 @@ export class WSPath {
 
     serialize() {
         return JSON.stringify(this.toObject());
+    }
+
+    getPath(path: string) {
+        if (path === this.path) {
+            return this;
+        }
+        for (let child of this.children) {
+            let currentPath: WSPath = child.getPath(path);
+            if (currentPath instanceof WSPath) {
+                return currentPath;
+            }
+        }
+        return null;
+    }
+
+    findParentOfChild(path: WSPath): WSPath {
+        if (path === this) {
+            return null;
+        }
+        if (this.children.contains(path)) {
+            return this;
+        }
+        for (let child of this.children) {
+            if (child.children.contains(path)) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    getAll() {
+        let paths: WSPath[];
+        paths.push(this);
+        this.children.forEach((child) => {
+            paths.push(...child.getAll());
+        })
+        return SortPathList(paths);
+    }
+
+    addChild(child: WSPath) {
+        if (!this.children.contains(child)) {
+            this.children.push(child);
+        }
+    }
+
+    removeChild(child: WSPath) {
+        if (this.children.contains(child)) {
+            this.children.remove(child);
+        }
+    }
+
+    hasProjects(manager: WSProjectManager) {
+        return manager.getProjectsByPath(this.path).length > 0;
+    }
+
+    hasChildren() {
+        return this.children.length > 0;
+    }
+
+    hasChild(child: WSPath) {
+        return this.children.contains(child);
+    }
+
+    get title(): string {
+        if (this._title.length > 0) {
+            return this._title;
+        }
+        let lastSlash = this.path.lastIndexOf("/") + 1
+        if (lastSlash > 0) {
+            return (this.path.slice(lastSlash));
+        }
+        return this.path;
+
+
+    }
+
+    set title(title: string) {
+        this._title = title;
     }
 }
 
@@ -188,6 +275,10 @@ export abstract class WSProject {
         return JSON.stringify(this.toObject());
     }
 
+    set title(title: string) {
+        this._title = title;
+    }
+
     get title(): string {
         return (this.title || this.id);
     }
@@ -200,7 +291,7 @@ export abstract class WSProject {
         return count;
     }
 
-    get fullPath():string {
+    get fullPath(): string {
         return this.path + "/" + this.id;
     }
 

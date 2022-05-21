@@ -1,11 +1,12 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, parseFrontMatterTags, parseFrontMatterEntry, TFolder } from 'obsidian';
-import type {FrontMatterCache} from 'obsidian';
+import type { FrontMatterCache } from 'obsidian';
 import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
 import { WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
+import { timeStamp } from 'console';
 
 interface LongformDraft {
     name: string;
@@ -259,6 +260,15 @@ export class WSDataCollector {
         return file;
     }
 
+    setFile(path: string, file: WSFile) {
+        if (!this.files.contains(file) && !this.fileMap.has(path)) {
+            this.files.push(file);
+            this.fileMap.set(path, file);
+        } else {
+            console.log(`Attempted to set file for path ${path}, but it is already set.`);
+        }
+    }
+
     getWords(path: string): number {
         let fi = this.fileMap.get(path);
         if (fi === null || fi === undefined) {
@@ -290,16 +300,24 @@ export class WSDataCollector {
         return null;
     }
 
-    async scanVault() {
+    async scanVault(fileLog: WSFile[] = []) {
         // console.log("Vault scan initiated.");
         const files = this.vault.getMarkdownFiles();
+        let fileMap = new Map<string, WSFile>(fileLog.map((value) => { return [value.path, value]; }));
         // console.log("Vault file list retrieved.");
         for (const i in files) {
             const file = files[i];
+            let fi: WSFile;
             // console.log(`[${Date.now()}: Processing file '${file.path}'.`);
-            let fi = this.getFile(file.path);
-            if (fi === null) {
-                fi = this.newFile(file.basename, file.path);
+            if (fileMap.has(file.path)) {
+                fi = fileMap.get(file.path);
+                fileMap.delete(file.path);
+                this.setFile(file.path, fi);
+            } else {
+                fi = this.getFile(file.path);
+                if (fi === null) {
+                    fi = this.newFile(file.basename, file.path);
+                }
             }
             this.updateFile(file);
             // console.log(fi.getPath());
@@ -310,6 +328,10 @@ export class WSDataCollector {
 
             //console.log(frontMatter.wordStatsProject);
             this.update();
+        }
+        if (fileMap.size > 0) {
+            console.log("Failed to load the following files. Do they still exist in the file system?");
+            console.log(fileMap);
         }
     }
 }  

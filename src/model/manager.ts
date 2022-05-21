@@ -3,7 +3,7 @@ import type WordStatisticsPlugin from "src/main";
 import { ModalLoader } from "src/ui/ModalLoader";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
-import { LoadPathFromSerial, LoadProjectFromSerial, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPath, WSPType, WSTagProject, type IPathV0, type IProjectV0, type IProjectV1 } from "./project";
+import { LoadPathFromSerial, LoadProjectFromSerial, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPath, WSPType, WSTagProject, type IPathV0, type IProjectV0, type IProjectV1, SortProjectList } from "./project";
 
 interface ProjectManagerJSON {
     projects: string[],
@@ -18,10 +18,6 @@ export interface IProjectManagerV0 {
 export interface IProjectManager {
     projects: WSProject[];
     paths: WSPath[];
-}
-
-export function SortProjectList(projects: WSProject[]) {
-    return projects.sort((a, b) => a.fullPath.localeCompare(b.fullPath, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
 }
 
 function ProcessAllContent(manager: WSProjectManager, content: IProjectManagerV0): IProjectManager {
@@ -92,6 +88,7 @@ export function ParseProjectManagerContent(manager: WSProjectManager, data: stri
 export class WSProjectManager {
     projectList: WSProject[];
     paths: Map<string, WSPath>;
+    pathRoot: WSPath = new WSPath("", "", 0);
     projects: Map<string, [WSPType, WSProject]>;
     errorState: boolean = false;
     errorMessages: string[] = [];
@@ -347,40 +344,76 @@ export class WSProjectManager {
     }
 
     getPaths() {
-        // This could potentially get slow. It may be wiser to build some kind of tree as the projects are read in/created
-        let paths: string[] = [];
-        let pathCollection: string[] = [];
-        this.paths.forEach((path) => {
-            pathCollection.push(path.path);
-        });
-        this.projectList.forEach((project) => {
-            let fullPath = project.path;
-            if (fullPath.charAt(project.path.length - 1) != "/") {
-                fullPath += "/";
-            }
-            pathCollection.push(fullPath);
-        });
-        pathCollection.forEach((path) => {
-            let folders = Array.from(path.matchAll(/([^/]+)/gmu));
-            for (let i = 0; i < folders.length; i++) {
-                let path = folders.slice(0, i + 1).join('/');
-                if (!paths.contains(path)) {
-                    paths.push(path);
-                }
-            }
-        });
-        return paths.sort((a, b) => a.localeCompare(b, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
+        return this.pathRoot.getAll();
     }
 
-    setPath(path: string, title: string, category: WSPCategory, wordGoalForFolder: number, wordGoalForProjects: number, wordGoalForFiles: number) {
-        if (!this.paths.has(path)) {
-            return new WSPath(path, title, category, wordGoalForFolder, wordGoalForProjects, wordGoalForFiles);
-        } else {
-            console.log(`setProjectPath(${path}, ${title}, ${category}, ${wordGoalForFolder}, ${wordGoalForProjects}, ${wordGoalForFiles})`);
-            console.log(this.paths.get(path));
-            this.logError(`Attempted to set new project path information, but it is already set: ${path}`);
-            return this.paths.get(path);
+    getPathStrings() {
+        let paths = this.pathRoot.getAll();
+        let pathStrings: string[] = [];
+        paths.forEach((path) => {
+            pathStrings.push(path.path);
+        });
+        return pathStrings;
+    }
+
+    setPath(path: string, title: string, category: WSPCategory, wordGoalForPath: number, wordGoalForProjects: number, wordGoalForFiles: number) {
+        let pathObj = this.getPath(path);
+        pathObj.title = title;
+        pathObj.category = category;
+        pathObj.wordGoalForPath = wordGoalForPath;
+        pathObj.wordGoalForProjects = wordGoalForProjects;
+        pathObj.wordGoalForFiles = wordGoalForFiles;
+        this.registerPath(pathObj);
+        return pathObj;
+    }
+
+    clearPath(path: string) {
+        let pathObj = this.getPath(path);
+        this.setPathTitle(pathObj);
+        this.setPathWordGoals(pathObj);
+        this.setPathCategory(pathObj);
+        this.unregisterPath(pathObj);
+    }
+
+    getPath(path: string): WSPath {
+        return this.pathRoot.getPath(path);
+    }
+
+    getParentPath(path: WSPath) {
+        return this.pathRoot.findParentOfChild(path);
+    }
+
+    buildPath(path: string) {
+        if (path.length > 0 && !(this.paths.has(path) || this.pathRoot.getPath(path))) {
+            let root = this.pathRoot;
+            let currentPath = root;
+            let pathRe = new RegExp(/([^/]+)/, 'gmu');
+            let segments: string[];
+            let lastIndex = 0;
+            while (pathRe.test(path)) {
+                segments.push(path.slice(lastIndex, pathRe.lastIndex));
+                lastIndex = pathRe.lastIndex + 1;
+            }
+            let builtPath: string;
+            for (let i = 0; i < segments.length; i++) {
+                builtPath += segments[i];
+                if (this.paths.has(builtPath)) {
+                    currentPath = this.paths.get(builtPath);
+                } else {
+                    currentPath = new WSPath(builtPath, "", WSPCategory.None);
+                    if (!root.hasChild(currentPath)) {
+                        root.addChild(currentPath);
+                    }
+                    this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Created, path: currentPath }, { filter: currentPath }));
+                }
+                root = currentPath;
+                if (i < segments.length - 1) {
+                    builtPath += "/";
+                };
+            }
         }
+
+
     }
 
     /* ====================
@@ -388,13 +421,9 @@ export class WSProjectManager {
        ==================== */
 
     updateProjectGoals(project: WSProject, wordGoalForProject: number, wordGoalForFiles: number) {
-        let oldGoal = project.wordGoalForProject;
-        let oldFileGoal = project.wordGoalForFiles;
         project.wordGoalForProject = wordGoalForProject;
         project.wordGoalForFiles = wordGoalForFiles;
-        if (oldGoal != project.wordGoalForProject || oldFileGoal != project.wordGoalForFiles) {
-            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: project }, { filter: project }));
-        }
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: project }, { filter: project }));
     }
 
     updateProjectIndex(project: WSProject, projectIndex: string) {
@@ -441,17 +470,6 @@ export class WSProjectManager {
         // return (project);
     }
 
-    // projectEditorCallback(type: WSPType, projectName?: string, projectIndex?: string, project?: WSProject) {
-    //     if (project instanceof WSProject) {
-    //         if (project.name != projectName) {
-    //             this.renameProject(project, projectName);
-    //         }
-    //         this.updateProjectIndex(project, projectIndex);
-    //     } else {
-    //         this.createProject(type, projectName, projectIndex);
-    //     }
-    // }
-
     registerProject(proj: WSProject) {
         if (this.projects.has(proj.id)) {
             this.logError(`Tried to register project with ID '${proj.id}', but one with that ID already exists: ${this.projects.get(proj.id)[1].fullPath}`);
@@ -480,7 +498,7 @@ export class WSProjectManager {
         }
     }
 
-    renameProject(proj: WSProject, newID: string) {
+    reIDProject(proj: WSProject, newID: string) {
         if (this.projects.has(newID)) {
             let [, existingProj] = this.projects.get(newID);
             if (existingProj != proj) {
@@ -497,10 +515,31 @@ export class WSProjectManager {
         // this.updateProject(proj);
     }
 
+    retitleProject(proj: WSProject, newTitle: string) {
+        let oldTitle = proj.title;
+        proj.title = newTitle;
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Renamed, project: proj, data: [oldTitle, newTitle] }, { filter: proj }));
+    }
+
+    categorizeProject(proj: WSProject, newCategory: WSPCategory) {
+        let oldCat = proj.category;
+        proj.category = newCategory;
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: proj }, { filter: proj }));
+    }
+
     deleteProject(proj: WSProject) {
         // unregister project
         this.unregisterProject(proj);
-        // remove project from any outstanding groups
+        // cleanup paths
+        let path = this.getPath(proj.path);
+        if (!path.hasChildren() && !path.hasProjects && this.plugin.settings.clearEmptyPaths) {
+            this.clearPath(path.path);
+            let parent = this.getParentPath(path);
+            if (parent instanceof WSPath) {
+                parent.removeChild(path);
+            }
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path }, { filter: path }));
+        }
     }
 
     /* ==================
@@ -527,19 +566,28 @@ export class WSProjectManager {
         this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Cleared, path }, { filter: path }));
     }
 
-    setPathTitle(path: WSPath, title: string) {
+    setPathTitle(path: WSPath, title: string = "") {
         if (title != path.title) {
             path.title = title;
             this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Titled, path }, { filter: path }));
         }
     }
 
-    setPathWordGoals(path: WSPath, goalForPath?: number, goalForProjects?: number, goalForFiles?: number) {
+    setPathWordGoals(path: WSPath, goalForPath: number = 0, goalForProjects: number = 0, goalForFiles: number = 0) {
         let changed = path.wordGoalForPath != goalForPath || path.wordGoalForProjects != goalForProjects || path.wordGoalForFiles != goalForFiles;
 
         path.wordGoalForPath = goalForPath;
         path.wordGoalForProjects = goalForProjects;
         path.wordGoalForFiles = goalForFiles;
+        if (changed) {
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path }, { filter: path }));
+        }
+    }
+
+    setPathCategory(path: WSPath, category: WSPCategory = WSPCategory.None) {
+        let changed = category != path.category;
+
+        path.category = category;
         if (changed) {
             this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path }, { filter: path }));
         }
@@ -554,5 +602,20 @@ export class WSProjectManager {
         let valid = this.checkProjectID(id);
         let error = empty ? "Project name must not be blank." : !valid ? "Project name must be unique." : "";
         return [!empty && valid, error];
+    }
+
+    validatePath(path: string): [boolean, string] {
+        let invalidChars = ["/", " "];
+        let endingSlash = invalidChars.contains(path.charAt(path.length - 1));
+        let startingSlash = path.length > 0 && invalidChars.contains(path.charAt(0));
+        let error = "";
+        if (startingSlash && !endingSlash) {
+            error = "Path must not begin with a forward-slash (/) or space.";
+        } else if (endingSlash && !startingSlash) {
+            error = "Path must not end with a forward-slash (/) or space.";
+        } else {
+            error = "Path must not begin or end with a forward-slash (/) or space.";
+        }
+        return [!endingSlash && !startingSlash, error];
     }
 }

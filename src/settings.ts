@@ -8,16 +8,22 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showExcluded: true,
 };
 
+export const DEFAULT_VIEW_SETTINGS: WSViewSettings = {
+	treeView: true,
+}
+
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	clearEmptyPaths: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
+	viewSettings: DEFAULT_VIEW_SETTINGS,
 };
 
 export interface WSPluginSettings {
 	useDisplayText: boolean;
 	clearEmptyPaths: boolean;
 	tableSettings: WSTableSettings;
+	viewSettings: WSViewSettings;
 };
 
 export interface WSTableSettings {
@@ -26,6 +32,10 @@ export interface WSTableSettings {
 	showShare: boolean; // shorts the percentage of words the note holds of the project's total word count
 	showExcluded: boolean; // still shows an file in the table where counting is to be excluded 
 };
+
+export interface WSViewSettings {
+	treeView: boolean;
+}
 
 export default class WordStatsSettingTab extends PluginSettingTab {
 	plugin: WordStatisticsPlugin;

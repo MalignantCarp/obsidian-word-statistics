@@ -1,4 +1,15 @@
 ## Changelog
+### 2022-05-20
+ - Added IFile and file recording in preparation of bringing in statistics for the files.
+ - Updated SuggestBox to allow non-options to be valid (optional flag) or to specify a custom validation routine that will alternatively provide validation even if an option is not selected.
+ - Removed the old Project Manager.
+ - Updated the ProjectEditor to allow for the creation and editing of any type of project. The type of project will be determined by the input project, or in the case of new projects, the selected project. Once saved, a project's type is immutable.
+ - Removed the non-existent null project type.
+ - Added View settings
+ - Refined WSPath to act as a full tree.
+ - Completed new version of ProjectEditor. (untested)
+ - Began new PMProjectTree.
+
 ### 2022-05-19
  - Taking a slightly different route, eliminating the file/folder/tag grouping of project groups and opting for a path-based tree of projects to allow custom organization. The new system will utilize a basic path structure, and paths are set on a per-project basis. The UI will allow certain modifications to these paths—including giving them titles (and eventually icons) and word goals for the folder, contained groups, and files—but they are otherwise largely immutable and based entirely upon their presence under the path field of the projects. If a particular path has settings and has its final project deleted, then if the user has opted in via settings, the empty paths will be removed. Otherwise, they will remain.
 

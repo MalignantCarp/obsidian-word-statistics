@@ -5,13 +5,14 @@ import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 import type { WSProject } from './model/project';
-import { WSFile } from './model/file';
+import { ParseFileContent, WSFile } from './model/file';
 import { Dispatcher, WSEvents, WSFocusEvent, WSPathEvent, WSProjectEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
 import { ParseProjectManagerContent } from './model/manager';
 
 const PROJECT_PATH = "projects.json";
+const FILE_PATH = "files.json";
 
 export default class WordStatisticsPlugin extends Plugin {
 	settings: WSPluginSettings;
@@ -67,14 +68,6 @@ export default class WordStatisticsPlugin extends Plugin {
 			return new ProjectManagementView(leaf, this);
 		});
 
-		this.addCommand({
-			id: 'open-project-manager',
-			name: 'Open Project Manager',
-			callback: () => {
-				this.openProjectManager();
-			}
-		});
-
 		// this.addCommand({
 		// 	id: 'insert-project-table-modal',
 		// 	name: 'Insert Project Table Modal',
@@ -109,12 +102,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.app.workspace.getRightLeaf(false).setViewState({
 			type: PROJECT_MANAGEMENT_VIEW.type,
 		});
-	}
-
-	openProjectManager() {
-		let modal = this.collector.manager.modals.createProjectManagerModal();
-		//let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
-		modal.open();
 	}
 
 	async loadSettings() {
@@ -166,8 +153,9 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	async onStartup() {
 		if (!this.initialScan) {
+			let files = ParseFileContent(await this.loadSerialData(FILE_PATH));
 			// console.log("Initiating vault scan.");
-			await this.collector.scanVault();
+			await this.collector.scanVault(files);
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
 		}
