@@ -3,12 +3,8 @@ import type WordStatisticsPlugin from "src/main";
 import { ModalLoader } from "src/ui/ModalLoader";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
-import { LoadPathFromSerial, LoadProjectFromSerial, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPath, WSPType, WSTagProject, type IPathV0, type IProjectV0, type IProjectV1, SortProjectList } from "./project";
-
-interface ProjectManagerJSON {
-    projects: string[],
-    paths: string[],
-}
+import { LoadProjectFromSerial, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, type IProjectV0, SortProjectList } from "./project";
+import { LoadPathFromSerial, WSPath, type IPathV0 } from "./path";
 
 export interface IProjectManagerV0 {
     projects: IProjectV0[],
@@ -26,7 +22,7 @@ function ProcessAllContent(manager: WSProjectManager, content: IProjectManagerV0
 
     content.projects.forEach((info) => {
         let proj = LoadProjectFromSerial(manager.collector, info);
-        if (proj instanceof WSTagProject) {
+        if (proj instanceof WSProject) {
             projects.push(proj);
         } else {
             console.log(`Error processing project manager content for project '${info.id}'. Deserialization returned invalid type '${typeof (proj)}'`);
@@ -46,21 +42,8 @@ function ProcessAllContent(manager: WSProjectManager, content: IProjectManagerV0
 function ParseProjectManagerContentV0(manager: WSProjectManager, data: string) {
     try {
         // console.log("Attempting to parse data into ProjectManagerJSON");
-        let content = JSON.parse(data) as ProjectManagerJSON;
-        // console.log(content);
-        // console.log("Attempting to parse Projects into IProjectV0");
-        let projects: IProjectV0[] = [];
-        content.projects.forEach((value) => {
-            projects.push(JSON.parse(value) as IProjectV0);
-        });
-        // console.log(folderProjects);
-        // console.log("Attempting to parse Project Groups into IProjectGroupV0");
-        let paths: IPathV0[] = [];
-        content.paths.forEach((value) => {
-            paths.push(JSON.parse(value) as IPathV0);
-        });
-        // console.log(projectGroups);
-        return ProcessAllContent(manager, { projects, paths });
+        let content = JSON.parse(data) as IProjectManagerV0;
+        return ProcessAllContent(manager, content);
     } catch (error) {
         console.log("Error parsing project manager content (V0):", error);
         return undefined;
@@ -101,6 +84,12 @@ export class WSProjectManager {
         this.modals = new ModalLoader(this.plugin, this);
     }
 
+    cleanup() {
+        this.paths.clear();
+        this.projects.clear();
+        this.projectList = [];
+    }
+
     /* ===========================
         Attribute Getters/Setters
        =========================== */
@@ -114,8 +103,8 @@ export class WSProjectManager {
        =============== */
 
     private toObject() {
-        let projects: string[] = [];
-        let paths: string[] = [];
+        let projects: IProjectV0[] = [];
+        let paths: IPathV0[] = [];
 
         this.projectList.forEach((proj) => {
             projects.push(proj.serialize());
@@ -227,6 +216,10 @@ export class WSProjectManager {
 
     getProjectsByPath(path: string) {
         return SortProjectList(this.projectList.filter((proj) => proj.fullPath.startsWith(path)));
+    }
+
+    getProjectsByExactPath(path: string) {
+        return SortProjectList(this.projectList.filter((proj) => proj.path === path));
     }
 
     getProjectsByType(type: WSPType): WSProject[] {
@@ -388,65 +381,70 @@ export class WSProjectManager {
             let root = this.pathRoot;
             let currentPath = root;
             let pathRe = new RegExp(/([^/]+)/, 'gmu');
-            let segments: string[];
+            let segments: string[] = [];
             let lastIndex = 0;
+            // console.log(`Building segments for '${path}'.`)
             while (pathRe.test(path)) {
                 segments.push(path.slice(lastIndex, pathRe.lastIndex));
                 lastIndex = pathRe.lastIndex + 1;
             }
-            let builtPath: string;
+            let builtPath: string = "";
             for (let i = 0; i < segments.length; i++) {
                 builtPath += segments[i];
+                // console.log(`Building path for '${builtPath}'`)
                 if (this.paths.has(builtPath)) {
                     currentPath = this.paths.get(builtPath);
+                    // console.log(`Current path set.`);
                 } else {
                     currentPath = new WSPath(builtPath, "", WSPCategory.None);
+                    // console.log(`Current path created and set.`);
                     if (!root.hasChild(currentPath)) {
+                        // console.log(`Current path added to root (${root.path}/).`)
                         root.addChild(currentPath);
                     }
+                    // console.log("Triggering path creation event.")
                     this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Created, path: currentPath }, { filter: currentPath }));
                 }
+                // console.log("Setting root to current path.")
                 root = currentPath;
                 if (i < segments.length - 1) {
                     builtPath += "/";
                 };
             }
         }
-
-
     }
 
     /* ====================
         Project Management
        ==================== */
 
-    updateProjectGoals(project: WSProject, wordGoalForProject: number, wordGoalForFiles: number) {
+    setProjectGoals(project: WSProject, wordGoalForProject: number, wordGoalForFiles: number) {
         project.wordGoalForProject = wordGoalForProject;
         project.wordGoalForFiles = wordGoalForFiles;
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: project }, { filter: project }));
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.GoalsSet, project: project }, { filter: project }));
     }
 
-    updateProjectIndex(project: WSProject, projectIndex: string) {
+    setProjectIndex(project: WSProject, projectIndex: string) {
         if (project.pType === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
             let fp = <WSFileProject>project;
             if (file != fp.file) {
                 fp.file = file;
-                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.IndexSet, project }, { filter: project }));
                 this.updateProject(project);
             }
         } else if (project.pType === WSPType.Folder) {
             let fp = <WSFolderProject>project;
             if (fp.folder != projectIndex) {
                 fp.folder = projectIndex;
-                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.IndexSet, project }, { filter: project }));
                 this.updateProject(project);
             }
         } else if (project.pType === WSPType.Tag) {
             let tp = <WSTagProject>project;
             if (tp.tag != projectIndex) {
                 tp.tag = projectIndex;
-                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.IndexSet, project }, { filter: project }));
                 this.updateProject(project);
             }
         }
@@ -480,6 +478,7 @@ export class WSProjectManager {
         if (proj.pType === WSPType.File) {
             this.collector.forceUpdateFile((<WSFileProject>proj).file);
         }
+        this.buildPath(proj.path);
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Created, project: proj }, { filter: proj }));
         this.updateProject(proj);
     }
@@ -493,12 +492,12 @@ export class WSProjectManager {
         this.projects.delete(proj.id);
         this.projectList.remove(proj);
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Deleted, project: proj }, { filter: proj }));
-        if (this.plugin.settings.clearEmptyPaths && this.paths.has(path) && this.getProjectsByPath(path).length == 0) {
+        if (this.plugin.settings.clearEmptyPaths && this.paths.has(path) && this.getProjectsByPath(path).length === 0) {
             this.unregisterPath(this.paths.get(path));
         }
     }
 
-    reIDProject(proj: WSProject, newID: string) {
+    setProjectID(proj: WSProject, newID: string) {
         if (this.projects.has(newID)) {
             let [, existingProj] = this.projects.get(newID);
             if (existingProj != proj) {
@@ -515,16 +514,19 @@ export class WSProjectManager {
         // this.updateProject(proj);
     }
 
-    retitleProject(proj: WSProject, newTitle: string) {
+    setProjectTitle(proj: WSProject, newTitle: string) {
         let oldTitle = proj.title;
         proj.title = newTitle;
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Renamed, project: proj, data: [oldTitle, newTitle] }, { filter: proj }));
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.TitleSet, project: proj, data: [oldTitle, newTitle] }, { filter: proj }));
     }
 
-    categorizeProject(proj: WSProject, newCategory: WSPCategory) {
-        let oldCat = proj.category;
+    setProjectCategory(proj: WSProject, newCategory: WSPCategory) {
         proj.category = newCategory;
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: proj }, { filter: proj }));
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.CategorySet, project: proj }, { filter: proj }));
+    }
+
+    setProjectPath(proj: WSProject, newPath: string) {
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.PathSet, project: proj }, { filter: proj }));
     }
 
     deleteProject(proj: WSProject) {

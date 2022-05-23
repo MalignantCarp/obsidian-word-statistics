@@ -1,4 +1,16 @@
 ## Changelog
+### 2022-05-22
+ - Added method of WSProjectManager to reset the path of a project.
+ - Added a few helper methods to WSPath.
+ - Added WSEvents.Project event types for setting various aspects of the project. This way the UI can focus only on ones that matter to display.
+ - Added WSEvents.Data.File/Project/Path and respect event types.
+ - Event dispatcher now fires a Data event for File, Project, and Path events to indicate it is time to save data. This way we don't have to monitor dozens of events in main.ts.
+ - Tested ProjectEditor. A few layout issues, but it otherwise works.
+ - Moved was WSPath content from projects.ts into new paths.ts.
+ - Added a modal to provide messages in an unordered list (for now).
+ - Need to test some more and then complete the project items for the project viewer and complete CSS.
+ - BUG: For some reason, the contents of the file collector seem to be filled in prior to running scanVault, which makes no sense. Need to see why this is happening. Have entered some debug prints for now to see. May need to add one in the WSFile constructor to see if it's being created elsewhere (though can't imagine where).
+
 ### 2022-05-20
  - Added IFile and file recording in preparation of bringing in statistics for the files.
  - Updated SuggestBox to allow non-options to be valid (optional flag) or to specify a custom validation routine that will alternatively provide validation even if an option is not selected.

@@ -35,6 +35,13 @@
 		return searchString;
 	}
 
+	export function resetOptions(newOptions: string[]) {
+		options = newOptions;
+		searchString = "";
+		highlightIndex = null;
+		focus = false;
+	}
+
 	function searchHighlight(text: string): string {
 		return text.replace(new RegExp(searchString), "<span class='suggestion-highlight'>" + searchString + "</span>");
 	}

@@ -7,14 +7,13 @@
 	import { FormatWords } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import { createPopperActions } from "svelte-popperjs";
-	import PmProjectListFileItem from "./PMProjectListFileItem.svelte";
+	import PmProjectTreeFileItem from "./PMProjectTreeFileItem.svelte";
 
 	export let project: WSProject;
 	export let manager: WSProjectManager;
 
 	export let onDelete: (project: WSProject) => void;
 
-	let element: HTMLElement;
 	let icon: HTMLElement;
 	let menuIcon: HTMLElement;
 	let editIcon: HTMLElement;
@@ -25,10 +24,6 @@
 	let showMenu = false;
 
 	let projectWordCount: number = project.totalWords;
-
-	const [menuPopperRef, menuPopperContent] = createPopperActions({
-		placement: "bottom-start"
-	});
 
 	onMount(() => {
 		registerEvents();
@@ -76,7 +71,7 @@
 		// console.log("onFileUpdate in PMProjectListItem.svelte for project ", project.name);
 		project = project;
 		files =
-			project.type === WSPType.File
+			project.pType === WSPType.File
 				? project.files
 				: project.files.sort((a, b) =>
 						a.name.localeCompare(b.name, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true })
@@ -94,7 +89,7 @@
 	}
 
 	function editProject() {
-		let modal = manager.modals.createModalFromProject(project);
+		let modal = manager.modals.createProjectEditorModal(project);
 		modal.open();
 	}
 
@@ -105,7 +100,7 @@
 	}
 
 	function deleteProject() {
-		let modal = manager.modals.createConfirmationModal(`Are you sure you want to delete this project, '${project.name}'?`, () => {
+		let modal = manager.modals.createConfirmationModal(`Are you sure you want to delete this project, '${project.id}'?`, () => {
 			onConfirm(modal.confirmation);
 		});
 		modal.open();
@@ -139,11 +134,11 @@
 </script>
 
 <svelte:body on:click={onPageClick} />
-<div class="ws-pm-project-list-item" bind:this={element}>
+<div class="ws-pm-project-list-item">
 	<div class="ws-pm-project-list-item-header" class:is-open={open}>
 		<div class="label" on:click={onOpen}>
 			<i class="collapse-icon" class:is-collapsed={!open} bind:this={icon} />
-			<div class="ws-pm-project-list-item-name" class:error={invalidState}>{project.name}</div>
+			<div class="ws-pm-project-list-item-name" class:error={invalidState}>{project.id}</div>
 		</div>
 		<div class="group">
 			<div class="ws-pm-project-list-item-word-count" class:hidden={open}>{FormatWords(project.totalWords)}</div>
@@ -161,7 +156,7 @@
 			</thead>
 			<tbody>
 				{#each files as file}
-					<PmProjectListFileItem {project} {manager} {file} {onWordCountUpdate} />
+					<PmProjectTreeFileItem {project} {manager} {file} {onWordCountUpdate} />
 				{/each}
 			</tbody>
 			<tfoot>

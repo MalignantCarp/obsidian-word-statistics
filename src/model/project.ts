@@ -26,33 +26,7 @@ export const PROJECT_TYPE_DESCRIPTION = [
     "These projects are indexed by a tag. Files within this project will appear in vault order or alphabetial oder, depending on setting."
 ];
 
-export interface ProjectMap {
-    projects: WSProject[],
-    folders: WSPath[];
-}
-
-export interface IPathV0 {
-    path: string,
-    title: string,
-    category: WSPCategory,
-    wordGoalForFolder: number,
-    wordGoalForProjects: number,
-    wordGoalForFiles: number,
-    iconID: string;
-}
-
 export interface IProjectV0 {
-    id: string,
-    path: string,
-    pType: WSPType,
-    title: string,
-    index: string,
-    category: WSPCategory,
-    wordGoalForProject: number,
-    wordGoalForFiles: number;
-}
-
-export interface IProjectV1 {
     id: string,
     path: string,
     pType: WSPType,
@@ -69,10 +43,6 @@ export interface IProjectV1 {
 
 export function SortProjectList(projects: WSProject[]) {
     return projects.sort((a, b) => a.fullPath.localeCompare(b.fullPath, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
-}
-
-export function SortPathList(paths: WSPath[]) {
-    return paths.sort((a,b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
 }
 
 function LoadProjectV0FromSerial(collector: WSDataCollector, projInfo: IProjectV0): WSProject {
@@ -107,7 +77,7 @@ function LoadProjectV0FromSerial(collector: WSDataCollector, projInfo: IProjectV
 //     return null;
 // };
 
-export function LoadProjectFromSerial(collector: WSDataCollector, projInfo: IProjectV0 | IProjectV1): WSProject {
+export function LoadProjectFromSerial(collector: WSDataCollector, projInfo: IProjectV0): WSProject {
     let project: WSProject;
     // project = LoadProjectV1FromSerial(collector, projInfo as IProjectV1);
     // if (project === null) {
@@ -119,127 +89,6 @@ export function LoadProjectFromSerial(collector: WSDataCollector, projInfo: IPro
         console.log("Failed to load project:", projInfo);
     }
     return project;
-}
-
-function LoadPathV0FromSerial(folderInfo: IPathV0): WSPath {
-    let folder: WSPath;
-    folder = new WSPath(folderInfo.path, folderInfo.title, folderInfo.category, folderInfo.wordGoalForFolder, folderInfo.wordGoalForProjects, folderInfo.wordGoalForFiles, folderInfo.iconID);
-    return folder;
-}
-
-export function LoadPathFromSerial(folderInfo: IPathV0): WSPath {
-    let folder = LoadPathV0FromSerial(folderInfo as IPathV0);
-    if (folder === null) {
-        console.log("Failed to load project folder:", folderInfo);
-    }
-    return folder;
-}
-
-export class WSPath {
-    constructor(
-        public path: string,
-        public _title: string,
-        public category: WSPCategory,
-        public wordGoalForPath?: number,
-        public wordGoalForProjects?: number,
-        public wordGoalForFiles?: number,
-        public iconID: string = "",
-        private children: WSPath[] = []
-    ) { }
-
-    private toObject() {
-        return {
-            path: this.path,
-            title: this._title,
-            category: this.category,
-            wordGoalForFolder: this.wordGoalForPath || 0,
-            wordGoalForProjects: this.wordGoalForProjects || 0,
-            wordGoalForFiles: this.wordGoalForFiles || 0,
-            iconID: ""
-        };
-    }
-
-    serialize() {
-        return JSON.stringify(this.toObject());
-    }
-
-    getPath(path: string) {
-        if (path === this.path) {
-            return this;
-        }
-        for (let child of this.children) {
-            let currentPath: WSPath = child.getPath(path);
-            if (currentPath instanceof WSPath) {
-                return currentPath;
-            }
-        }
-        return null;
-    }
-
-    findParentOfChild(path: WSPath): WSPath {
-        if (path === this) {
-            return null;
-        }
-        if (this.children.contains(path)) {
-            return this;
-        }
-        for (let child of this.children) {
-            if (child.children.contains(path)) {
-                return child;
-            }
-        }
-        return null;
-    }
-
-    getAll() {
-        let paths: WSPath[];
-        paths.push(this);
-        this.children.forEach((child) => {
-            paths.push(...child.getAll());
-        })
-        return SortPathList(paths);
-    }
-
-    addChild(child: WSPath) {
-        if (!this.children.contains(child)) {
-            this.children.push(child);
-        }
-    }
-
-    removeChild(child: WSPath) {
-        if (this.children.contains(child)) {
-            this.children.remove(child);
-        }
-    }
-
-    hasProjects(manager: WSProjectManager) {
-        return manager.getProjectsByPath(this.path).length > 0;
-    }
-
-    hasChildren() {
-        return this.children.length > 0;
-    }
-
-    hasChild(child: WSPath) {
-        return this.children.contains(child);
-    }
-
-    get title(): string {
-        if (this._title.length > 0) {
-            return this._title;
-        }
-        let lastSlash = this.path.lastIndexOf("/") + 1
-        if (lastSlash > 0) {
-            return (this.path.slice(lastSlash));
-        }
-        return this.path;
-
-
-    }
-
-    set title(title: string) {
-        this._title = title;
-    }
 }
 
 export abstract class WSProject {
@@ -258,11 +107,11 @@ export abstract class WSProject {
     abstract get index(): string;
     abstract getFiles(): WSFile[];
 
-    private toObject() {
+    private toObject(): IProjectV0 {
         return {
             id: this.id,
             path: this.path,
-            type: this.pType,
+            pType: this.pType,
             title: this._title,
             category: this.category,
             index: this.index,
@@ -272,7 +121,7 @@ export abstract class WSProject {
     }
 
     serialize() {
-        return JSON.stringify(this.toObject());
+        return this.toObject();
     }
 
     set title(title: string) {

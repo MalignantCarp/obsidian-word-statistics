@@ -16,24 +16,26 @@ function LoadFileFromSerial(data: IFile) {
 }
 
 function ParseFileContentV0(data: string): WSFile[] {
-    try {
-        let content = JSON.parse(data) as IFile[];
-        let files: WSFile[];
+	try {
+		let content = JSON.parse(data) as IFile[];
+		let files: WSFile[] = [];
 		content.forEach((value) => {
 			files.push(LoadFileFromSerial(value));
-		})
+		});
 		return files;
-    } catch (error) {
-        console.log("Error parsing project manager content (V0):", error);
-        return undefined;
-    }
+	} catch (error) {
+		console.log("Error parsing file content (V0):", error);
+		return undefined;
+	}
 }
 
 export function ParseFileContent(data: string) {
-    let content: WSFile[];
+	let content: WSFile[];
 
-    content = ParseFileContentV0(data);
-    return content;
+	if (data) {
+		content = ParseFileContentV0(data);
+	}
+	return content;
 }
 
 export class WSFile {
@@ -70,7 +72,7 @@ export class WSFile {
 	}
 
 	serialize() {
-		return JSON.stringify(this.toObject());
+		return this.toObject();
 	}
 
 	clearTags() {

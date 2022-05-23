@@ -25,7 +25,7 @@
 	$: projectType = PROJECT_TYPE_NAME[pType];
 	$: projectDesc = PROJECT_TYPE_DESCRIPTION[pType];
 
-	const options: string[][] = [[], manager.collector.getAllPaths(), manager.collector.getAllFolders(), manager.collector.getAllTags()];
+	const options: string[][] = [manager.collector.getAllPaths(), manager.collector.getAllFolders(), manager.collector.getAllTags()];
 
 	$: optionPlaceholder = PROJECT_INDEX_TYPE[pType];
 	$: project = _project instanceof WSProject ? _project : null;
@@ -65,24 +65,27 @@
 				parseInt(wordGoalFile.value) || 0
 			);
 		} else {
+			if (_project.path != path.getSearchString()) {
+				manager.setProjectPath(_project, path.getSearchString());
+			}
 			if (_project.id != projectID.getText()) {
-				manager.reIDProject(_project, projectID.getText());
+				manager.setProjectID(_project, projectID.getText());
 			}
 			if (_project.index != projectIndex.getSelectedOption()) {
-				manager.updateProjectIndex(_project, projectIndex.getSelectedOption());
+				manager.setProjectIndex(_project, projectIndex.getSelectedOption());
 			}
 			if (_project.category != categoryEl.selectedIndex) {
-				manager.categorizeProject(_project, categoryEl.selectedIndex);
+				manager.setProjectCategory(_project, categoryEl.selectedIndex);
 			}
 			if (_project.title != titleEl.getText()) {
-				manager.retitleProject(_project, titleEl.getText());
+				manager.setProjectTitle(_project, titleEl.getText());
 			}
 			let oldGoal = _project.wordGoalForProject;
 			let oldFileGoal = _project.wordGoalForFiles;
 			let newGoal = parseInt(wordGoalProject.value) || 0;
 			let newFileGoal = parseInt(wordGoalFile.value) || 0;
 			if (oldGoal != newGoal || oldFileGoal != newFileGoal) {
-				manager.updateProjectGoals(_project, newGoal, newFileGoal);
+				manager.setProjectGoals(_project, newGoal, newFileGoal);
 			}
 		}
 		onClose();
@@ -100,7 +103,8 @@
 		let newType = typeEl.selectedIndex;
 		if (newType != pType) {
 			pType = newType;
-			// do we need to go projectIndex = projectIndex or projectIndex.options=options[pType];?
+			// do we need to go projectIndex = projectIndex or ;?
+			projectIndex.resetOptions(options[pType]);
 		}
 	}
 
@@ -131,8 +135,8 @@
 		</div>
 		<div class="setting-item-control">
 			<select class="ws-project-editor-project-type dropdown" disabled={_project instanceof WSProject} bind:this={typeEl} on:change={onTypeChange}>
-				{#each PROJECT_INDEX_TYPE as projectType, i}
-					<option value={i} selected={i === pType}>projectType</option>
+				{#each PROJECT_INDEX_TYPE as piType, i}
+					<option value={i} selected={i === pType}>{piType}</option>
 				{/each}
 			</select>
 		</div>
@@ -145,7 +149,7 @@
 				overridden (visually) by the project's title.
 			</div>
 		</div>
-		<svelte:component this={ValidatedInput} placeholder={"Project Name"} validate={validateProjectID} bind:this={projectID} bind:isValid={validID} />
+		<svelte:component this={ValidatedInput} placeholder={"Project ID"} validate={validateProjectID} bind:this={projectID} bind:isValid={validID} />
 	</div>
 
 	<div class="setting-item">
@@ -160,7 +164,7 @@
 		<svelte:component
 			this={SuggestBox}
 			options={manager.getPathStrings()}
-			placeholder={optionPlaceholder}
+			placeholder={""}
 			bind:this={path}
 			bind:isValid={validPath}
 			customValidation={validateProjectPath}

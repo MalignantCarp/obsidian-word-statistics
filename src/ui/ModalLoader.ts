@@ -1,8 +1,31 @@
-import { ButtonComponent, Modal, Setting } from "obsidian";
+import { Modal, Setting } from "obsidian";
 import type WordStatisticsPlugin from "src/main";
 import type { WSProjectManager } from "src/model/manager";
-import { WSProject, WSPType } from "src/model/project";
+import type { WSProject } from "src/model/project";
+import MessagePanel from "./svelte/Modals/MessagePanel.svelte";
 import ProjectEditor from "./svelte/Modals/ProjectEditor.svelte";
+
+class MessageModal extends Modal {
+    panel: MessagePanel;
+
+    constructor(public plugin: WordStatisticsPlugin, public messages: string[]) {
+        super(plugin.app);
+    }
+
+    onOpen() {
+        let {contentEl} = this;
+        this.panel = new MessagePanel({ target: contentEl, props: { messages: this.messages } });
+    }
+
+    onClose() {
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
+
+}
 
 class ConfirmationModal extends Modal {
     confirmation: boolean = false;
@@ -59,7 +82,7 @@ class ProjectEditorModal extends Modal {
 
     onOpen() {
         let { contentEl } = this;
-        this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.Tag, onClose: this.close.bind(this), _project: this.project } });
+        this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, onClose: this.close.bind(this), _project: this.project } });
     }
 
     onClose() {
@@ -80,6 +103,10 @@ export class ModalLoader {
 
     createConfirmationModal(message: string, cb: Function) {
         return new ConfirmationModal(this.plugin, message, cb);
+    }
+
+    createMessageModal(messages: string[]) {
+        return new MessageModal(this.plugin, messages);
     }
 
 }

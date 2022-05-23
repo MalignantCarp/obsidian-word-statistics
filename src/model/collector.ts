@@ -1,12 +1,11 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, parseFrontMatterTags, parseFrontMatterEntry, TFolder } from 'obsidian';
 import type { FrontMatterCache } from 'obsidian';
-import { WSFile } from './file';
+import { WSFile, type IFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
 import { WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
-import { timeStamp } from 'console';
 
 interface LongformDraft {
     name: string;
@@ -22,7 +21,7 @@ export class WSDataCollector {
     private files: WSFile[];
     manager: WSProjectManager;
     lastUpdate: number = 0;
-    queue: [Function, unknown[]][] = [];
+    //queue: [Function, unknown[]][] = [];
     lastWords: number = 0;
 
     constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
@@ -33,6 +32,11 @@ export class WSDataCollector {
         this.files = [];
         this.lastUpdate = 0;
         this.manager = new WSProjectManager(plugin, this);
+    }
+
+    cleanup() {
+        this.files = [];
+        this.fileMap.clear();
     }
 
     get totalWords() {
@@ -123,16 +127,6 @@ export class WSDataCollector {
         }
     }
 
-    checkFMLongform(file: TFile, frontmatter: FrontMatterCache) {
-        let longformDrafts: LongformDraft[] = [];
-        if (frontmatter?.['drafts'] != undefined) {
-            let drafts = frontmatter['drafts'];
-            for (let draft of drafts) {
-                longformDrafts.push(draft);
-            }
-        }
-    }
-
     logWords(path: string, newCount: number) {
         if (this.fileMap.has(path)) {
             let file = this.fileMap.get(path);
@@ -162,12 +156,12 @@ export class WSDataCollector {
         });
     }
 
-    async executeDeferredItems() {
-        while (this.queue.length > 0) {
-            let [func, pack] = this.queue.shift();
-            func(...pack);
-        };
-    }
+    // async executeDeferredItems() {
+    //     while (this.queue.length > 0) {
+    //         let [func, pack] = this.queue.shift();
+    //         func(...pack);
+    //     };
+    // }
 
     updateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
@@ -265,7 +259,13 @@ export class WSDataCollector {
             this.files.push(file);
             this.fileMap.set(path, file);
         } else {
-            console.log(`Attempted to set file for path ${path}, but it is already set.`);
+            // console.log(`Attempted to set file for path ${path}, but it is already set.`);
+            console.log(`this.files.contains(${file.path})=${this.files.contains(file)}, this.fileMap.has(${path})=${this.fileMap.has(path)})`);
+            console.log("Existing file:")
+            let otherFile = this.fileMap.get(path);
+            console.log(otherFile.serialize());
+            console.log("Replacement file:")
+            console.log(file.serialize());
         }
     }
 
@@ -301,17 +301,18 @@ export class WSDataCollector {
     }
 
     async scanVault(fileLog: WSFile[] = []) {
-        // console.log("Vault scan initiated.");
+        console.log(`Vault scan initiated (${this.fileList.length}).`);
         const files = this.vault.getMarkdownFiles();
-        let fileMap = new Map<string, WSFile>(fileLog.map((value) => { return [value.path, value]; }));
         // console.log("Vault file list retrieved.");
-        for (const i in files) {
-            const file = files[i];
+        let loadedFiles = new Map<string, WSFile>(fileLog.map((value) => { return [value.path, value]; }));
+        // console.log("Mapped existing files.");
+        for (let file of files) {
             let fi: WSFile;
-            // console.log(`[${Date.now()}: Processing file '${file.path}'.`);
-            if (fileMap.has(file.path)) {
-                fi = fileMap.get(file.path);
-                fileMap.delete(file.path);
+            // console.log(`@${Date.now()}: Processing file '${file.path}'.`);
+            // if (fileLog.length > 0) console.log(`isInLoadedFiles? ${loadedFiles.has(file.path)}, isInFileMap? ${this.fileMap.has(file.path)}`);
+            if (loadedFiles.has(file.path)) {
+                fi = loadedFiles.get(file.path);
+                loadedFiles.delete(file.path);
                 this.setFile(file.path, fi);
             } else {
                 fi = this.getFile(file.path);
@@ -329,9 +330,17 @@ export class WSDataCollector {
             //console.log(frontMatter.wordStatsProject);
             this.update();
         }
-        if (fileMap.size > 0) {
+        if (loadedFiles.size > 0) {
             console.log("Failed to load the following files. Do they still exist in the file system?");
-            console.log(fileMap);
+            console.log(loadedFiles);
         }
+    }
+
+    serialize() {
+        let files: IFile[] = [];
+        this.files.forEach((file) => {
+            files.push(file.serialize());
+        });
+        return JSON.stringify(files);
     }
 }  

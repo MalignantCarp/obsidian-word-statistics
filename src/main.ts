@@ -4,9 +4,8 @@ import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import type { WSProject } from './model/project';
 import { ParseFileContent, WSFile } from './model/file';
-import { Dispatcher, WSEvents, WSFocusEvent, WSPathEvent, WSProjectEvent } from './model/event';
+import { Dispatcher, WSDataEvent, WSEvents, WSFocusEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
 import { ParseProjectManagerContent } from './model/manager';
@@ -51,15 +50,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		// custom events
 		this.events = new Dispatcher();
 
-		this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), { filter: null });
-
-		this.events.on(WSEvents.Path.Set, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Path.Cleared, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Path.Titled, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Path.Updated, this.saveProjects.bind(this), { filter: null });
+		// We don't want to queue saving of data until it's all loaded.
+		this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), {filter: null});
+		this.events.on(WSEvents.Data.Path, this.saveProjects.bind(this), {filter: null});
+		this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), {filter: null});
 
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
@@ -79,6 +73,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 		}
 		// 	}
 		// });
+
 		if (this.app.workspace.layoutReady) {
 			this.onStartup();
 			this.initializeProjectManagementLeaf();
@@ -92,6 +87,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onunload() {
 		this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
+		this.collector.manager.cleanup();
+		this.collector.cleanup();
 		console.log("Obsidian Word Statistics unloaded.");
 	}
 
@@ -153,8 +150,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	async onStartup() {
 		if (!this.initialScan) {
+			// console.log("Loading existing file content...")
 			let files = ParseFileContent(await this.loadSerialData(FILE_PATH));
-			// console.log("Initiating vault scan.");
 			await this.collector.scanVault(files);
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
@@ -170,7 +167,9 @@ export default class WordStatisticsPlugin extends Plugin {
 				this.collector.manager.updateAllProjects();
 			}
 			this.projectLoad = true;
-			await this.collector.scanVault();
+			// console.log("Initiating post-project vault re-scan...");
+			// await this.collector.scanVault();
+			// console.log("Complete.")
 		}
 		this.updateFocusedFile();
 	}
@@ -272,16 +271,15 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	saveProjects(evt: WSProjectEvent | WSPathEvent) {
+	saveProjects(evt: WSDataEvent) {
 		// project has been updated, we now want to save all project data
 		let data = this.collector.manager.serialize();
 		this.saveSerialData(PROJECT_PATH, data);
 	}
 
-	onProjectFilesUpdate(proj: WSProject) {
-		// update UI that project has been updated; anything watching for this project will need to obtain a new count
-		// this.view.updateForProject(proj); // this needs to go through any project groups as well
-		// we may not even need this
+	saveFiles(event: WSDataEvent) {
+		let data = this.collector.serialize();
+		this.saveSerialData(FILE_PATH, data);
 	}
 
 	onFileWordCount(file: WSFile) {

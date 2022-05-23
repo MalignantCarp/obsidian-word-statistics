@@ -1,7 +1,14 @@
 import type { WSFile } from "./file";
-import type { WSPath, WSProject } from "./project";
+import type { WSProject } from "./project";
+import type {WSPath} from "./path";
 
 export namespace WSEvents {
+    export namespace Data {
+        export const File = "ws-event-data-file";
+        export const Project = "ws-event-data-project";
+        export const Path = "ws-event-data-path";
+    }
+
     export namespace Focus {
         export const File = "ws-event-focus-file";
         export const Project = "ws-event-focus-project"; // we probably won't use this; the project will depend on the focused file
@@ -9,7 +16,6 @@ export namespace WSEvents {
     }
 
     export namespace File {
-        export const Opened = "ws-event-file-opened";
         export const Created = "ws-event-file-created";
         export const Renamed = "ws-event-file-renamed";
         export const Deleted = "ws-event-file-deleted";
@@ -23,6 +29,11 @@ export namespace WSEvents {
         export const Created = "ws-event-project-created";
         export const FilesUpdated = "ws-event-project-files-updated";
         export const Updated = "ws-event-project-updated";
+        export const PathSet = "ws-event-project-path-set";
+        export const GoalsSet = "ws-event-project-goals-set";
+        export const IndexSet = "ws-event-project-index-set";
+        export const CategorySet = "ws-event-project-category-set";
+        export const TitleSet = "ws-event-project-title-set";
     }
 
     export namespace Path {
@@ -35,15 +46,20 @@ export namespace WSEvents {
     }
 }
 
-type WSEventType = WSFocusEventType | WSFileEventType | WSProjectEventType | WSPathEventType;
+type WSEventType = WSDataEventType | WSFocusEventType | WSFileEventType | WSProjectEventType | WSPathEventType;
+export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.Project | typeof WSEvents.Data.Path;
 export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project | typeof WSEvents.Focus.FileItem;
-export type WSFileEventType = typeof WSEvents.File.Opened | typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
-export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated;
+export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
+export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated | typeof WSEvents.Project.PathSet | typeof WSEvents.Project.GoalsSet | typeof WSEvents.Project.IndexSet | typeof WSEvents.Project.CategorySet | typeof WSEvents.Project.TitleSet;
 export type WSPathEventType = typeof WSEvents.Path.Titled | typeof WSEvents.Path.Set | typeof WSEvents.Path.Cleared | typeof WSEvents.Path.Updated | typeof WSEvents.Path.Created | typeof WSEvents.Path.Deleted;
 
 interface WSEventInfo {
     type: WSEventType;
     data?: any[];
+}
+
+export interface WSDataEventInfo extends WSEventInfo {
+    type: WSDataEventType;
 }
 
 export interface WSFocusEventInfo extends WSEventInfo {
@@ -77,6 +93,12 @@ export interface WSEventFilter {
 
 export abstract class WSEvent {
     constructor(public info: WSEventInfo, public focus: WSEventFilter) {
+    }
+}
+
+export class WSDataEvent extends WSEvent {
+    constructor(public info: WSDataEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     }
 }
 
@@ -125,10 +147,10 @@ class DispatcherEvent {
             if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter?.filter == event.focus?.filter) {
                 // console.log("Dispatching event.")
                 cbRun(event);
-            // } else {
-            //     console.log("Ignoring event:", (filter == null || filter == undefined), (filter?.filter == null || filter?.filter == undefined), filter == event.focus);
-            //     console.log("Focus: ", event.focus)
-            //     console.log("Filter: ", filter?.filter)
+                // } else {
+                //     console.log("Ignoring event:", (filter == null || filter == undefined), (filter?.filter == null || filter?.filter == undefined), filter == event.focus);
+                //     console.log("Focus: ", event.focus)
+                //     console.log("Filter: ", filter?.filter)
             }
         });
     }
@@ -154,6 +176,13 @@ export class Dispatcher {
     trigger(event: WSEvent) {
         if (this.events.has(event.info.type)) {
             this.events.get(event.info.type).fire(event);
+        }
+        if (event instanceof WSFileEvent) {
+            this.trigger(new WSDataEvent({ type: WSEvents.Data.File }, { filter: null }));
+        } else if (event instanceof WSProjectEvent) {
+            this.trigger(new WSDataEvent({ type: WSEvents.Data.Project }, { filter: null }));
+        } else if (event instanceof WSPathEvent) {
+            this.trigger(new WSDataEvent({ type: WSEvents.Data.Path }, { filter: null }));
         }
     }
 

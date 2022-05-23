@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { WSEvents } from "src/model/event";
 	import type { WSProjectManager } from "src/model/manager";
-	import type { WSPath } from "src/model/project";
+	import { WSPath } from "src/model/path";
 	import { onDestroy, onMount } from "svelte";
 	import PmProjectTreePathItem from "./PMProjectTreePathItem.svelte";
 
 	export let manager: WSProjectManager;
 
-	let paths: WSPath[];
+	let paths: WSPath[] = [];
 
 	onMount(() => {
 		resetPaths();
@@ -18,12 +18,15 @@
 	onDestroy(() => {
 		manager.plugin.events.off(WSEvents.Path.Deleted, resetPaths, { filter: null });
 		manager.plugin.events.off(WSEvents.Path.Created, resetPaths, { filter: null });
-		paths = [];
 	});
 
 	function resetPaths() {
 		paths = [];
-		paths.push(...manager.getPaths());
+		if (manager.pathRoot instanceof WSPath) {
+			paths.push(manager.pathRoot);
+		}
+		//paths.push(...manager.getPaths());
+		paths = paths;
 	}
 </script>
 
