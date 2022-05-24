@@ -12,6 +12,7 @@
 	--ws-pm-file-info: #3355AA88;
 	--ws-icon-edit: #336699;
 	--ws-icon-delete: #993333;
+	--ws-icon-reset: #AA6633;
 }
 
 .theme-dark {
@@ -28,6 +29,7 @@
 	--ws-pm-file-info: #5577FF88;
 	--ws-icon-edit: #3399CC;
 	--ws-icon-delete: #DD3333;
+	--ws-icon-reset: #DDAA33;
 }
 
 .ws-status-bar {
@@ -432,6 +434,36 @@ table.ws-pm-project-list-item-files > :is(tbody,tfoot) > tr.ws-pm-file-item > td
 	display: flex;
 	align-items: center;
 	align-self: center;
+}
+
+.ws-path-item-buttons {
+	display: flex;
+	align-items: center;
+	align-self: center;
+}
+
+.ws-path-item-button.ws-edit {
+	color: var(--ws-icon-edit);
+}
+
+.ws-path-item-button.ws-edit:hover {
+	filter: drop-shadow(0px 0px 1px var(--ws-icon-edit)) drop-shadow(0px 0px 2px var(--ws-icon-edit));
+}
+
+.ws-path-item-button.ws-reset {
+	color: var(--ws-icon-reset);
+}
+
+.ws-path-item-button.ws-reset:hover {
+	filter: drop-shadow(0px 0px 1px var(--ws-icon-reset)) drop-shadow(0px 0px 2px var(--ws-icon-reset));
+}
+
+.ws-path-item-button.ws-purge {
+	color: var(--ws-icon-purge);
+}
+
+.ws-path-item-button.ws-purge:hover {
+	filter: drop-shadow(0px 0px 1px var(--ws-icon-purge)) drop-shadow(0px 0px 2px var(--ws-icon-purge));
 }
 
 .ws-pm-project-list-item-header .group i.edit-icon {

@@ -1,4 +1,8 @@
 ## Changelog
+### 2022-05-23
+ - Minor cleanups in WSProjectManager arround path building and purging.
+ - Added some CSS for PMProjectTree
+
 ### 2022-05-22
  - Added method of WSProjectManager to reset the path of a project.
  - Added a few helper methods to WSPath.

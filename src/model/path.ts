@@ -110,6 +110,10 @@ export class WSPath {
         return manager.getProjectsByPath(this.path).length > 0;
     }
 
+    hasDirectProjects(manager: WSProjectManager) {
+        return manager.getProjectsByExactPath(this.path).length > 0;
+    }
+
     hasChildren() {
         return this.children.length > 0;
     }

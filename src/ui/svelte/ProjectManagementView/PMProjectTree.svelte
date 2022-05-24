@@ -28,10 +28,14 @@
 		//paths.push(...manager.getPaths());
 		paths = paths;
 	}
+
+	function onDeletePath(path: WSPath) {
+		manager.purgePath(path);
+	}
 </script>
 
 <div class="ws-pm-project-tree">
 	{#each paths as path}
-		<PmProjectTreePathItem {manager} {path}/>
+		<PmProjectTreePathItem {manager} {path} {onDeletePath}/>
 	{/each}
 </div>

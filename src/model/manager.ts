@@ -360,12 +360,11 @@ export class WSProjectManager {
         return pathObj;
     }
 
-    clearPath(path: string) {
+    resetPath(path: string) {
         let pathObj = this.getPath(path);
-        this.setPathTitle(pathObj);
-        this.setPathWordGoals(pathObj);
-        this.setPathCategory(pathObj);
-        this.unregisterPath(pathObj);
+        this.setPathTitle(pathObj, "");
+        this.setPathWordGoals(pathObj, 0, 0, 0);
+        this.setPathCategory(pathObj, WSPCategory.None);
     }
 
     getPath(path: string): WSPath {
@@ -492,9 +491,6 @@ export class WSProjectManager {
         this.projects.delete(proj.id);
         this.projectList.remove(proj);
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Deleted, project: proj }, { filter: proj }));
-        if (this.plugin.settings.clearEmptyPaths && this.paths.has(path) && this.getProjectsByPath(path).length === 0) {
-            this.unregisterPath(this.paths.get(path));
-        }
     }
 
     setProjectID(proj: WSProject, newID: string) {
@@ -526,6 +522,10 @@ export class WSProjectManager {
     }
 
     setProjectPath(proj: WSProject, newPath: string) {
+        let oldPath = proj.path;
+        proj.path = newPath;
+        this.purgePath(this.getPath(oldPath));
+        this.buildPath(newPath);
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.PathSet, project: proj }, { filter: proj }));
     }
 
@@ -534,14 +534,7 @@ export class WSProjectManager {
         this.unregisterProject(proj);
         // cleanup paths
         let path = this.getPath(proj.path);
-        if (!path.hasChildren() && !path.hasProjects && this.plugin.settings.clearEmptyPaths) {
-            this.clearPath(path.path);
-            let parent = this.getParentPath(path);
-            if (parent instanceof WSPath) {
-                parent.removeChild(path);
-            }
-            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path }, { filter: path }));
-        }
+        this.purgePath(path);
     }
 
     /* ==================
@@ -566,6 +559,28 @@ export class WSProjectManager {
         }
         this.paths.delete(path.path);
         this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Cleared, path }, { filter: path }));
+    }
+
+    purgePath(path: WSPath) {
+        if (path !== this.pathRoot && this.plugin.settings.clearEmptyPaths && !path.hasChildren() && !path.hasProjects(this)) {
+            if (this.paths.has(path.path)) {
+                this.unregisterPath(path);
+            }
+            this.resetPath(path.path);
+            let parent = this.getParentPath(path);
+            if (parent instanceof WSPath) {
+                parent.removeChild(path);
+            }
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path }, { filter: path }));
+        }
+    }
+
+    canPurgePath(path: WSPath) {
+        return path !== this.pathRoot && !path.hasChildren() && !path.hasProjects(this);
+    }
+
+    canClearPath(path: WSPath) {
+        return this.paths.has(path.path);
     }
 
     setPathTitle(path: WSPath, title: string = "") {
