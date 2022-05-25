@@ -1,6 +1,5 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, parseFrontMatterTags, parseFrontMatterEntry, TFolder } from 'obsidian';
-import type { FrontMatterCache } from 'obsidian';
-import { WSFile, type IFile } from './file';
+import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
@@ -133,7 +132,7 @@ export class WSDataCollector {
             let oldCount = file.words;
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
-                this.fileMap.get(path).setWords(newCount);
+                this.fileMap.get(path).words = newCount;
                 this.update();
                 this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
             }
@@ -244,28 +243,29 @@ export class WSDataCollector {
         this.lastUpdate = Date.now();
     }
 
+    pushFile(file: WSFile) {
+        // console.log(`File ${file.path} being pushed to storage list and map.`);
+        this.files.push(file);
+        this.fileMap.set(file.path, file);
+    }
+
     newFile(name: string, path: string) {
         // console.log("newFile(%d)", this.files.length);
         let file = new WSFile(name, path);
-        this.files.push(file);
-        this.fileMap.set(path, file);
+        this.pushFile(file);
         // console.log("newFile(%d):", this.files.length, file);
         this.update();
         return file;
     }
 
     setFile(path: string, file: WSFile) {
+        // console.log(`setFile(${path})`);
         if (!this.files.contains(file) && !this.fileMap.has(path)) {
-            this.files.push(file);
-            this.fileMap.set(path, file);
+            this.pushFile(file);
         } else {
-            // console.log(`Attempted to set file for path ${path}, but it is already set.`);
-            console.log(`this.files.contains(${file.path})=${this.files.contains(file)}, this.fileMap.has(${path})=${this.fileMap.has(path)})`);
-            console.log("Existing file:")
-            let otherFile = this.fileMap.get(path);
-            console.log(otherFile.serialize());
-            console.log("Replacement file:")
-            console.log(file.serialize());
+            console.log(`For file '${file.path}:`);
+            console.log(`fileInList? ${this.files.contains(file)}, fileInMap? ${this.fileMap.has(path)}`);
+            console.log(`Attempted to set file for path ${path}, but it is already set.`);
         }
     }
 
@@ -295,13 +295,14 @@ export class WSDataCollector {
         }
         let af = this.vault.getAbstractFileByPath(path);
         if (af != null && af instanceof TFile) {
+            console.log(`Attempted to get file ${path}, but it did not exist. Creating...`)
             return this.newFile(af.name, af.path);
         }
         return null;
     }
 
     async scanVault(fileLog: WSFile[] = []) {
-        console.log(`Vault scan initiated (${this.fileList.length}).`);
+        // console.log(`Vault scan initiated (${this.fileList.length}).`);
         const files = this.vault.getMarkdownFiles();
         // console.log("Vault file list retrieved.");
         let loadedFiles = new Map<string, WSFile>(fileLog.map((value) => { return [value.path, value]; }));
@@ -334,13 +335,5 @@ export class WSDataCollector {
             console.log("Failed to load the following files. Do they still exist in the file system?");
             console.log(loadedFiles);
         }
-    }
-
-    serialize() {
-        let files: IFile[] = [];
-        this.files.forEach((file) => {
-            files.push(file.serialize());
-        });
-        return JSON.stringify(files);
     }
 }  

@@ -4,14 +4,15 @@ import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import { ParseFileContent, WSFile } from './model/file';
+import type { WSFile } from './model/file';
 import { Dispatcher, WSDataEvent, WSEvents, WSFocusEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
-import { ParseProjectManagerContent } from './model/manager';
+import { WSFormat } from './model/formats';
 
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
+const PATH_PATH = "paths.json";
 
 export default class WordStatisticsPlugin extends Plugin {
 	settings: WSPluginSettings;
@@ -44,16 +45,13 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
 
-		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
-		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
-
 		// custom events
 		this.events = new Dispatcher();
 
 		// We don't want to queue saving of data until it's all loaded.
-		this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), {filter: null});
-		this.events.on(WSEvents.Data.Path, this.saveProjects.bind(this), {filter: null});
-		this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), {filter: null});
+		this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
+		this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
 
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
@@ -150,26 +148,32 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	async onStartup() {
 		if (!this.initialScan) {
-			// console.log("Loading existing file content...")
-			let files = ParseFileContent(await this.loadSerialData(FILE_PATH));
+			// console.log("Loading existing file content...");
+			let files = WSFormat.LoadFileData(await this.loadSerialData(FILE_PATH));
 			await this.collector.scanVault(files);
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
 		}
 		if (!this.projectLoad && this.initialScan) {
 			// console.log(`Loading data from ${PROJECT_PATH}`);
-			let projects = await this.loadSerialData(PROJECT_PATH);
-			if (projects) {
+			let projects = WSFormat.LoadProjectData(this.collector, await this.loadSerialData(PROJECT_PATH));
+			let paths = WSFormat.LoadPathData(await this.loadSerialData(PATH_PATH));
+
+			if (projects.length > 0) {
 				// console.log(projects);
 				//this.collector.manager.populateFromSerialized(projects);
-				let contentLoad = ParseProjectManagerContent(this.collector.manager, projects);
-				this.collector.manager.loadProjectManagerData(contentLoad);
-				this.collector.manager.updateAllProjects();
+				this.collector.manager.loadProjects(projects);
+			}
+			if (paths.length > 0) {
+				this.collector.manager.loadPaths(paths);
 			}
 			this.projectLoad = true;
 			// console.log("Initiating post-project vault re-scan...");
 			// await this.collector.scanVault();
 			// console.log("Complete.")
+			// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
+			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
+
 		}
 		this.updateFocusedFile();
 	}
@@ -189,16 +193,15 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	updateFocusedFile() {
-		let file: WSFile;
+		let file: WSFile = null;
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
 		if (view != null && view.file != null) {
-			file = this.collector.getFileSafer(view.file.path);
+			file = this.collector.getFile(view.file.path);
 		}
-		if (file instanceof WSFile) {
-			this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
-			this.focusFile = file;
-		}
+		// console.log("[!] Updating focused file:", file instanceof WSFile ? file.serialize() : null);
+		this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
+		this.focusFile = file;
 	}
 
 	onFileRename(file: TAbstractFile, data: string) {
@@ -256,11 +259,15 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async onFileOpen(file: TFile) {
-		//console.log("onFileOpen()");
+		// console.log("onFileOpen()");
 		//console.log(file);
-		let wFile = this.collector.getFileSafer(file.path);
-		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
-			this.debounceRunCount(file, await this.app.vault.cachedRead(file));
+		if (file instanceof TFile) {
+			let wFile = this.collector.getFile(file.path);
+			if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
+				this.debounceRunCount(file, await this.app.vault.cachedRead(file));
+			}
+		} else {
+			this.updateFocusedFile();
 		}
 	}
 
@@ -272,14 +279,21 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	saveProjects(evt: WSDataEvent) {
-		// project has been updated, we now want to save all project data
-		let data = this.collector.manager.serialize();
-		this.saveSerialData(PROJECT_PATH, data);
+		let data = WSFormat.SaveProjectData(this, this.collector.manager.projectList);
+		// console.log(data);
+		// this.saveSerialData(PROJECT_PATH, data);
 	}
 
 	saveFiles(event: WSDataEvent) {
-		let data = this.collector.serialize();
-		this.saveSerialData(FILE_PATH, data);
+		let data = WSFormat.SaveFileData(this, this.collector.fileList);
+		// console.log(data);
+		// this.saveSerialData(FILE_PATH, data);
+	}
+
+	savePaths(event: WSDataEvent) {
+		let data = WSFormat.SavePathData(this, this.collector.manager.getSetPaths());
+		// console.log(data);
+		// this.saveSerialData(PATH_PATH, data);
 	}
 
 	onFileWordCount(file: WSFile) {

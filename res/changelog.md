@@ -1,4 +1,13 @@
 ## Changelog
+### 2022-05-24
+ - Built new WSFormat namespace for saving and loading files, paths, and projects. Moved all supporting code there to get it out of the main files to declutter. Will be considering CSV for a similar smaller format for minifying files.json, as it could get rather enormous for large vaults. Alternatively, it may be that only monitored files (i.e., project files) will be included, though that could be cumbersome in determining project files to output whenever saving is required.
+ - BUGFIX: Closing all open files resulted in an unhandled exception.
+ - BUGFIX: Status Bar had excess padding when particular word counter not present. Now we don't show the file or project counters if no file is open, and we do not show the project counter if the focused file has no project.
+ - Modified the Status Bar widgets (File/Project) a bit to account for no longer needing to check that they are monitoring a focused file, as they will not be shown if that is the case.
+ - Broke apart PMProjectTreePathItem into multiple components. Will continue to break down the interface into easily manageable building blocks.
+ - Project Manager now shows word count for paths.
+ - BUGFIX: Contents of the file collector filled prior to running scanVault. This was due to getFileSafer() being called on all metadata changes and when leaf changes were done. Have replaced with getFile() and deferred adding event listeners to metadata changes until everything has been loaded.
+
 ### 2022-05-23
  - Minor cleanups in WSProjectManager arround path building and purging.
  - Added some CSS for PMProjectTree

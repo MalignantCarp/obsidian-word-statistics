@@ -3,75 +3,13 @@ import type WordStatisticsPlugin from "src/main";
 import { ModalLoader } from "src/ui/ModalLoader";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
-import { LoadProjectFromSerial, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, type IProjectV0, SortProjectList } from "./project";
-import { LoadPathFromSerial, WSPath, type IPathV0 } from "./path";
-
-export interface IProjectManagerV0 {
-    projects: IProjectV0[],
-    paths: IPathV0[];
-}
-
-export interface IProjectManager {
-    projects: WSProject[];
-    paths: WSPath[];
-}
-
-function ProcessAllContent(manager: WSProjectManager, content: IProjectManagerV0): IProjectManager {
-    let projects: WSProject[] = [];
-    let paths: WSPath[] = [];
-
-    content.projects.forEach((info) => {
-        let proj = LoadProjectFromSerial(manager.collector, info);
-        if (proj instanceof WSProject) {
-            projects.push(proj);
-        } else {
-            console.log(`Error processing project manager content for project '${info.id}'. Deserialization returned invalid type '${typeof (proj)}'`);
-        }
-    });
-
-    content.paths.forEach((info) => {
-        let folder = LoadPathFromSerial(info);
-        if (folder instanceof WSPath) {
-            paths.push(folder);
-        }
-    });
-
-    return { projects, paths };
-}
-
-function ParseProjectManagerContentV0(manager: WSProjectManager, data: string) {
-    try {
-        // console.log("Attempting to parse data into ProjectManagerJSON");
-        let content = JSON.parse(data) as IProjectManagerV0;
-        return ProcessAllContent(manager, content);
-    } catch (error) {
-        console.log("Error parsing project manager content (V0):", error);
-        return undefined;
-    }
-}
-
-// function ParseProjectManagerContentV1(manager: WSProjectManager, data: string) {
-// }
-
-export function ParseProjectManagerContent(manager: WSProjectManager, data: string) {
-    let content: IProjectManager;
-
-    content = ParseProjectManagerContentV0(manager, data);
-    // if (content === undefined) {
-    //     console.log("Failed to load as V1, falling back to V0.");
-    //     content = ParseProjectManagerContentV0(manager, data);
-    // }
-    // if (content === undefined) {
-    //     console.log("Failed to load project manager");
-    //     return null;
-    // }
-    return content;
-}
+import { WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, SortProjectList } from "./project";
+import { WSPath } from "./path";
 
 export class WSProjectManager {
     projectList: WSProject[];
     paths: Map<string, WSPath>;
-    pathRoot: WSPath = new WSPath("", "", 0);
+    pathRoot: WSPath = new WSPath("", "Project Manager Root", 0);
     projects: Map<string, [WSPType, WSProject]>;
     errorState: boolean = false;
     errorMessages: string[] = [];
@@ -102,23 +40,6 @@ export class WSProjectManager {
         Serialization
        =============== */
 
-    private toObject() {
-        let projects: IProjectV0[] = [];
-        let paths: IPathV0[] = [];
-
-        this.projectList.forEach((proj) => {
-            projects.push(proj.serialize());
-        });
-        this.paths.forEach((grp) => {
-            paths.push(grp.serialize());
-        });
-        return { projects, paths };
-    }
-
-    serialize() {
-        return JSON.stringify(this.toObject());
-    }
-
     validateProjectLoad(projects: WSProject[]) {
         let ids: string[] = [];
         projects.forEach((proj) => {
@@ -143,16 +64,19 @@ export class WSProjectManager {
         return true;
     }
 
-    loadProjectManagerData(data: IProjectManager) {
-        if (this.validateProjectLoad(data.projects)) {
-            if (this.validatePathLoad(data.paths)) {
-                data.projects.forEach((proj) => {
-                    this.registerProject(proj);
-                });
-                data.paths.forEach((path) => {
-                    this.registerPath(path);
-                });
-            }
+    loadProjects(projects: WSProject[]) {
+        if (this.validateProjectLoad(projects)) {
+            projects.forEach((project) => {
+                this.registerProject(project);
+            })
+        }
+    }
+
+    loadPaths(paths: WSPath[]) {
+        if (this.validatePathLoad(paths)) {
+            paths.forEach((path) => {
+                this.registerPath(path);
+            })
         }
     }
 
@@ -333,7 +257,7 @@ export class WSProjectManager {
        ====================== */
 
     getSetPaths() {
-        return Array.from(this.paths.keys()).sort((a, b) => a.localeCompare(b, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
+        return Array.from(this.paths.values()).sort((a, b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
     }
 
     getPaths() {
@@ -454,11 +378,11 @@ export class WSProjectManager {
 
         if (type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
-            project = new WSFileProject(this.collector, projectID, path, file, projectCategory, title, [], wordGoalForProject, wordGoalForFiles);
+            project = new WSFileProject(this.collector, projectID, path, file, projectCategory, title, wordGoalForProject, wordGoalForFiles);
         } else if (type === WSPType.Folder) {
-            project = new WSFolderProject(this.collector, projectID, path, projectIndex, projectCategory, title, [], wordGoalForProject, wordGoalForFiles);
+            project = new WSFolderProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles);
         } else if (type === WSPType.Tag) {
-            project = new WSTagProject(this.collector, projectID, path, projectIndex, projectCategory, title, [], wordGoalForProject, wordGoalForFiles);
+            project = new WSTagProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles);
         } else {
             this.logError(`Attempted to create a project with an invalid type: ${type}`);
             return;

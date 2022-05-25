@@ -1,50 +1,26 @@
 <script lang="ts">
-	import { setIcon } from "obsidian";
 	import { WSEvents, WSPathEvent, WSProjectEvent } from "src/model/event";
 	import type { WSProjectManager } from "src/model/manager";
 	import type { WSPath } from "src/model/path";
 	import type { WSProject } from "src/model/project";
 	import { onDestroy, onMount } from "svelte";
-	import PmProjectTreeProjectItem from "./PMProjectTreeProjectItem.svelte";
+	import PathItemButtons from "./PathItemButtons.svelte";
+	import PathWordCount from "./PathWordCount.svelte";
+	import ProjectItem from "./ProjectItem.svelte";
+	import TreePathLabel from "./TreePathLabel.svelte";
 
 	export let manager: WSProjectManager;
 	export let path: WSPath;
 
 	export let onDeletePath: (path: WSPath) => void;
 
-	let title = path.title;
-	let fullPath = path.path;
-	let collapsed = false;
-
-	let editIcon: HTMLElement;
-	let clearIcon: HTMLElement;
-	let collapseIcon: HTMLElement;
-
 	let childPaths: WSPath[] = [];
 	let childProjects: WSProject[] = [];
 
-	let isClear = false;
-	let canClear = false;
-	let canPurge = false;
+	let buttons: PathItemButtons;
+	let label: TreePathLabel;
 
-	$: if (collapseIcon) {
-		collapseIcon.empty();
-		setIcon(collapseIcon, "right-triangle", 12);
-	}
-
-	$: if (editIcon) {
-		editIcon.empty();
-		setIcon(editIcon, "vertical-three-dots", 12);
-	}
-
-	$: if (clearIcon) {
-		clearIcon.empty();
-		if (canClear) {
-			setIcon(clearIcon, "reset", 12);
-		} else if (isClear && canPurge) {
-			setIcon(clearIcon, "trash", 12);
-		}
-	}
+	let collapsed = false;
 
 	onMount(() => {
 		manager.plugin.events.on(WSEvents.Path.Titled, reset, { filter: null });
@@ -71,11 +47,8 @@
 	});
 
 	function reset(event: WSPathEvent) {
-		title = path.title;
-		fullPath = path.path;
-		isClear = !manager.canClearPath(path);
-		canClear = manager.canClearPath(path);
-		canPurge = manager.canPurgePath(path);
+		buttons.reset();
+		label.reset();
 	}
 
 	function updateProjects(event: WSProjectEvent) {
@@ -89,12 +62,6 @@
 		// we only need to update our path children if the created or deleted path is a direct child
 		if (path.hasChild(event.info.path)) {
 			childPaths = path.getChildren();
-		}
-	}
-
-	function collapseToggle() {
-		if (manager.plugin.settings.viewSettings.treeView) {
-			collapsed = !collapsed;
 		}
 	}
 
@@ -131,50 +98,28 @@
 	function deleteProject(project: WSProject) {
 		manager.deleteProject(project);
 	}
+
+	function collapseToggle() {
+		collapsed = !collapsed;
+	}
 </script>
 
-{#if path === manager.pathRoot}
-	<div class="ws-path-item-root">
-		<div class="ws-path-item-children" class:tree-item-children={manager.plugin.settings.viewSettings.treeView}>
+<div class="ws-path-item tree-item" class:is-collapsed={collapsed}>
+	<div class="ws-path-item-self tree-item-self" class:is-clickable={path != manager.pathRoot}>
+		<TreePathLabel bind:this={label} {manager} {path} {collapseToggle} />
+		<div class="ws-path-item-end">
+			<PathWordCount {path} {manager} />
+			<PathItemButtons bind:this={buttons} {manager} {path} {editPath} {pathClear} {pathDelete} />
+		</div>
+	</div>
+	{#if !collapsed && (path.hasChildren() || path.hasProjects(manager))}
+		<div class="ws-path-item-children tree-item-children">
 			{#each childPaths as childPath}
-				<svelte:self {manager} path={childPath} {onDeletePath}/>
+				<svelte:self {manager} path={childPath} {onDeletePath} />
 			{/each}
 			{#each childProjects as childProject}
-				<PmProjectTreeProjectItem {manager} project={childProject} onDelete={deleteProject} />
+				<ProjectItem {manager} project={childProject} onDelete={deleteProject} />
 			{/each}
 		</div>
-	</div>
-{:else}
-	<div class="ws-path-item" class:is-collapsed={collapsed} class:tree-item={manager.plugin.settings.viewSettings.treeView}>
-		<div class="ws-path-item-self is-clickable" class:tree-item-self={manager.plugin.settings.viewSettings.treeView}>
-			{#if manager.plugin.settings.viewSettings.treeView}
-				<div class="ws-path-item-icon collapse-icon tree-item-icon" bind:this={collapseIcon} on:click={collapseToggle} />
-				<div class="ws-path-item-inner tree-item-inner" aria-label={fullPath} on:click={collapseToggle}>
-					{title}
-				</div>
-			{:else}
-				<div class="ws-path-item-inner" aria-label={fullPath}>
-					{title}
-				</div>
-			{/if}
-			<div class="ws-path-item-buttons">
-				<div class="ws-path-item-button ws-edit" on:click={editPath} aria-label="Customize Path" bind:this={editIcon} />
-				{#if canClear}
-					<div class="ws-path-item-button ws-reset" on:click={pathClear} aria-label="Reset Path" bind:this={clearIcon} />
-				{:else if isClear && canPurge}
-					<div class="ws-path-item-button ws-purge" on:click={pathDelete} aria-label="Purge Path" bind:this={clearIcon} />
-				{/if}
-			</div>
-		</div>
-		{#if !collapsed && (path.hasChildren() || path.hasProjects(manager))}
-			<div class="ws-path-item-children" class:tree-item-children={manager.plugin.settings.viewSettings.treeView}>
-				{#each childPaths as childPath}
-					<svelte:self {manager} path={childPath} {onDeletePath} />
-				{/each}
-				{#each childProjects as childProject}
-					<PmProjectTreeProjectItem {manager} project={childProject} onDelete={deleteProject} />
-				{/each}
-			</div>
-		{/if}
-	</div>
-{/if}
+	{/if}
+</div>

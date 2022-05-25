@@ -3,11 +3,11 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSPath } from "src/model/path";
 	import { onDestroy, onMount } from "svelte";
-	import PmProjectTreePathItem from "./PMProjectTreePathItem.svelte";
+	import TreePathContainer from "./TreePathContainer.svelte";
 
 	export let manager: WSProjectManager;
 
-	let paths: WSPath[] = [];
+	let path: WSPath;
 
 	onMount(() => {
 		resetPaths();
@@ -21,12 +21,7 @@
 	});
 
 	function resetPaths() {
-		paths = [];
-		if (manager.pathRoot instanceof WSPath) {
-			paths.push(manager.pathRoot);
-		}
-		//paths.push(...manager.getPaths());
-		paths = paths;
+		path = manager.pathRoot;
 	}
 
 	function onDeletePath(path: WSPath) {
@@ -35,7 +30,7 @@
 </script>
 
 <div class="ws-pm-project-tree">
-	{#each paths as path}
-		<PmProjectTreePathItem {manager} {path} {onDeletePath}/>
-	{/each}
+	{#if path instanceof WSPath}
+	<TreePathContainer {manager} {path} {onDeletePath}/>
+	{/if}
 </div>

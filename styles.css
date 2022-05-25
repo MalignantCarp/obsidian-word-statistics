@@ -442,6 +442,15 @@ table.ws-pm-project-list-item-files > :is(tbody,tfoot) > tr.ws-pm-file-item > td
 	align-self: center;
 }
 
+.ws-path-item-end {
+	display: flex;
+	column-gap: 0.25em;
+}
+
+.ws-path-item-inner {
+	flex: 1 1 auto;
+}
+
 .ws-path-item-button.ws-edit {
 	color: var(--ws-icon-edit);
 }

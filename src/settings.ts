@@ -10,28 +10,42 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 
 export const DEFAULT_VIEW_SETTINGS: WSViewSettings = {
 	treeView: true,
-}
+};
+
+export const DEFAULT_DATABASE_SETTINGS: WSDatabaseSettings = {
+	fileMinify: true,
+	projectMinify: false,
+	pathMinify: false,
+};
 
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	clearEmptyPaths: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
 	viewSettings: DEFAULT_VIEW_SETTINGS,
+	databaseSettings: DEFAULT_DATABASE_SETTINGS,
 };
 
 export interface WSPluginSettings {
-	useDisplayText: boolean;
-	clearEmptyPaths: boolean;
-	tableSettings: WSTableSettings;
-	viewSettings: WSViewSettings;
+	useDisplayText: boolean,
+	clearEmptyPaths: boolean,
+	tableSettings: WSTableSettings,
+	viewSettings: WSViewSettings,
+	databaseSettings: WSDatabaseSettings;
 };
 
 export interface WSTableSettings {
-	showNumber: boolean; // shows a number next to each entry as the primary key
-	sortAlpha: boolean; // sorts all entries alphabetically -- ignores index sort
-	showShare: boolean; // shorts the percentage of words the note holds of the project's total word count
-	showExcluded: boolean; // still shows an file in the table where counting is to be excluded 
+	showNumber: boolean, // shows a number next to each entry as the primary key
+	sortAlpha: boolean, // sorts all entries alphabetically -- ignores index sort
+	showShare: boolean, // shorts the percentage of words the note holds of the project's total word count
+	showExcluded: boolean, // still shows an file in the table where counting is to be excluded 
 };
+
+export interface WSDatabaseSettings {
+	fileMinify: boolean,
+	projectMinify: boolean,
+	pathMinify: boolean;
+}
 
 export interface WSViewSettings {
 	treeView: boolean;
@@ -43,6 +57,35 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: WordStatisticsPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	showDatabaseSettings(containerEl: HTMLElement) {
+		containerEl.createEl('h3', { text: 'Database Settings' });
+		containerEl.createEl('p', { text: "These options will help to compact the JSON files used to store the file, project, and path databases. If enabled, no whitespace will be added to leave the JSON file more human readable." });
+		new Setting(containerEl)
+			.setName('Minify File Database')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.databaseSettings.fileMinify)
+				.onChange(async (value) => {
+					this.plugin.settings.databaseSettings.fileMinify = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Minify Project Database')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.databaseSettings.projectMinify)
+				.onChange(async (value) => {
+					this.plugin.settings.databaseSettings.projectMinify = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Minify Path Database')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.databaseSettings.pathMinify)
+				.onChange(async (value) => {
+					this.plugin.settings.databaseSettings.pathMinify = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 
 	display(): void {

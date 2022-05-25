@@ -3,7 +3,7 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import { PROJECT_TYPE_NAME_PLURAL, WSProject, WSPType } from "src/model/project";
 	import { onDestroy, onMount } from "svelte";
-	import PmProjectListItem from "./PMProjectTreeProjectItem.svelte";
+	import PmProjectListItem from "./ProjectItem.svelte";
 
 	export let type: WSPType;
 	export let manager: WSProjectManager;

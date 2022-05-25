@@ -1,6 +1,5 @@
 import type { WSDataCollector } from "./collector";
 import { WSFile } from "./file";
-import type { WSProjectManager } from "./manager";
 
 export enum WSPType {
     File = 0,
@@ -50,19 +49,19 @@ function LoadProjectV0FromSerial(collector: WSDataCollector, projInfo: IProjectV
         case WSPType.File:
             let file = collector.getFileSafer(projInfo.index);
             if (file != null) {
-                return new WSFileProject(collector, projInfo.id, projInfo.path, file, projInfo.category, projInfo.title, [], projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
+                return new WSFileProject(collector, projInfo.id, projInfo.path, file, projInfo.category, projInfo.title, projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
             }
             console.log(`Attempted to load V0 Project from invalid data. File not found for '${projInfo.index}':`, projInfo);
             break;
         case WSPType.Folder:
             if (collector.getAllFolders().contains(projInfo.index)) {
-                return new WSFolderProject(collector, projInfo.id, projInfo.path, projInfo.index, projInfo.category, projInfo.title, [], projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
+                return new WSFolderProject(collector, projInfo.id, projInfo.path, projInfo.index, projInfo.category, projInfo.title, projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
             }
             console.log(`Attempted to load V0 Project from invalid data. Folder not found for '${projInfo.index}':`, projInfo);
             break;
         case WSPType.Tag:
             if (collector.getAllTags().contains(projInfo.index)) {
-                return new WSTagProject(collector, projInfo.id, projInfo.path, projInfo.index, projInfo.category, projInfo.title, [], projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
+                return new WSTagProject(collector, projInfo.id, projInfo.path, projInfo.index, projInfo.category, projInfo.title, projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
             }
             console.log(`Attempted to load V0 Project from invalid data. Tag not found for '${projInfo.index}':`, projInfo);
             break;
@@ -92,6 +91,8 @@ export function LoadProjectFromSerial(collector: WSDataCollector, projInfo: IPro
 }
 
 export abstract class WSProject {
+    public files: WSFile[] = [];
+
     constructor(
         public collector: WSDataCollector,
         public id: string,
@@ -99,7 +100,6 @@ export abstract class WSProject {
         public readonly pType: WSPType,
         public category: WSPCategory,
         public _title: string,
-        public files: WSFile[] = [],
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0
     ) { }
@@ -129,7 +129,7 @@ export abstract class WSProject {
     }
 
     get title(): string {
-        return (this.title || this.id);
+        return (this._title || this.id);
     }
 
     get totalWords() {
@@ -166,11 +166,10 @@ export class WSFileProject extends WSProject {
         public file: WSFile,
         public category: WSPCategory,
         public _title: string,
-        public files: WSFile[] = [],
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0
     ) {
-        super(collector, id, path, WSPType.File, category, _title, [], wordGoalForProject, wordGoalForFiles);
+        super(collector, id, path, WSPType.File, category, _title, wordGoalForProject, wordGoalForFiles);
         if (file instanceof WSFile) {
             this.file = file;
         } else {
@@ -202,11 +201,10 @@ export class WSFolderProject extends WSProject {
         public folder: string,
         public category: WSPCategory,
         public _title: string,
-        public files: WSFile[] = [],
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0
     ) {
-        super(collector, id, path, WSPType.Folder, category, _title, [], wordGoalForProject, wordGoalForFiles);
+        super(collector, id, path, WSPType.Folder, category, _title, wordGoalForProject, wordGoalForFiles);
     }
 
     get index() {
@@ -226,11 +224,10 @@ export class WSTagProject extends WSProject {
         public tag: string,
         public category: WSPCategory,
         public _title: string,
-        public files: WSFile[] = [],
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0
     ) {
-        super(collector, id, path, WSPType.Tag, category, _title, [], wordGoalForProject, wordGoalForFiles);
+        super(collector, id, path, WSPType.Tag, category, _title, wordGoalForProject, wordGoalForFiles);
     }
 
     get index() {

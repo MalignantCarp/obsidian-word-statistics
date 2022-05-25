@@ -4,7 +4,7 @@
 	import { onMount } from "svelte";
 
 	import PmFileInfo from "./PMFileInfo.svelte";
-	import PmProjectTree from "./PMProjectTree.svelte";
+	import ProjectTree from "./ProjectTree.svelte";
 
 	let newProjectButton: HTMLElement;
 
@@ -29,7 +29,7 @@
 		</div>
 	</div>
 	<div class="ws-project-management-view-body">
-		<PmProjectTree {manager} />
+		<ProjectTree {manager} />
 	</div>
 	<PmFileInfo {manager} defaultFile={manager.plugin.focusFile} />
 </div>

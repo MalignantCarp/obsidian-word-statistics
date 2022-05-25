@@ -6,16 +6,15 @@
 
 	export let events: Dispatcher;
 
-	let file: WSFile = null;
+	export let file: WSFile = null;
 	let wordCount: string = "";
-	let monitoring: boolean = false;
-	let errMessage: string = "No file loaded.";
 	let containerEl: HTMLElement;
 
 	onMount(() => {
 		registerEvents();
 		events.on(WSEvents.Focus.File, updateFile, { filter: null });
 		setIcon(containerEl, "document", 16);
+		updateCount();
 	});
 
 	onDestroy(() => {
@@ -35,19 +34,11 @@
 	}
 
 	function registerEvents() {
-		if (!monitoring && file instanceof WSFile) {
-			events.on(WSEvents.File.WordsChanged, updateCount, { filter: file });
-			monitoring = true;
-		}
+		events.on(WSEvents.File.WordsChanged, updateCount, { filter: file });
 	}
 
 	function unregisterEvents() {
-		if (monitoring) {
-			events.off(WSEvents.File.WordsChanged, updateCount, { filter: file });
-			monitoring = false;
-			wordCount = "";
-			file = null;
-		}
+		events.off(WSEvents.File.WordsChanged, updateCount, { filter: file });
 	}
 
 	function updateCount(event?: WSFileEvent) {
@@ -59,10 +50,6 @@
 </script>
 
 <div class="ws-sb-counter-file">
-	<div class="ws-sb-icon" bind:this={containerEl} class:hidden={!(monitoring && wordCount.length > 0)}/>
-	{#if monitoring && wordCount.length > 0}
-		<div class="ws-sb-count-file">{wordCount}</div>
-	{:else if !monitoring}
-		{errMessage}
-	{/if}
+	<div class="ws-sb-icon" bind:this={containerEl} />
+	<div class="ws-sb-count-file">{wordCount}</div>
 </div>

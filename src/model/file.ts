@@ -1,43 +1,3 @@
-export interface IFile {
-	name: string,
-	path: string,
-	words: number,
-	lastUpdate: number,
-	wordGoal: number;
-}
-
-// This may yield a file that is inaccessible if the file path has changed outside of Obsidian.
-// Thus this may need to be looped from within Collector
-function LoadFileFromSerial(data: IFile) {
-	let file = new WSFile(data.name, data.path, data.wordGoal);
-	file.setWords(data.words);
-	file.lastUpdate = data.lastUpdate;
-	return file;
-}
-
-function ParseFileContentV0(data: string): WSFile[] {
-	try {
-		let content = JSON.parse(data) as IFile[];
-		let files: WSFile[] = [];
-		content.forEach((value) => {
-			files.push(LoadFileFromSerial(value));
-		});
-		return files;
-	} catch (error) {
-		console.log("Error parsing file content (V0):", error);
-		return undefined;
-	}
-}
-
-export function ParseFileContent(data: string) {
-	let content: WSFile[];
-
-	if (data) {
-		content = ParseFileContentV0(data);
-	}
-	return content;
-}
-
 export class WSFile {
 	name: string;
 	path: string;
@@ -59,6 +19,7 @@ export class WSFile {
 		this.links = new Map<WSFile, string>();
 		this.backlinks = [];
 		this.wordGoal = wordGoal || 0;
+		// console.log(`New File(${this.path}`);
 	}
 
 	private toObject() {
@@ -173,7 +134,7 @@ export class WSFile {
 		this.lastUpdate = Date.now();
 	}
 
-	setWords(count: number) {
+	set words(count: number) {
 		this.currentWords = count;
 		this.lastUpdate = Date.now();
 	}
