@@ -281,19 +281,19 @@ export default class WordStatisticsPlugin extends Plugin {
 	saveProjects(evt: WSDataEvent) {
 		let data = WSFormat.SaveProjectData(this, this.collector.manager.projectList);
 		// console.log(data);
-		// this.saveSerialData(PROJECT_PATH, data);
+		this.saveSerialData(PROJECT_PATH, data);
 	}
 
 	saveFiles(event: WSDataEvent) {
 		let data = WSFormat.SaveFileData(this, this.collector.fileList);
 		// console.log(data);
-		// this.saveSerialData(FILE_PATH, data);
+		this.saveSerialData(FILE_PATH, data);
 	}
 
 	savePaths(event: WSDataEvent) {
 		let data = WSFormat.SavePathData(this, this.collector.manager.getSetPaths());
 		// console.log(data);
-		// this.saveSerialData(PATH_PATH, data);
+		this.saveSerialData(PATH_PATH, data);
 	}
 
 	onFileWordCount(file: WSFile) {

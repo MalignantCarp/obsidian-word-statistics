@@ -25,69 +25,12 @@ export const PROJECT_TYPE_DESCRIPTION = [
     "These projects are indexed by a tag. Files within this project will appear in vault order or alphabetial oder, depending on setting."
 ];
 
-export interface IProjectV0 {
-    id: string,
-    path: string,
-    pType: WSPType,
-    title: string,
-    index: string,
-    category: WSPCategory,
-    wordGoalForProject: number,
-    wordGoalForFiles: number;
-}
-
 /* Assuming we will at some point have a new version of the spec, this makes the most sense for loading.
    If the current version load routine returns null, can always fallback on prior version.
 */
 
 export function SortProjectList(projects: WSProject[]) {
     return projects.sort((a, b) => a.fullPath.localeCompare(b.fullPath, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
-}
-
-function LoadProjectV0FromSerial(collector: WSDataCollector, projInfo: IProjectV0): WSProject {
-    switch (projInfo.pType) {
-        case WSPType.File:
-            let file = collector.getFileSafer(projInfo.index);
-            if (file != null) {
-                return new WSFileProject(collector, projInfo.id, projInfo.path, file, projInfo.category, projInfo.title, projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
-            }
-            console.log(`Attempted to load V0 Project from invalid data. File not found for '${projInfo.index}':`, projInfo);
-            break;
-        case WSPType.Folder:
-            if (collector.getAllFolders().contains(projInfo.index)) {
-                return new WSFolderProject(collector, projInfo.id, projInfo.path, projInfo.index, projInfo.category, projInfo.title, projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
-            }
-            console.log(`Attempted to load V0 Project from invalid data. Folder not found for '${projInfo.index}':`, projInfo);
-            break;
-        case WSPType.Tag:
-            if (collector.getAllTags().contains(projInfo.index)) {
-                return new WSTagProject(collector, projInfo.id, projInfo.path, projInfo.index, projInfo.category, projInfo.title, projInfo.wordGoalForProject, projInfo.wordGoalForFiles);
-            }
-            console.log(`Attempted to load V0 Project from invalid data. Tag not found for '${projInfo.index}':`, projInfo);
-            break;
-        default:
-            console.log(`Attempted to load V0 Project from invalid data. Unknown project type '${projInfo.pType}':`, projInfo);
-            break;
-    }
-    return null;
-};
-
-// function LoadProjectV1FromSerial(collector: WSDataCollector, projInfo: IProjectV1): WSProject {
-//     return null;
-// };
-
-export function LoadProjectFromSerial(collector: WSDataCollector, projInfo: IProjectV0): WSProject {
-    let project: WSProject;
-    // project = LoadProjectV1FromSerial(collector, projInfo as IProjectV1);
-    // if (project === null) {
-    //     console.log("Falling back on Project V0.");
-    //     project = LoadProjectV0FromSerial(collector, projInfo as IProjectV0);
-    // }
-    project = LoadProjectV0FromSerial(collector, projInfo as IProjectV0);
-    if (project === null) {
-        console.log("Failed to load project:", projInfo);
-    }
-    return project;
 }
 
 export abstract class WSProject {
@@ -101,28 +44,12 @@ export abstract class WSProject {
         public category: WSPCategory,
         public _title: string,
         public wordGoalForProject: number = 0,
-        public wordGoalForFiles: number = 0
+        public wordGoalForFiles: number = 0,
+        public iconID: string = ""
     ) { }
 
     abstract get index(): string;
     abstract getFiles(): WSFile[];
-
-    private toObject(): IProjectV0 {
-        return {
-            id: this.id,
-            path: this.path,
-            pType: this.pType,
-            title: this._title,
-            category: this.category,
-            index: this.index,
-            wordGoalForProject: this.wordGoalForProject,
-            wordGoalForFiles: this.wordGoalForFiles
-        };
-    }
-
-    serialize() {
-        return this.toObject();
-    }
 
     set title(title: string) {
         this._title = title;
@@ -167,9 +94,10 @@ export class WSFileProject extends WSProject {
         public category: WSPCategory,
         public _title: string,
         public wordGoalForProject: number = 0,
-        public wordGoalForFiles: number = 0
+        public wordGoalForFiles: number = 0,
+        public iconID: string = ""
     ) {
-        super(collector, id, path, WSPType.File, category, _title, wordGoalForProject, wordGoalForFiles);
+        super(collector, id, path, WSPType.File, category, _title, wordGoalForProject, wordGoalForFiles, iconID);
         if (file instanceof WSFile) {
             this.file = file;
         } else {
@@ -202,9 +130,10 @@ export class WSFolderProject extends WSProject {
         public category: WSPCategory,
         public _title: string,
         public wordGoalForProject: number = 0,
-        public wordGoalForFiles: number = 0
+        public wordGoalForFiles: number = 0,
+        public iconID: string = ""
     ) {
-        super(collector, id, path, WSPType.Folder, category, _title, wordGoalForProject, wordGoalForFiles);
+        super(collector, id, path, WSPType.Folder, category, _title, wordGoalForProject, wordGoalForFiles, iconID);
     }
 
     get index() {
@@ -225,9 +154,10 @@ export class WSTagProject extends WSProject {
         public category: WSPCategory,
         public _title: string,
         public wordGoalForProject: number = 0,
-        public wordGoalForFiles: number = 0
-    ) {
-        super(collector, id, path, WSPType.Tag, category, _title, wordGoalForProject, wordGoalForFiles);
+        public wordGoalForFiles: number = 0,
+        public iconID: string = ""
+        ) {
+        super(collector, id, path, WSPType.Tag, category, _title, wordGoalForProject, wordGoalForFiles, iconID);
     }
 
     get index() {

@@ -3,11 +3,13 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import type { WSPath } from "src/model/path";
 	import type { WSProject } from "src/model/project";
+import { GetProgressGrade } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import PathItemButtons from "./PathItemButtons.svelte";
 	import PathWordCount from "./PathWordCount.svelte";
 	import ProjectItem from "./ProjectItem.svelte";
 	import TreePathLabel from "./TreePathLabel.svelte";
+import TreeProjectContainer from "./TreeProjectContainer.svelte";
 
 	export let manager: WSProjectManager;
 	export let path: WSPath;
@@ -21,6 +23,9 @@
 	let label: TreePathLabel;
 
 	let collapsed = false;
+
+	let progress: HTMLElement;
+    let progressData: string;
 
 	onMount(() => {
 		manager.plugin.events.on(WSEvents.Path.Titled, reset, { filter: null });
@@ -81,6 +86,12 @@
 		}
 	}
 
+	function onConfirmDeleteProject(confirmed: boolean, project: WSProject) {
+		if (confirmed) {
+			manager.deleteProject(project);
+		}
+	}
+
 	function pathDelete() {
 		let modal = manager.modals.createConfirmationModal(`Are you sure you want to purge this path ('/${path.title}/')?`, () => {
 			onConfirmDelete(modal.confirmation);
@@ -96,21 +107,38 @@
 	}
 
 	function deleteProject(project: WSProject) {
-		manager.deleteProject(project);
+		let modal = manager.modals.createConfirmationModal(`Are you sure you want to delete this project ('${project.id}')?`, () => {
+			onConfirmDeleteProject(modal.confirmation, project);
+		})
+		modal.open();
 	}
 
 	function collapseToggle() {
 		collapsed = !collapsed;
 	}
+
+	function onWordCountUpdate(count: number) {
+		if (path.wordGoalForPath > 0) {
+            let percent = Math.round((count / path.wordGoalForPath)*100);
+            percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
+			progressData = GetProgressGrade(percent);
+            progress.style.width = percent.toString() + "%";
+		} else {
+			progressData = "0";
+			progress.style.width = "0";
+		}
+	}
+
 </script>
 
 <div class="ws-path-item tree-item" class:is-collapsed={collapsed}>
 	<div class="ws-path-item-self tree-item-self" class:is-clickable={path != manager.pathRoot}>
 		<TreePathLabel bind:this={label} {manager} {path} {collapseToggle} />
 		<div class="ws-path-item-end">
-			<PathWordCount {path} {manager} />
+			<PathWordCount {path} {manager} {onWordCountUpdate}/>
 			<PathItemButtons bind:this={buttons} {manager} {path} {editPath} {pathClear} {pathDelete} />
 		</div>
+		<div class="ws-word-progress" data-progress={progressData} bind:this={progress} />
 	</div>
 	{#if !collapsed && (path.hasChildren() || path.hasProjects(manager))}
 		<div class="ws-path-item-children tree-item-children">
@@ -118,7 +146,7 @@
 				<svelte:self {manager} path={childPath} {onDeletePath} />
 			{/each}
 			{#each childProjects as childProject}
-				<ProjectItem {manager} project={childProject} onDelete={deleteProject} />
+				<TreeProjectContainer {manager} project={childProject} {deleteProject} />
 			{/each}
 		</div>
 	{/if}

@@ -38,10 +38,10 @@
 </script>
 
 <div class="ws-path-item-buttons">
-	<div class="ws-path-item-button ws-edit" on:click={editPath} aria-label="Customize Path" bind:this={editIcon} />
+	<div class="ws-path-item-button ws-icon-edit" on:click={editPath} aria-label="Customize Path" bind:this={editIcon} />
 	{#if canClear}
-		<div class="ws-path-item-button ws-reset" on:click={pathClear} aria-label="Reset Path" bind:this={clearIcon} />
+		<div class="ws-path-item-button ws-icon-mod" on:click={pathClear} aria-label="Reset Path" bind:this={clearIcon} />
 	{:else if isClear && canPurge}
-		<div class="ws-path-item-button ws-purge" on:click={pathDelete} aria-label="Purge Path" bind:this={clearIcon} />
+		<div class="ws-path-item-button ws-icon-delete" on:click={pathDelete} aria-label="Purge Path" bind:this={clearIcon} />
 	{/if}
 </div>

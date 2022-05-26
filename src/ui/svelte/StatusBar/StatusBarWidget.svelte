@@ -33,7 +33,7 @@
 
 <div class="ws-status-bar">
 	{#if file instanceof WSFile}
-		<WordCountForFile {file} events={eventDispatcher} />
+		<WordCountForFile manager={projectManager} {file} events={eventDispatcher} />
 		{#if projectManager.getProjectsByFile(file).length > 0}
 			<WordCountForProject events={eventDispatcher} manager={projectManager} focus={file}/>
 		{/if}

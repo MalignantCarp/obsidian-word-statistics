@@ -31,6 +31,7 @@
 	$: project = _project instanceof WSProject ? _project : null;
 
 	let title: string;
+	let titleStr: string;
 
 	onMount(() => {
 		title = (project instanceof WSProject ? "Edit " : "New ") + "Project";
@@ -38,7 +39,7 @@
 			projectIndex.setInitial(project.index);
 			pType = project.pType;
 			projectID.setText(project.id);
-			titleEl.setText(project.title);
+			titleStr = project._title;
 			path.setInitial(project.path);
 			categoryEl.selectedIndex = project.category;
 			wordGoalProject.value = project.wordGoalForProject.toString();
@@ -52,7 +53,6 @@
 	let validPath: boolean;
 
 	function onSave() {
-		//manager.projectEditorCallback(type, projectName.getText(), suggestBox.getSelectedOption(), project);
 		if (_project === null) {
 			manager.createProject(
 				pType,
@@ -60,33 +60,19 @@
 				path.getSearchString(),
 				projectIndex.getSelectedOption(),
 				categoryEl.selectedIndex,
-				titleEl.getText(),
+				titleStr,
 				parseInt(wordGoalProject.value) || 0,
 				parseInt(wordGoalFile.value) || 0
 			);
 		} else {
-			if (_project.path != path.getSearchString()) {
-				manager.setProjectPath(_project, path.getSearchString());
-			}
-			if (_project.id != projectID.getText()) {
-				manager.setProjectID(_project, projectID.getText());
-			}
-			if (_project.index != projectIndex.getSelectedOption()) {
-				manager.setProjectIndex(_project, projectIndex.getSelectedOption());
-			}
-			if (_project.category != categoryEl.selectedIndex) {
-				manager.setProjectCategory(_project, categoryEl.selectedIndex);
-			}
-			if (_project.title != titleEl.getText()) {
-				manager.setProjectTitle(_project, titleEl.getText());
-			}
-			let oldGoal = _project.wordGoalForProject;
-			let oldFileGoal = _project.wordGoalForFiles;
+			manager.setProjectPath(_project, path.getSearchString());
+			manager.setProjectID(_project, projectID.getText());
+			manager.setProjectIndex(_project, projectIndex.getSelectedOption());
+			manager.setProjectCategory(_project, categoryEl.selectedIndex);
+			manager.setProjectTitle(_project, titleStr);
 			let newGoal = parseInt(wordGoalProject.value) || 0;
 			let newFileGoal = parseInt(wordGoalFile.value) || 0;
-			if (oldGoal != newGoal || oldFileGoal != newFileGoal) {
-				manager.setProjectGoals(_project, newGoal, newFileGoal);
-			}
+			manager.setProjectGoals(_project, newGoal, newFileGoal);
 		}
 		onClose();
 	}
@@ -120,6 +106,12 @@
 			return [true, ""];
 		}
 		return manager.validatePath(path);
+	}
+
+	function getPathStrings() {
+		let strings = manager.getPathStrings();
+		strings.remove("");
+		return strings;
 	}
 </script>
 
@@ -163,7 +155,7 @@
 		</div>
 		<svelte:component
 			this={SuggestBox}
-			options={manager.getPathStrings()}
+			options={getPathStrings()}
 			placeholder={""}
 			bind:this={path}
 			bind:isValid={validPath}
@@ -197,7 +189,7 @@
 			<div class="setting-item-description">Please enter your project title. If left blank, project ID will be displayed in its place.</div>
 		</div>
 		<div class="setting-item-control">
-			<input type="text" bind:this={titleEl} />
+			<input type="text" bind:this={titleEl} bind:value={titleStr}/>
 		</div>
 	</div>
 	<div class="setting-item">

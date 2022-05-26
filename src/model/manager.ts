@@ -9,7 +9,7 @@ import { WSPath } from "./path";
 export class WSProjectManager {
     projectList: WSProject[];
     paths: Map<string, WSPath>;
-    pathRoot: WSPath = new WSPath("", "Project Manager Root", 0);
+    pathRoot: WSPath = new WSPath("", "All Projects", 0);
     projects: Map<string, [WSPType, WSProject]>;
     errorState: boolean = false;
     errorMessages: string[] = [];
@@ -68,7 +68,7 @@ export class WSProjectManager {
         if (this.validateProjectLoad(projects)) {
             projects.forEach((project) => {
                 this.registerProject(project);
-            })
+            });
         }
     }
 
@@ -76,7 +76,7 @@ export class WSProjectManager {
         if (this.validatePathLoad(paths)) {
             paths.forEach((path) => {
                 this.registerPath(path);
-            })
+            });
         }
     }
 
@@ -106,6 +106,21 @@ export class WSProjectManager {
         let matches = this.projectList.filter(fp => fp.pType === WSPType.File && (<WSFileProject>fp).file === file);
         // console.log(`isIndexFile(${file.path}) = ${matches.length > 0}`);
         return matches.length > 0;
+    }
+
+    getWordGoalForProjectByContext(project: WSProject) {
+        if (project.wordGoalForProject) {
+            return project.wordGoalForProject;
+        }
+        if (this.paths.has(project.path)) {
+            let path = this.paths.get(project.path);
+            if (path instanceof WSPath) {
+                if (path.wordGoalForProjects) {
+                    return path.wordGoalForProjects;
+                }
+            }
+        }
+        return undefined;
     }
 
     getWordGoalForFileByContext(file: WSFile, project: WSProject) {
@@ -430,19 +445,26 @@ export class WSProjectManager {
         this.projects.delete(proj.id);
         proj.id = newID;
         this.projects.set(newID, [proj.pType, proj]);
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Renamed, project: proj, data: [oldID, newID] }, { filter: proj }));
+        if (proj.id != oldID) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Renamed, project: proj, data: [oldID, newID] }, { filter: proj }));
+        }
         // this.updateProject(proj);
     }
 
     setProjectTitle(proj: WSProject, newTitle: string) {
-        let oldTitle = proj.title;
-        proj.title = newTitle;
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.TitleSet, project: proj, data: [oldTitle, newTitle] }, { filter: proj }));
+        let oldTitle = proj._title;
+        proj._title = newTitle;
+        if (oldTitle != newTitle) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.TitleSet, project: proj, data: [oldTitle, newTitle] }, { filter: proj }));
+        }
     }
 
     setProjectCategory(proj: WSProject, newCategory: WSPCategory) {
+        let oldCategory = proj.category;
         proj.category = newCategory;
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.CategorySet, project: proj }, { filter: proj }));
+        if (oldCategory != newCategory) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.CategorySet, project: proj }, { filter: proj }));
+        }
     }
 
     setProjectPath(proj: WSProject, newPath: string) {
@@ -450,7 +472,9 @@ export class WSProjectManager {
         proj.path = newPath;
         this.purgePath(this.getPath(oldPath));
         this.buildPath(newPath);
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.PathSet, project: proj }, { filter: proj }));
+        if (oldPath != newPath) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.PathSet, project: proj }, { filter: proj }));
+        }
     }
 
     deleteProject(proj: WSProject) {

@@ -6,12 +6,6 @@ import { WordCountForText } from '../words';
 import { WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
 
-interface LongformDraft {
-    name: string;
-    folder: string;
-    scenes: string[];
-}
-
 export class WSDataCollector {
     plugin: WordStatisticsPlugin;
     vault: Vault;
@@ -315,6 +309,10 @@ export class WSDataCollector {
                 fi = loadedFiles.get(file.path);
                 loadedFiles.delete(file.path);
                 this.setFile(file.path, fi);
+                this.lastWords += fi.totalWords;
+                if (fi.totalWords > 0) {
+                    this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file: fi }, { filter: fi }));
+                }
             } else {
                 fi = this.getFile(file.path);
                 if (fi === null) {

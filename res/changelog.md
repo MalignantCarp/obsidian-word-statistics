@@ -1,4 +1,13 @@
 ## Changelog
+### 2022-05-25
+ - Removed PMFileInfo panel.
+ - Removed serialization code from WSProject.
+ - BUGFIX: Project Title is not saved.
+ - Moved check code from ProjectEditor.svelte into the respective WSProjectManager.setProject* methods to determine whether to fire events.
+ - Finished the TreeProjectContainer and its subcomponents.
+ - Added progress bars to TreeProjectContainer and TreePathContainer and file and project status bar counters.
+ - BUGFIX: Since caching file state, Vault Counter read 0. Needed to account for the word totals for each file already being set, so now setting them when the file is initially set and triggering a word count change event as required.
+
 ### 2022-05-24
  - Built new WSFormat namespace for saving and loading files, paths, and projects. Moved all supporting code there to get it out of the main files to declutter. Will be considering CSV for a similar smaller format for minifying files.json, as it could get rather enormous for large vaults. Alternatively, it may be that only monitored files (i.e., project files) will be included, though that could be cumbersome in determining project files to output whenever saving is required.
  - BUGFIX: Closing all open files resulted in an unhandled exception.
