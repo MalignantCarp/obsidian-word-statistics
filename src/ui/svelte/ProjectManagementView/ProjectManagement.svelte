@@ -22,9 +22,7 @@
 <div class="ws-project-management-view">
 	<div class="nav-header">
 		<div class="nav-buttons-container">
-			<div class="group">
-				<div class="nav-action-button" aria-label="New Project" bind:this={newProjectButton} on:click={onNewProject} />
-			</div>
+			<div class="nav-action-button" aria-label="New Project" bind:this={newProjectButton} on:click={onNewProject} />
 		</div>
 	</div>
 	<div class="ws-project-management-view-body">

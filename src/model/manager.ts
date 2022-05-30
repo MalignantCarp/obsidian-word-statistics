@@ -288,10 +288,9 @@ export class WSProjectManager {
         return pathStrings;
     }
 
-    setPath(path: string, title: string, category: WSPCategory, wordGoalForPath: number, wordGoalForProjects: number, wordGoalForFiles: number) {
+    setPath(path: string, title: string, wordGoalForPath: number, wordGoalForProjects: number, wordGoalForFiles: number) {
         let pathObj = this.getPath(path);
-        pathObj.title = title;
-        pathObj.category = category;
+        pathObj._title = title;
         pathObj.wordGoalForPath = wordGoalForPath;
         pathObj.wordGoalForProjects = wordGoalForProjects;
         pathObj.wordGoalForFiles = wordGoalForFiles;
@@ -299,11 +298,19 @@ export class WSProjectManager {
         return pathObj;
     }
 
+    updatePath(path: WSPath, title: string, wordGoalForPath: number, wordGoalForProjects: number, wordGoalForFiles: number) {
+        let updated = title !== path._title || wordGoalForPath !== path.wordGoalForPath || wordGoalForProjects !== path.wordGoalForProjects || wordGoalForFiles !== path.wordGoalForProjects;
+        this.setPathTitle(path, title);
+        this.setPathWordGoals(path, wordGoalForPath, wordGoalForProjects, wordGoalForFiles);
+        if (!this.paths.has(path.path) && updated) {
+            this.registerPath(path);
+        }
+    }
+
     resetPath(path: string) {
         let pathObj = this.getPath(path);
         this.setPathTitle(pathObj, "");
         this.setPathWordGoals(pathObj, 0, 0, 0);
-        this.setPathCategory(pathObj, WSPCategory.None);
     }
 
     getPath(path: string): WSPath {
@@ -545,16 +552,7 @@ export class WSProjectManager {
         path.wordGoalForProjects = goalForProjects;
         path.wordGoalForFiles = goalForFiles;
         if (changed) {
-            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path }, { filter: path }));
-        }
-    }
-
-    setPathCategory(path: WSPath, category: WSPCategory = WSPCategory.None) {
-        let changed = category != path.category;
-
-        path.category = category;
-        if (changed) {
-            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path }, { filter: path }));
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.GoalsSet, path }, { filter: path }));
         }
     }
 

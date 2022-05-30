@@ -3,6 +3,7 @@
 	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent, WSProjectEvent } from "src/model/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
+import type { WSPath } from "src/model/path";
 	import { WSProject } from "src/model/project";
 	import { FormatWords, GetProgressGrade } from "src/util";
 	import { onDestroy, onMount } from "svelte";
@@ -12,6 +13,7 @@
 	export let manager: WSProjectManager;
 	export let focus: WSFile;
 
+	let path: WSPath = null;
 	let project: WSProject = null;
 	let wordCount: string = "";
 	let errMessage = "";
@@ -36,19 +38,33 @@
 		events.off(WSEvents.Focus.File, onFocus, { filter: null });
 		events.off(WSEvents.Project.FilesUpdated, onProjectsUpdated, { filter: null });
 		events.off(WSEvents.File.WordsChanged, updateCount, { filter: null });
+		UnregisterEvents();
 	});
 
+	function RegisterEvents() {
+		events.on(WSEvents.Path.GoalsSet, updateCount, {filter: path});
+	}
+
+	function UnregisterEvents() {
+		events.off(WSEvents.Path.GoalsSet, updateCount, {filter: path});
+	}
+
 	function loadProjects() {
+		UnregisterEvents();
 		if (focus instanceof WSFile) {
 			projects = manager.getProjectsByFile(focus);
 			if (projects.length > 1) {
 				errMessage = `File in ${projects.length} project${projects.length == 1 ? "" : "s"}`;
+				path = null;
 				project = null;
 			} else if (projects.length === 0) {
 				errMessage = "";
+				path = null;
 				project = null;
 			} else {
 				project = projects[0];
+				path = manager.getPath(project.path);
+				RegisterEvents();
 				errMessage = "";
 			}
 		} else {

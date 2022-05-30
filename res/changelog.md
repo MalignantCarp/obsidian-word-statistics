@@ -1,4 +1,14 @@
 ## Changelog
+### 2022-05-29
+ - Added a svelte file for SettingItems to help cleanup the ProjectEditor.svelte.
+ - Cleaned up ProjectEditor.svelte using the new SettingItems.svelte.
+ - Some CSS and container fixes to make ValidatedInput and SuggestBox components not jump around when validation messages appear.
+ - BUGFIX: SuggestBox was not scrolling with the moved highlight.
+ - Made it so SuggestBox can scroll in either direction and will loop around.
+ - Removed Category from WSPath. Category will be per-project.
+ - Built PathEditor (untested)
+ - A few changes to accommodate the PathEditor and updates to goals, so that they are accounted for by the Project and File word counters.
+
 ### 2022-05-25
  - Removed PMFileInfo panel.
  - Removed serialization code from WSProject.

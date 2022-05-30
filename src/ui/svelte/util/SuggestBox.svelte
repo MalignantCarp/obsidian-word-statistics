@@ -2,7 +2,7 @@
 	import { setIcon } from "obsidian";
 	import { onMount } from "svelte";
 	import { createPopperActions } from "svelte-popperjs";
-	import * as fuzzysort from 'fuzzysort';
+	import * as fuzzysort from "fuzzysort";
 
 	export let placeholder: string;
 	export let options: string[];
@@ -15,6 +15,7 @@
 	let highlightIndex: number = null;
 	let inputComponent: HTMLInputElement;
 	let suggestionBox: HTMLElement;
+	let suggestionList: HTMLElement;
 
 	const [popperRef, popperContent] = createPopperActions({
 		placement: "bottom-start"
@@ -53,11 +54,11 @@
 	function filterOptions() {
 		let filtered: string[] = [];
 		if (searchString) {
-			let results = fuzzysort.go(searchString, options, {all:true});
-			results.forEach((result) => {
+			let results = fuzzysort.go(searchString, options, { all: true });
+			results.forEach(result => {
 				// console.log(result);
 				filtered.push(fuzzysort.highlight(result, "<span class='suggestion-highlight'>", "</span>"));
-			})
+			});
 		}
 		filteredOptions = filtered;
 	}
@@ -75,16 +76,29 @@
 			if (filteredOptions.length > 0) {
 				list = filteredOptions;
 			}
-
-			if (event.key == "ArrowDown" && (highlightIndex === null || highlightIndex < list.length - 1)) {
-				highlightIndex === null ? (highlightIndex = 0) : (highlightIndex += 1);
-			} else if (event.key == "ArrowDown" && highlightIndex === list.length - 1) {
-				highlightIndex = 0;
-			} else if (event.key == "ArrowUp" && highlightIndex != null) {
-				highlightIndex > 0 ? (highlightIndex -= 1) : (highlightIndex = list.length - 1);
+			if (event.key == "ArrowDown") {
+				if (highlightIndex === null || highlightIndex === list.length - 1) {
+					highlightIndex = 0;
+				} else {
+					highlightIndex += 1;
+				}
+			} else if (event.key == "ArrowUp") {
+				if (highlightIndex === null || highlightIndex === 0) {
+					highlightIndex = list.length - 1;
+				} else {
+					highlightIndex -= 1;
+				}
 			} else if (event.key == "Enter" && highlightIndex != null) {
 				setSuggestion(list[highlightIndex]);
 			}
+		}
+		scrollList();
+	}
+
+	function scrollList() {
+		if (inputComponent.isShown() && showOptions && suggestionList.isShown()) {
+			let highlightedElement = suggestionList.children[highlightIndex];
+			highlightedElement.scrollIntoView({block: "nearest"});
 		}
 	}
 
@@ -140,8 +154,8 @@
 </script>
 
 <svelte:window on:keydown={onKeyNav} />
-<div class="setting-item-control ws-suggest-box">
-	<div class="ws-suggest-box-container">
+<div class="ws-suggest-box-container">
+	<div class="ws-suggest-input">
 		<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
 		<input
 			class="ws-input"
@@ -157,14 +171,14 @@
 			use:popperRef
 			on:input={filterOptions}
 		/>
-		<div class="ws-validation-error">
-			<div class="ws-validation-message" class:hidden={isValid}>{validationMessage}</div>
-		</div>
+	</div>
+	<div class="ws-validation-error">
+		<div class="ws-validation-message" class:hidden={isValid}>{validationMessage}</div>
 	</div>
 </div>
 {#if showOptions}
 	<div class="suggestion-container ws-suggest-box" on:mousedown={onMouseDown} use:popperContent={extraOpts} bind:this={suggestionBox}>
-		<div class="suggestion">
+		<div class="suggestion" bind:this={suggestionList}>
 			{#if filteredOptions.length > 0}
 				{#each filteredOptions as option, i}
 					<div class="suggestion-item" on:click={() => setSuggestion(option)} class:is-selected={highlightIndex === i}>{@html option}</div>

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { WSProjectManager } from "src/model/manager";
-	import { PROJECT_CATEGORY_NAME, PROJECT_INDEX_TYPE, PROJECT_TYPE_DESCRIPTION, PROJECT_TYPE_NAME, WSProject, WSPType } from "src/model/project";
+	import { PROJECT_CATEGORY_NAME, PROJECT_TYPE_DESCRIPTION, PROJECT_INDEX_TYPE, WSProject, WSPType } from "src/model/project";
 	import { onMount } from "svelte";
+	import SettingItem from "../util/SettingItem.svelte";
 	import SuggestBox from "../util/SuggestBox.svelte";
 	import ValidatedInput from "../util/ValidatedInput.svelte";
 
@@ -22,7 +23,7 @@
 	let typeEl: HTMLSelectElement;
 	let titleEl: HTMLInputElement;
 
-	$: projectType = PROJECT_TYPE_NAME[pType];
+	$: projectType = PROJECT_INDEX_TYPE[pType];
 	$: projectDesc = PROJECT_TYPE_DESCRIPTION[pType];
 
 	const options: string[][] = [manager.collector.getAllPaths(), manager.collector.getAllFolders(), manager.collector.getAllTags()];
@@ -117,42 +118,32 @@
 
 <div class="ws-project-editor">
 	<h2>{title}</h2>
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Project Type</div>
-			<div class="setting-item-description">
-				Select the type of project you wish to use. <em>File Index</em> projects are indexed by Markdown file, <em>Folder</em> projects are indexed by a
-				file path, and <em>Tag</em> projects are indexed by tag. Once a project has been created, its type cannot be changed.
-			</div>
-		</div>
-		<div class="setting-item-control">
-			<select class="ws-project-editor-project-type dropdown" disabled={_project instanceof WSProject} bind:this={typeEl} on:change={onTypeChange}>
-				{#each PROJECT_INDEX_TYPE as piType, i}
-					<option value={i} selected={i === pType}>{piType}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Project ID</div>
-			<div class="setting-item-description">
-				Enter the ID of the project here. The project ID cannot be blank and must be unique. The Project ID will be used in sorting and may be
-				overridden (visually) by the project's title.
-			</div>
-		</div>
+	<SettingItem
+		name="Project Type"
+		desc="Select the type of project you wish to use. <em>File Index</em> projects are indexed by Markdown file, <em>Folder</em> projects are indexed by a
+		file path, and <em>Tag</em> projects are indexed by tag. Once a project has been created, its type cannot be changed."
+	>
+		<select class="ws-project-editor-project-type dropdown" disabled={_project instanceof WSProject} bind:this={typeEl} on:change={onTypeChange}>
+			{#each PROJECT_INDEX_TYPE as piType, i}
+				<option value={i} selected={i === pType}>{piType}</option>
+			{/each}
+		</select>
+	</SettingItem>
+	<SettingItem
+		name="Project ID"
+		desc="Enter the ID of the project here. The project ID cannot be blank and must be unique. The Project ID will be used in sorting and may be
+	overridden (visually) by the project's title."
+		controlClass="ws-validated-input"
+	>
 		<svelte:component this={ValidatedInput} placeholder={"Project ID"} validate={validateProjectID} bind:this={projectID} bind:isValid={validID} />
-	</div>
-
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Project Path</div>
-			<div class="setting-item-description">
-				Enter the path for this project. The project path allows you to organize the hierarchy of your projects. It can be blank (root path), cannot
-				begin or end with a forward-slash (/) or space, and can be as deep as you want, with each level separated by a forward-slash (/).
-				<br />Example: 'Book Series/Book 1'
-			</div>
-		</div>
+	</SettingItem>
+	<SettingItem
+		name="Project Path"
+		desc="Enter the path for this project. The project path allows you to organize the hierarchy of your projects. It can be blank (root path), cannot
+	begin or end with a forward-slash (/) or space, and can be as deep as you want, with each level separated by a forward-slash (/).
+	<br />Example: 'Book Series/Book 1'"
+		controlClass="ws-suggest-box"
+	>
 		<svelte:component
 			this={SuggestBox}
 			options={getPathStrings()}
@@ -161,60 +152,33 @@
 			bind:isValid={validPath}
 			customValidation={validateProjectPath}
 		/>
-	</div>
-
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">{projectType}</div>
-			<div class="setting-item-description">{projectDesc}</div>
-		</div>
+	</SettingItem>
+	<SettingItem name={projectType} desc={projectDesc} controlClass="ws-suggest-box">
 		<svelte:component this={SuggestBox} options={options[pType]} placeholder={optionPlaceholder} bind:this={projectIndex} bind:isValid={validIndex} />
-	</div>
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Category</div>
-			<div class="setting-item-description">Choose a category for this project. Defaults to None.</div>
-		</div>
-		<div class="setting-item-control">
-			<select class="ws-project-editor-project-category dropdown" bind:this={categoryEl}>
-				{#each PROJECT_CATEGORY_NAME as category, i}
-					<option value={i} selected={i === 0}>{category}</option>
-				{/each}
-			</select>
-		</div>
-	</div>
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Title</div>
-			<div class="setting-item-description">Please enter your project title. If left blank, project ID will be displayed in its place.</div>
-		</div>
-		<div class="setting-item-control">
-			<input type="text" bind:this={titleEl} bind:value={titleStr}/>
-		</div>
-	</div>
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Word Goal For Project</div>
-			<div class="setting-item-description">
-				Choose a goal word count for this project (0 for no goal, max is {Intl.NumberFormat().format(1000000000)}).
-			</div>
-		</div>
-		<div class="setting-item-control">
-			<input type="number" min="0" max="1000000000" step="1000" bind:this={wordGoalProject} />
-		</div>
-	</div>
-	<div class="setting-item">
-		<div class="setting-item-info">
-			<div class="setting-item-name">Word Goal For Files</div>
-			<div class="setting-item-description">
-				Choose a goal word count for each file in this project (0 for no goal, max is {Intl.NumberFormat().format(1000000)}).
-				<em>A word goal specified in the file will override this goal.</em>
-			</div>
-		</div>
-		<div class="setting-item-control">
-			<input type="number" min="0" max="1000000" step="100" bind:this={wordGoalFile} />
-		</div>
-	</div>
+	</SettingItem>
+	<SettingItem name="Category" desc="Choose a category for this project. Defaults to None.">
+		<select class="ws-project-editor-project-category dropdown" bind:this={categoryEl}>
+			{#each PROJECT_CATEGORY_NAME as category, i}
+				<option value={i} selected={i === 0}>{category}</option>
+			{/each}
+		</select>
+	</SettingItem>
+	<SettingItem name="Title" desc="Please enter your project title. If left blank, project ID will be displayed in its place.">
+		<input type="text" bind:this={titleEl} bind:value={titleStr} />
+	</SettingItem>
+	<SettingItem
+		name="Word Goal For Project"
+		desc={`Choose a goal word count for this project (0 for no goal, max is ${Intl.NumberFormat().format(1000000000)}).`}
+	>
+		<input type="number" class="ws-number" min="0" max="1000000000" step="1000" bind:this={wordGoalProject} />
+	</SettingItem>
+	<SettingItem
+		name="Word Goal For Files"
+		desc={`Choose a goal word count for each file in this project (0 for no goal, max is ${Intl.NumberFormat().format(1000000)}).
+	<br/><em>A word goal specified in the file will override this goal.</em>`}
+	>
+		<input type="number" class="ws-number" min="0" max="1000000" step="100" bind:this={wordGoalFile} />
+	</SettingItem>
 	<div class="setting-item">
 		<div class="setting-item-control">
 			<button disabled={!canSave} on:click={onSave}>Save</button>

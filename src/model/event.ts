@@ -43,6 +43,7 @@ export namespace WSEvents {
         export const Updated = "ws-event-path-updated";
         export const Cleared = "ws-event-path-cleared";
         export const Set = "ws-event-path-set";
+        export const GoalsSet = "ws-eventpath-goals-set";
     }
 }
 
@@ -51,7 +52,7 @@ export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.P
 export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project | typeof WSEvents.Focus.FileItem;
 export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged;
 export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated | typeof WSEvents.Project.PathSet | typeof WSEvents.Project.GoalsSet | typeof WSEvents.Project.IndexSet | typeof WSEvents.Project.CategorySet | typeof WSEvents.Project.TitleSet;
-export type WSPathEventType = typeof WSEvents.Path.Titled | typeof WSEvents.Path.Set | typeof WSEvents.Path.Cleared | typeof WSEvents.Path.Updated | typeof WSEvents.Path.Created | typeof WSEvents.Path.Deleted;
+export type WSPathEventType = typeof WSEvents.Path.Titled | typeof WSEvents.Path.Set | typeof WSEvents.Path.Cleared | typeof WSEvents.Path.Updated | typeof WSEvents.Path.Created | typeof WSEvents.Path.Deleted | typeof WSEvents.Path.GoalsSet;
 
 interface WSEventInfo {
     type: WSEventType;

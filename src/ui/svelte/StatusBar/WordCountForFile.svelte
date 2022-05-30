@@ -3,8 +3,8 @@
 	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent } from "src/model/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
-	import { WSProject } from "src/model/project";
-import { GetProgressGrade } from "src/util";
+	import type { WSProject } from "src/model/project";
+	import { GetProgressGrade } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 
 	export let events: Dispatcher;
@@ -57,29 +57,29 @@ import { GetProgressGrade } from "src/util";
 
 	function registerEvents() {
 		events.on(WSEvents.File.WordsChanged, updateCount, { filter: file });
-		events.on(WSEvents.Project.GoalsSet, updateCount, {filter: null});
+		events.on(WSEvents.Project.GoalsSet, updateCount, { filter: null });
+		events.on(WSEvents.Path.GoalsSet, updateCount, { filter: null });
 	}
 
 	function unregisterEvents() {
 		events.off(WSEvents.File.WordsChanged, updateCount, { filter: file });
-		events.off(WSEvents.Project.GoalsSet, updateCount, {filter: null});
+		events.off(WSEvents.Project.GoalsSet, updateCount, { filter: null });
+		events.off(WSEvents.Path.GoalsSet, updateCount, { filter: null });
 	}
 
 	function updateCount(event?: WSFileEvent) {
 		if (file instanceof WSFile) {
 			let words = event?.info.words | file.totalWords;
 			wordCount = Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
-			if (project instanceof WSProject) {
-				let goal = manager.getWordGoalForFileByContext(file, project);
-				if (goal) {
-					let percent = Math.round((words / goal) * 100);
-					percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
-					progressData = GetProgressGrade(percent);
-					progress.style.width = percent.toString() + "%";
-				} else {
-					progressData = "0";
-					progress.style.width = "0";
-				}
+			let goal = manager.getWordGoalForFileByContext(file, project);
+			if (goal) {
+				let percent = Math.round((words / goal) * 100);
+				percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
+				progressData = GetProgressGrade(percent);
+				progress.style.width = percent.toString() + "%";
+			} else {
+				progressData = "0";
+				progress.style.width = "0";
 			}
 		}
 	}

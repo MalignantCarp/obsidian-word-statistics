@@ -1,8 +1,10 @@
 import { Modal, Setting } from "obsidian";
 import type WordStatisticsPlugin from "src/main";
 import type { WSProjectManager } from "src/model/manager";
+import type { WSPath } from "src/model/path";
 import type { WSProject } from "src/model/project";
 import MessagePanel from "./svelte/Modals/MessagePanel.svelte";
+import PathEditor from "./svelte/Modals/PathEditor.svelte";
 import ProjectEditor from "./svelte/Modals/ProjectEditor.svelte";
 
 class MessageModal extends Modal {
@@ -67,10 +69,6 @@ class ConfirmationModal extends Modal {
 }
 
 
-// =======================
-//  Project Editor Modals
-// =======================
-
 class ProjectEditorModal extends Modal {
     manager: WSProjectManager;
     panel: ProjectEditor;
@@ -94,6 +92,30 @@ class ProjectEditorModal extends Modal {
     }
 }
 
+class PathEditorModal extends Modal {
+    manager: WSProjectManager;
+    panel: PathEditor;
+
+    constructor(public plugin: WordStatisticsPlugin, public path?: WSPath) {
+        super(plugin.app);
+        this.manager = plugin.collector.manager;
+    }
+
+    onOpen() {
+        let { contentEl } = this;
+        this.panel = new PathEditor({ target: contentEl, props: { manager: this.manager, onClose: this.close.bind(this), path: this.path } });
+    }
+
+    onClose() {
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+
 export class ModalLoader {
     constructor(public plugin: WordStatisticsPlugin, public manager: WSProjectManager) { }
 
@@ -107,6 +129,10 @@ export class ModalLoader {
 
     createMessageModal(messages: string[]) {
         return new MessageModal(this.plugin, messages);
+    }
+
+    createPathEditorModal(path: WSPath) {
+        return new PathEditorModal(this.plugin, path);
     }
 
 }

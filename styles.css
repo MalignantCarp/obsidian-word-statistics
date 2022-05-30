@@ -114,40 +114,24 @@
 
 .ws-suggest-box-container,
 .ws-validated-input-container {
-	display: grid;
-	align-items: start;
+	display: flex;
+	align-items: flex-start;
+	flex-wrap: wrap;
 	column-gap: 0.25em;
 	row-gap: 0.5em;
 }
 
 .ws-suggest-box-container .ws-text-icon,
 .ws-validated-input-container .ws-text-icon {
-	grid-row-start: 1;
-	grid-row-end: 1;
-	grid-column-start: 1;
-	grid-column-end: 1;
-	justify-self: center;
-	align-self: center;
 }
 
 .ws-suggest-box-container .ws-input,
 .ws-validated-input-container .ws-input {
-	grid-row-start: 1;
-	grid-row-end: 1;
-	grid-column-start: 2;
-	grid-column-end: 2;
-	justify-self: start;
-	align-self: start;
 }
 
 .ws-suggest-box-container .ws-validation-error,
 .ws-validated-input-container .ws-validation-error {
-	grid-row-start: 2;
-	grid-row-end: 2;
-	grid-column-start: 2;
-	grid-column-end: 2;
-	justify-self: start;
-	align-self: start;
+	flex-basis: 100%;
 }
 
 .ws-validation-error {
@@ -171,22 +155,26 @@
 }
 
 .ws-project-editor .setting-item {
-	display: grid;
-	align-items: start;
+	display: flex;
+	align-items: flex-start;
+	flex-direction: row;
 }
 
 .ws-project-editor .setting-item .setting-item-info {
-	grid-row-start: 1;
-	grid-row-end: 1;
-	grid-column-start: 1;
-	grid-column-end: 1;
 }
 
 .ws-project-editor .setting-item .setting-item-control {
-	grid-row-start: 1;
-	grid-row-end: 1;
-	grid-column-start: 2;
-	grid-column-end: 2;
+}
+
+.ws-validated-input,
+.ws-suggest-input {
+	display: flex;
+	align-items: flex-end;
+	column-gap: 0.25em;
+}
+
+input.ws-number {
+	text-align: right;
 }
 
 .ws-suggest-box .suggestion-item:hover {
@@ -202,60 +190,12 @@
 }
 
 .ws-project-edit-panel-header h3 {
-	grid-row-start: 1;
-	grid-row-end: 1;
-	grid-column-start: 1;
-	grid-column-end: 1;
-	margin-block-start: 0;
-	margin-block-end: 0;
 }
 
 .ws-project-edit-panel-header .ws-project-edit-description {
-	grid-row-start: 2;
-	grid-row-end: 2;
-	grid-column-start: 1;
-	grid-column-end: 1;
 }
 
 .ws-project-edit-panel-header button {
-	grid-row-start: 2;
-	grid-row-end: 2;
-	grid-column-start: 2;
-	grid-column-end: 2;
-}
-
-.ws-project-edit-list {
-	background-image: linear-gradient(#00000015, #00000015);
-	padding: 4px;
-	box-shadow: inset 2px 2px 4px #00000030;
-	border: 1px solid #00000030;
-}
-
-.ws-project-edit-list-item:nth-child(1) {
-	padding-top: 8px;
-}
-
-.ws-project-edit-list-item {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	font-weight: bold;
-	padding: 4px 2px;
-	text-indent: 1em;
-}
-
-.ws-project-edit-list-item:nth-child(even) {
-	background-image: linear-gradient(var(--ws-table-highlight), var(--ws-table-highlight));
-}
-
-.ws-project-edit-list-item-button-container {
-	display: flex;
-	flex-direction: row;
-}
-
-.ws-project-edit-list-item-buttons-container .clickable-icon {
-	justify-self: center;
-	align-self: center;
 }
 
 div.ws-project-management-view {
@@ -271,7 +211,6 @@ div.ws-project-management-view {
 }
 
 .ws-project-management-view .nav-buttons-container {
-	justify-content: space-between;
 	position: sticky;
 }
 

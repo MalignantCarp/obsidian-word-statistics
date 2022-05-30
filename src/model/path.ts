@@ -1,10 +1,8 @@
 import type { WSProjectManager } from "./manager";
-import { WSPCategory } from "./project";
 
 export interface IPathV0 {
     path: string,
     title: string,
-    category: WSPCategory,
     wordGoalForPath: number,
     wordGoalForProjects: number,
     wordGoalForFiles: number,
@@ -17,7 +15,7 @@ export function SortPathList(paths: WSPath[]) {
 
 function LoadPathV0FromSerial(folderInfo: IPathV0): WSPath {
     let folder: WSPath;
-    folder = new WSPath(folderInfo.path, folderInfo.title, folderInfo.category, folderInfo.wordGoalForPath, folderInfo.wordGoalForProjects, folderInfo.wordGoalForFiles, folderInfo.iconID);
+    folder = new WSPath(folderInfo.path, folderInfo.title, folderInfo.wordGoalForPath, folderInfo.wordGoalForProjects, folderInfo.wordGoalForFiles, folderInfo.iconID);
     return folder;
 }
 
@@ -33,7 +31,6 @@ export class WSPath {
     constructor(
         public path: string = "",
         public _title: string = "",
-        public category: WSPCategory = WSPCategory.None,
         public wordGoalForPath: number = 0,
         public wordGoalForProjects: number = 0,
         public wordGoalForFiles: number = 0,
@@ -45,7 +42,6 @@ export class WSPath {
         return {
             path: this.path,
             title: this._title,
-            category: this.category,
             wordGoalForPath: this.wordGoalForPath,
             wordGoalForProjects: this.wordGoalForProjects,
             wordGoalForFiles: this.wordGoalForFiles,
@@ -130,6 +126,14 @@ export class WSPath {
 
     getChildren(): WSPath[] {
         return this.children;
+    }
+
+    get defaultTitle(): string {
+        let lastSlash = this.path.lastIndexOf("/") + 1
+        if (lastSlash > 0) {
+            return (this.path.slice(lastSlash));
+        }
+        return this.path;
     }
 
     get title(): string {

@@ -71,7 +71,8 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 	}
 
 	function editPath() {
-		// summon a path editing modal
+		let modal = manager.modals.createPathEditorModal(path);
+		modal.open();
 	}
 
 	function onConfirmDelete(confirmed: boolean) {

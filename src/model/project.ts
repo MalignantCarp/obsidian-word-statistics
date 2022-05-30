@@ -10,19 +10,20 @@ export enum WSPType {
 export enum WSPCategory {
     None = 0,
     Writing,
-    Worldbuilding
+    Worldbuilding,
+    Journaling
 }
 
-export const PROJECT_CATEGORY_NAME = ["None", "Writing", "Worldbuilding"];
+export const PROJECT_CATEGORY_NAME = ["None", "Writing", "Worldbuilding", "Journaling"];
 
 export const PROJECT_TYPE_STRING = ["WSFileProject", "WSFolderProject", "WSTagProject"];
 export const PROJECT_TYPE_NAME = ["File Index Project", "Folder Project", "Tag Project"];
 export const PROJECT_TYPE_NAME_PLURAL = ["File Index Projects", "Folder Projects", "Tag Projects"];
 export const PROJECT_INDEX_TYPE = ["File Index", "Folder", "Tag"];
 export const PROJECT_TYPE_DESCRIPTION = [
-    "These projects are indexed by a file. Files within this project type will always appear in the order in which they appear in the index markdown file.",
-    "These projects are indexed by a folder. Files within this project will appear in vault order or alphabetical order, depending on setting.",
-    "These projects are indexed by a tag. Files within this project will appear in vault order or alphabetial oder, depending on setting."
+    "Please select a file that will serve as the index for this project. Files within this project will always appear in the order in which they appear in the index markdown file.",
+    "Please select a folder that will serve as the index for this project. Files within this project will appear in vault order or alphabetical order, depending on setting.",
+    "Please select a tag that will serve as the index for this project. Files within this project will appear in vault order or alphabetial order, depending on setting."
 ];
 
 /* Assuming we will at some point have a new version of the spec, this makes the most sense for loading.
