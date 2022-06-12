@@ -109,7 +109,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("Obsidian Word Statistics settings saved.");
 	}
 
-	async loadSerialData(path: string) {
+	async loadSerialData(path: string): Promise<string> {
 		const adapter = this.app.vault.adapter;
 		const dir = this.manifest.dir;
 		const loadPath = normalizePath(`${dir}/${path}`);
@@ -149,25 +149,36 @@ export default class WordStatisticsPlugin extends Plugin {
 	async onStartup() {
 		if (!this.initialScan) {
 			// console.log("Loading existing file content...");
-			let files = WSFormat.LoadFileData(await this.loadSerialData(FILE_PATH));
+			let fileData = await this.loadSerialData(FILE_PATH);
+			let files: WSFile[] = [];
+			if (fileData != undefined) {
+				files = WSFormat.LoadFileData(fileData);
+			}
+
 			await this.collector.scanVault(files);
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
 		}
 		if (!this.projectLoad && this.initialScan) {
-			// console.log(`Loading data from ${PROJECT_PATH}`);
-			let projects = WSFormat.LoadProjectData(this.collector, await this.loadSerialData(PROJECT_PATH));
-			let paths = WSFormat.LoadPathData(await this.loadSerialData(PATH_PATH));
-
-			if (projects.length > 0) {
-				// console.log(projects);
-				//this.collector.manager.populateFromSerialized(projects);
-				this.collector.manager.loadProjects(projects);
-			}
-			if (paths.length > 0) {
-				this.collector.manager.loadPaths(paths);
+			// console.log(`Loading data from ${PROJECT_PATH}`);\
+			let projData = await this.loadSerialData(PROJECT_PATH);
+			if (projData != undefined) {
+				let projects = WSFormat.LoadProjectData(this.collector, projData);
+				if (projects.length > 0) {
+					// console.log(projects);
+					//this.collector.manager.populateFromSerialized(projects);
+					this.collector.manager.loadProjects(projects);
+				}
+				let pathData = await this.loadSerialData(PATH_PATH);
+				if (pathData != undefined) {
+					let paths = WSFormat.LoadPathData(pathData);
+					if (paths.length > 0) {
+						this.collector.manager.loadPaths(paths);
+					}
+				}
 			}
 			this.projectLoad = true;
+
 			// console.log("Initiating post-project vault re-scan...");
 			// await this.collector.scanVault();
 			// console.log("Complete.")

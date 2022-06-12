@@ -38,8 +38,13 @@ export namespace WSFormat {
     }
 
     export function LoadFileData(data: string): WSFile[] {
-        // console.log("Loading file data.");
-        let table = JSON.parse(data) as IFile[];
+        let table: IFile[];
+        try {
+            table = JSON.parse(data) as IFile[];
+
+        } catch (error) {
+            console.log(`Error attempting to parse file data [${data}]: `, error)
+        }
         let files = DeserializeFiles(table);
         // console.log("File data loaded.");
         return files;
@@ -138,7 +143,6 @@ export namespace WSFormat {
     interface IPath {
         path: string,
         title: string,
-        category: number,
         wordGoalForPath: number,
         wordGoalForProjects: number,
         wordGoalForFiles: number,
@@ -148,7 +152,7 @@ export namespace WSFormat {
     function SerializePaths(paths: WSPath[]): IPath[] {
         let table: IPath[] = [];
         paths.forEach((p) => {
-            table.push({ path: p.path, title: p._title, category: p.category, wordGoalForPath: p.wordGoalForPath, wordGoalForProjects: p.wordGoalForProjects, wordGoalForFiles: p.wordGoalForFiles, iconID: p.iconID });
+            table.push({ path: p.path, title: p._title, wordGoalForPath: p.wordGoalForPath, wordGoalForProjects: p.wordGoalForProjects, wordGoalForFiles: p.wordGoalForFiles, iconID: p.iconID });
         });
         return table;
     }
@@ -156,8 +160,8 @@ export namespace WSFormat {
     function DeserializePaths(table: IPath[]): WSPath[] {
         let paths: WSPath[] = [];
         table.forEach((row) => {
-            let { path, title, category, wordGoalForPath, wordGoalForProjects, wordGoalForFiles, iconID } = row;
-            let pathObj = new WSPath(path, title, category, wordGoalForPath, wordGoalForProjects, wordGoalForFiles, iconID);
+            let { path, title, wordGoalForPath, wordGoalForProjects, wordGoalForFiles, iconID } = row;
+            let pathObj = new WSPath(path, title, wordGoalForPath, wordGoalForProjects, wordGoalForFiles, iconID);
             if (pathObj instanceof WSPath) {
                 paths.push(pathObj);
             } else {

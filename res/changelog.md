@@ -1,4 +1,13 @@
 ## Changelog
+### 2022-06-11
+ - BUGFIX: JSON.parse errors when file, project, and path files do not exist.
+ - BUGFIX: category was still part of the Path structures in formats.ts
+ - Path editor appears to work.
+ - BUG: Reset path doesn't reset the button to its default (hidden) appearance
+ - BUG: Reset path doesn't remove the path from the paths.json file.
+  - If it has no content, it does not need to appear.
+ - Need to alter the reset button so that it shows a neutral icon when the path is already clear and shows the reset button when it is set.
+
 ### 2022-05-29
  - Added a svelte file for SettingItems to help cleanup the ProjectEditor.svelte.
  - Cleaned up ProjectEditor.svelte using the new SettingItems.svelte.
