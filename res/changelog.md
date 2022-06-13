@@ -1,4 +1,14 @@
 ## Changelog
+### 2022-06-12
+ - Added box-glyph as a new icon in PathItemButtons and related CSS to always have an icon in its place where the reset/purge icon would go.
+ - Added a label to the confirmation dialog modal to control whether it says Delete or Purge.
+ - BUGFIX: Reset path doesn't remove path from the paths.json file.
+ - BUGFIX: SuggestBox attempted to use highlightedElement when it was undefined
+ - BUGFIX: Reset path doesn't reset the button to its default appearance
+ - BUG: Delete project doesn't reset the path buttons correctly for the paths above it.
+ - BUG: Purge path does not function properly.
+ - Disabled saving of file, project, and path JSON files for testing.  
+
 ### 2022-06-11
  - BUGFIX: JSON.parse errors when file, project, and path files do not exist.
  - BUGFIX: category was still part of the Path structures in formats.ts

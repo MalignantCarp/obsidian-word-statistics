@@ -10,7 +10,7 @@ export interface IPathV0 {
 }
 
 export function SortPathList(paths: WSPath[]) {
-    return paths.sort((a,b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
+    return paths.sort((a, b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
 }
 
 function LoadPathV0FromSerial(folderInfo: IPathV0): WSPath {
@@ -67,15 +67,22 @@ export class WSPath {
     }
 
     findParentOfChild(path: WSPath): WSPath {
+        // console.log(`Finding parent of child (${path.path}) from (${this.path}). Current children:`);
+        // this.children.forEach((child) => {
+        //     console.log(child.path);
+        // });
+        // console.log("--");
         if (path === this) {
             return null;
         }
         if (this.children.contains(path)) {
+            // console.log(this.path, " is parent.");
             return this;
         }
         for (let child of this.children) {
-            if (child.children.contains(path)) {
-                return child;
+            let parent = child.findParentOfChild(path);
+            if  (parent instanceof WSPath) {
+                return (parent)
             }
         }
         return null;
@@ -86,7 +93,7 @@ export class WSPath {
         paths.push(this);
         this.children.forEach((child) => {
             paths.push(...child.getAll());
-        })
+        });
         return SortPathList(paths);
     }
 
@@ -95,7 +102,7 @@ export class WSPath {
             this.children.push(child);
         }
     }
-
+ 
     removeChild(child: WSPath) {
         if (this.children.contains(child)) {
             this.children.remove(child);
@@ -129,7 +136,7 @@ export class WSPath {
     }
 
     get defaultTitle(): string {
-        let lastSlash = this.path.lastIndexOf("/") + 1
+        let lastSlash = this.path.lastIndexOf("/") + 1;
         if (lastSlash > 0) {
             return (this.path.slice(lastSlash));
         }
@@ -140,7 +147,7 @@ export class WSPath {
         if (this._title.length > 0) {
             return this._title;
         }
-        let lastSlash = this.path.lastIndexOf("/") + 1
+        let lastSlash = this.path.lastIndexOf("/") + 1;
         if (lastSlash > 0) {
             return (this.path.slice(lastSlash));
         }

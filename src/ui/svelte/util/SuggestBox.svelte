@@ -98,7 +98,9 @@
 	function scrollList() {
 		if (inputComponent.isShown() && showOptions && suggestionList.isShown()) {
 			let highlightedElement = suggestionList.children[highlightIndex];
-			highlightedElement.scrollIntoView({block: "nearest"});
+			if (highlightedElement !== undefined) {
+				highlightedElement.scrollIntoView({ block: "nearest" });
+			}
 		}
 	}
 

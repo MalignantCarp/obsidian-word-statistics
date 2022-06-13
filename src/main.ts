@@ -123,6 +123,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async saveSerialData(path: string, data: string) {
+		return;
 		const adapter = this.app.vault.adapter;
 		const dir = this.manifest.dir;
 		const savePath = normalizePath(`${dir}/${path}`);

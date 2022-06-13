@@ -32,7 +32,7 @@ class MessageModal extends Modal {
 class ConfirmationModal extends Modal {
     confirmation: boolean = false;
 
-    constructor(public plugin: WordStatisticsPlugin, public message: string, public cb: Function) {
+    constructor(public plugin: WordStatisticsPlugin, public message: string, public cb: Function, public label: string = "Delete") {
         super(plugin.app);
     }
 
@@ -52,7 +52,7 @@ class ConfirmationModal extends Modal {
             .setName("Deletion Confirmation")
             .setDesc(this.message);
         new Setting(contentEl).addButton((button) => {
-            button.setButtonText("Delete");
+            button.setButtonText(this.label);
             button.onClick(this.onDelete.bind(this));
         })
             .addButton((button) => {
@@ -123,8 +123,8 @@ export class ModalLoader {
         return new ProjectEditorModal(this.plugin, project);
     }
 
-    createConfirmationModal(message: string, cb: Function) {
-        return new ConfirmationModal(this.plugin, message, cb);
+    createConfirmationModal(message: string, cb: Function, label: string = "Delete") {
+        return new ConfirmationModal(this.plugin, message, cb, label);
     }
 
     createMessageModal(messages: string[]) {

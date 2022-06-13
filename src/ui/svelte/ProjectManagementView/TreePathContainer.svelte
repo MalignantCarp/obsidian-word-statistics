@@ -3,13 +3,12 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import type { WSPath } from "src/model/path";
 	import type { WSProject } from "src/model/project";
-import { GetProgressGrade } from "src/util";
+	import { GetProgressGrade } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import PathItemButtons from "./PathItemButtons.svelte";
 	import PathWordCount from "./PathWordCount.svelte";
-	import ProjectItem from "./ProjectItem.svelte";
 	import TreePathLabel from "./TreePathLabel.svelte";
-import TreeProjectContainer from "./TreeProjectContainer.svelte";
+	import TreeProjectContainer from "./TreeProjectContainer.svelte";
 
 	export let manager: WSProjectManager;
 	export let path: WSPath;
@@ -25,7 +24,7 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 	let collapsed = false;
 
 	let progress: HTMLElement;
-    let progressData: string;
+	let progressData: string;
 
 	onMount(() => {
 		manager.plugin.events.on(WSEvents.Path.Titled, reset, { filter: null });
@@ -52,6 +51,7 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 	});
 
 	function reset(event: WSPathEvent) {
+		console.log("reset", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
 		buttons.reset();
 		label.reset();
 	}
@@ -64,9 +64,11 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 	}
 
 	function updateChildren(event: WSPathEvent) {
+		console.log("updating children", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
 		// we only need to update our path children if the created or deleted path is a direct child
-		if (path.hasChild(event.info.path)) {
+		if (path.hasChild(event.info.path) || (event.info.type === WSEvents.Path.Deleted && path === event.info.data[0])) {
 			childPaths = path.getChildren();
+			reset(event);
 		}
 	}
 
@@ -83,7 +85,7 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 
 	function onConfirmClear(confirmed: boolean) {
 		if (confirmed) {
-			manager.resetPath(path.path);
+			manager.resetPath(path);
 		}
 	}
 
@@ -96,21 +98,21 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 	function pathDelete() {
 		let modal = manager.modals.createConfirmationModal(`Are you sure you want to purge this path ('/${path.title}/')?`, () => {
 			onConfirmDelete(modal.confirmation);
-		});
+		}, "Purge");
 		modal.open();
 	}
 
 	function pathClear() {
 		let modal = manager.modals.createConfirmationModal(`Are you sure you want to reset this path ('/${path.title}/') to defaults?`, () => {
 			onConfirmClear(modal.confirmation);
-		});
+		}, "Reset");
 		modal.open();
 	}
 
 	function deleteProject(project: WSProject) {
 		let modal = manager.modals.createConfirmationModal(`Are you sure you want to delete this project ('${project.id}')?`, () => {
 			onConfirmDeleteProject(modal.confirmation, project);
-		})
+		});
 		modal.open();
 	}
 
@@ -120,23 +122,22 @@ import TreeProjectContainer from "./TreeProjectContainer.svelte";
 
 	function onWordCountUpdate(count: number) {
 		if (path.wordGoalForPath > 0) {
-            let percent = Math.round((count / path.wordGoalForPath)*100);
-            percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
+			let percent = Math.round((count / path.wordGoalForPath) * 100);
+			percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
 			progressData = GetProgressGrade(percent);
-            progress.style.width = percent.toString() + "%";
+			progress.style.width = percent.toString() + "%";
 		} else {
 			progressData = "0";
 			progress.style.width = "0";
 		}
 	}
-
 </script>
 
 <div class="ws-path-item tree-item" class:is-collapsed={collapsed}>
 	<div class="ws-path-item-self tree-item-self" class:is-clickable={path != manager.pathRoot}>
 		<TreePathLabel bind:this={label} {manager} {path} {collapseToggle} />
 		<div class="ws-path-item-end">
-			<PathWordCount {path} {manager} {onWordCountUpdate}/>
+			<PathWordCount {path} {manager} {onWordCountUpdate} />
 			<PathItemButtons bind:this={buttons} {manager} {path} {editPath} {pathClear} {pathDelete} />
 		</div>
 		<div class="ws-word-progress" data-progress={progressData} bind:this={progress} />

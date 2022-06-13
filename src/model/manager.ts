@@ -307,12 +307,6 @@ export class WSProjectManager {
         }
     }
 
-    resetPath(path: string) {
-        let pathObj = this.getPath(path);
-        this.setPathTitle(pathObj, "");
-        this.setPathWordGoals(pathObj, 0, 0, 0);
-    }
-
     getPath(path: string): WSPath {
         return this.pathRoot.getPath(path);
     }
@@ -493,7 +487,7 @@ export class WSProjectManager {
     }
 
     /* ==================
-        Group Management
+        Path Management
        ================== */
 
     registerPath(path: WSPath) {
@@ -516,17 +510,28 @@ export class WSProjectManager {
         this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Cleared, path }, { filter: path }));
     }
 
-    purgePath(path: WSPath) {
-        if (path !== this.pathRoot && this.plugin.settings.clearEmptyPaths && !path.hasChildren() && !path.hasProjects(this)) {
+    resetPath(path: WSPath) {
+        if (path instanceof WSPath) {
+            this.setPathTitle(path, "");
+            this.setPathWordGoals(path, 0, 0, 0);
             if (this.paths.has(path.path)) {
                 this.unregisterPath(path);
             }
-            this.resetPath(path.path);
+        }
+    }
+
+    purgePath(path: WSPath) {
+        if (path !== this.pathRoot && this.plugin.settings.clearEmptyPaths && !path.hasChildren() && !path.hasProjects(this)) {
+            console.log("Resetting path: ", path.path)
+            this.resetPath(path);
+            console.log("Determining parent")
             let parent = this.getParentPath(path);
+            console.log("Parent: ", parent?.path)
             if (parent instanceof WSPath) {
                 parent.removeChild(path);
             }
-            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path }, { filter: path }));
+            console.log("Firing deletion event")
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path, data: [parent] }, { filter: path }));
         }
     }
 

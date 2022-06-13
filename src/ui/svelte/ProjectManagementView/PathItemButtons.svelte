@@ -27,6 +27,8 @@
 			setIcon(clearIcon, "reset", 12);
 		} else if (isClear && canPurge) {
 			setIcon(clearIcon, "trash", 12);
+		} else {
+			setIcon(clearIcon, "box-glyph", 12);
 		}
 	}
 
@@ -43,5 +45,7 @@
 		<div class="ws-path-item-button ws-icon-mod" on:click={pathClear} aria-label="Reset Path" bind:this={clearIcon} />
 	{:else if isClear && canPurge}
 		<div class="ws-path-item-button ws-icon-delete" on:click={pathDelete} aria-label="Purge Path" bind:this={clearIcon} />
+	{:else}
+		<div class="ws-path-item-button ws-icon-okay ws-icon-no-hover" bind:this={clearIcon}></div>
 	{/if}
 </div>
