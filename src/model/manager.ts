@@ -483,7 +483,9 @@ export class WSProjectManager {
         this.unregisterProject(proj);
         // cleanup paths
         let path = this.getPath(proj.path);
-        this.purgePath(path);
+        if (this.plugin.settings.clearEmptyPaths) {
+            this.purgePath(path);
+        }
     }
 
     /* ==================
@@ -520,19 +522,21 @@ export class WSProjectManager {
         }
     }
 
-    purgePath(path: WSPath) {
-        if (path !== this.pathRoot && this.plugin.settings.clearEmptyPaths && !path.hasChildren() && !path.hasProjects(this)) {
-            console.log("Resetting path: ", path.path)
+    purgePath(path: WSPath): WSPath {
+        if (path !== this.pathRoot && !path.hasChildren() && !path.hasProjects(this)) {
+            console.log("Resetting path: ", path.path);
             this.resetPath(path);
-            console.log("Determining parent")
+            console.log("Determining parent");
             let parent = this.getParentPath(path);
-            console.log("Parent: ", parent?.path)
+            console.log("Parent: ", parent?.path);
             if (parent instanceof WSPath) {
                 parent.removeChild(path);
             }
-            console.log("Firing deletion event")
+            console.log("Firing deletion event");
             this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path, data: [parent] }, { filter: path }));
+            return parent;
         }
+        return null;
     }
 
     canPurgePath(path: WSPath) {

@@ -37,9 +37,12 @@
 		manager.plugin.events.on(WSEvents.Project.Deleted, updateProjects, { filter: null });
 		childPaths = path.getChildren();
 		childProjects = manager.getProjectsByExactPath(path.path);
+		buttons.reset()
+		label.reset()
 	});
 
 	onDestroy(() => {
+		console.log("Call to destroy path container for ", path.path)
 		manager.plugin.events.off(WSEvents.Path.Titled, reset, { filter: null });
 		manager.plugin.events.off(WSEvents.Path.Cleared, reset, { filter: null });
 		manager.plugin.events.off(WSEvents.Path.Set, reset, { filter: null });
@@ -51,7 +54,7 @@
 	});
 
 	function reset(event: WSPathEvent) {
-		console.log("reset", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
+		console.log("reset() ", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
 		buttons.reset();
 		label.reset();
 	}
@@ -64,7 +67,7 @@
 	}
 
 	function updateChildren(event: WSPathEvent) {
-		console.log("updating children", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
+		console.log("updateChildren()", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
 		// we only need to update our path children if the created or deleted path is a direct child
 		if (path.hasChild(event.info.path) || (event.info.type === WSEvents.Path.Deleted && path === event.info.data[0])) {
 			childPaths = path.getChildren();

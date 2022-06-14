@@ -1,6 +1,6 @@
 import type { WSFile } from "./file";
 import type { WSProject } from "./project";
-import type {WSPath} from "./path";
+import type { WSPath } from "./path";
 
 export namespace WSEvents {
     export namespace Data {
@@ -138,16 +138,18 @@ class DispatcherEvent {
     }
 
     unregisterCallback(cbRun: Function, filter?: WSEventFilter) {
+        console.log("Callback unregistered. ", this.name)
         this.callbacks.remove([cbRun, filter]);
     }
 
     fire(event: WSEvent) {
-        // console.log("Ping!", event.info.type, event.focus)
+        console.log("Ping!", this.name, event.info.type, event.focus);
         this.callbacks.forEach(([cbRun, filter]) => {
-            // console.log("Pong!", filter);
+            console.log("Pong!", filter);
             if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter?.filter == event.focus?.filter) {
-                // console.log("Dispatching event.")
+                console.log("Dispatching event.");
                 cbRun(event);
+                console.log("Event dispatched.");
                 // } else {
                 //     console.log("Ignoring event:", (filter == null || filter == undefined), (filter?.filter == null || filter?.filter == undefined), filter == event.focus);
                 //     console.log("Focus: ", event.focus)

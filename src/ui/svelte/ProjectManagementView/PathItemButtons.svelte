@@ -33,9 +33,11 @@
 	}
 
 	export function reset() {
+		console.log("Resetting buttons for ", path.path);
 		isClear = !manager.canClearPath(path);
 		canClear = manager.canClearPath(path);
 		canPurge = manager.canPurgePath(path);
+		console.log(isClear, canClear, canPurge);
 	}
 </script>
 
@@ -46,6 +48,6 @@
 	{:else if isClear && canPurge}
 		<div class="ws-path-item-button ws-icon-delete" on:click={pathDelete} aria-label="Purge Path" bind:this={clearIcon} />
 	{:else}
-		<div class="ws-path-item-button ws-icon-okay ws-icon-no-hover" bind:this={clearIcon}></div>
+		<div class="ws-path-item-button ws-icon-okay ws-icon-no-hover" bind:this={clearIcon} />
 	{/if}
 </div>

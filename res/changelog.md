@@ -1,4 +1,9 @@
 ## Changelog
+### 2022-06-13
+ - BUGFIX: Purge path does not function -- the clearEmptyPath setting was being queried as a conditional for purging, rather than for auto purging following the deletion of its contained project
+  - BUG: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty
+  - purgePath() now returns the parent path of the purged path
+
 ### 2022-06-12
  - Added box-glyph as a new icon in PathItemButtons and related CSS to always have an icon in its place where the reset/purge icon would go.
  - Added a label to the confirmation dialog modal to control whether it says Delete or Purge.
