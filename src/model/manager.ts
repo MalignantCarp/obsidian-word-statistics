@@ -484,7 +484,10 @@ export class WSProjectManager {
         // cleanup paths
         let path = this.getPath(proj.path);
         if (this.plugin.settings.clearEmptyPaths) {
-            this.purgePath(path);
+            let parent = this.purgePath(path);
+            while (parent instanceof WSPath && (parent !== this.pathRoot && !parent.hasChildren() && !parent.hasProjects(this))) {
+                parent = this.purgePath(parent);
+            }
         }
     }
 
@@ -524,15 +527,17 @@ export class WSProjectManager {
 
     purgePath(path: WSPath): WSPath {
         if (path !== this.pathRoot && !path.hasChildren() && !path.hasProjects(this)) {
-            console.log("Resetting path: ", path.path);
-            this.resetPath(path);
-            console.log("Determining parent");
+            // this shouldn't happen, since you can't purge in the interface until you have cleared it
+            if (this.paths.has(path.path)) {
+                this.unregisterPath(path);
+            }
+            // console.log("Determining parent");
             let parent = this.getParentPath(path);
-            console.log("Parent: ", parent?.path);
+            // console.log("Parent: ", parent?.path);
             if (parent instanceof WSPath) {
                 parent.removeChild(path);
             }
-            console.log("Firing deletion event");
+            // console.log("Firing deletion event");
             this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path, data: [parent] }, { filter: path }));
             return parent;
         }

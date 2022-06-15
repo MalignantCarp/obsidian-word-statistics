@@ -138,18 +138,18 @@ class DispatcherEvent {
     }
 
     unregisterCallback(cbRun: Function, filter?: WSEventFilter) {
-        console.log("Callback unregistered. ", this.name)
+        // console.log("Callback unregistered. ", this.name)
         this.callbacks.remove([cbRun, filter]);
     }
 
     fire(event: WSEvent) {
-        console.log("Ping!", this.name, event.info.type, event.focus);
+        // console.log("Ping!", this.name, event.info.type, event.focus);
         this.callbacks.forEach(([cbRun, filter]) => {
-            console.log("Pong!", filter);
+            // console.log("Pong!", filter);
             if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter?.filter == event.focus?.filter) {
-                console.log("Dispatching event.");
+                // console.log("Dispatching event.");
                 cbRun(event);
-                console.log("Event dispatched.");
+                // console.log("Event dispatched.");
                 // } else {
                 //     console.log("Ignoring event:", (filter == null || filter == undefined), (filter?.filter == null || filter?.filter == undefined), filter == event.focus);
                 //     console.log("Focus: ", event.focus)

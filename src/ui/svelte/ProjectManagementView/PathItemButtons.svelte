@@ -33,11 +33,11 @@
 	}
 
 	export function reset() {
-		console.log("Resetting buttons for ", path.path);
+		// console.log("Resetting buttons for ", path.path);
 		isClear = !manager.canClearPath(path);
 		canClear = manager.canClearPath(path);
 		canPurge = manager.canPurgePath(path);
-		console.log(isClear, canClear, canPurge);
+		// console.log(isClear, canClear, canPurge);
 	}
 </script>
 
