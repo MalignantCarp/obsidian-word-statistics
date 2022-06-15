@@ -1,17 +1,10 @@
 import { Vault, MetadataCache, TFile, TAbstractFile, parseFrontMatterTags, parseFrontMatterEntry, TFolder } from 'obsidian';
-import type {FrontMatterCache} from 'obsidian';
 import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
-import { WSEvents, WSFileEvent } from 'src/event';
+import { WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
-
-interface LongformDraft {
-    name: string;
-    folder: string;
-    scenes: string[];
-}
 
 export class WSDataCollector {
     plugin: WordStatisticsPlugin;
@@ -21,7 +14,7 @@ export class WSDataCollector {
     private files: WSFile[];
     manager: WSProjectManager;
     lastUpdate: number = 0;
-    queue: [Function, unknown[]][] = [];
+    //queue: [Function, unknown[]][] = [];
     lastWords: number = 0;
 
     constructor(plugin: WordStatisticsPlugin, vault: Vault, metadataCache: MetadataCache) {
@@ -32,6 +25,11 @@ export class WSDataCollector {
         this.files = [];
         this.lastUpdate = 0;
         this.manager = new WSProjectManager(plugin, this);
+    }
+
+    cleanup() {
+        this.files = [];
+        this.fileMap.clear();
     }
 
     get totalWords() {
@@ -122,23 +120,13 @@ export class WSDataCollector {
         }
     }
 
-    checkFMLongform(file: TFile, frontmatter: FrontMatterCache) {
-        let longformDrafts: LongformDraft[] = [];
-        if (frontmatter?.['drafts'] != undefined) {
-            let drafts = frontmatter['drafts'];
-            for (let draft of drafts) {
-                longformDrafts.push(draft);
-            }
-        }
-    }
-
     logWords(path: string, newCount: number) {
         if (this.fileMap.has(path)) {
             let file = this.fileMap.get(path);
             let oldCount = file.words;
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
-                this.fileMap.get(path).setWords(newCount);
+                this.fileMap.get(path).words = newCount;
                 this.update();
                 this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
             }
@@ -161,12 +149,12 @@ export class WSDataCollector {
         });
     }
 
-    async executeDeferredItems() {
-        while (this.queue.length > 0) {
-            let [func, pack] = this.queue.shift();
-            func(...pack);
-        };
-    }
+    // async executeDeferredItems() {
+    //     while (this.queue.length > 0) {
+    //         let [func, pack] = this.queue.shift();
+    //         func(...pack);
+    //     };
+    // }
 
     updateFile(file: TFile) {
         // console.log("UpdateFile(%s)", file.path);
@@ -249,14 +237,30 @@ export class WSDataCollector {
         this.lastUpdate = Date.now();
     }
 
+    pushFile(file: WSFile) {
+        // console.log(`File ${file.path} being pushed to storage list and map.`);
+        this.files.push(file);
+        this.fileMap.set(file.path, file);
+    }
+
     newFile(name: string, path: string) {
         // console.log("newFile(%d)", this.files.length);
         let file = new WSFile(name, path);
-        this.files.push(file);
-        this.fileMap.set(path, file);
+        this.pushFile(file);
         // console.log("newFile(%d):", this.files.length, file);
         this.update();
         return file;
+    }
+
+    setFile(path: string, file: WSFile) {
+        // console.log(`setFile(${path})`);
+        if (!this.files.contains(file) && !this.fileMap.has(path)) {
+            this.pushFile(file);
+        } else {
+            console.log(`For file '${file.path}:`);
+            console.log(`fileInList? ${this.files.contains(file)}, fileInMap? ${this.fileMap.has(path)}`);
+            console.log(`Attempted to set file for path ${path}, but it is already set.`);
+        }
     }
 
     getWords(path: string): number {
@@ -285,21 +289,35 @@ export class WSDataCollector {
         }
         let af = this.vault.getAbstractFileByPath(path);
         if (af != null && af instanceof TFile) {
+            console.log(`Attempted to get file ${path}, but it did not exist. Creating...`)
             return this.newFile(af.name, af.path);
         }
         return null;
     }
 
-    async scanVault() {
-        // console.log("Vault scan initiated.");
+    async scanVault(fileLog: WSFile[] = []) {
+        // console.log(`Vault scan initiated (${this.fileList.length}).`);
         const files = this.vault.getMarkdownFiles();
         // console.log("Vault file list retrieved.");
-        for (const i in files) {
-            const file = files[i];
-            // console.log(`[${Date.now()}: Processing file '${file.path}'.`);
-            let fi = this.getFile(file.path);
-            if (fi === null) {
-                fi = this.newFile(file.basename, file.path);
+        let loadedFiles = new Map<string, WSFile>(fileLog.map((value) => { return [value.path, value]; }));
+        // console.log("Mapped existing files.");
+        for (let file of files) {
+            let fi: WSFile;
+            // console.log(`@${Date.now()}: Processing file '${file.path}'.`);
+            // if (fileLog.length > 0) console.log(`isInLoadedFiles? ${loadedFiles.has(file.path)}, isInFileMap? ${this.fileMap.has(file.path)}`);
+            if (loadedFiles.has(file.path)) {
+                fi = loadedFiles.get(file.path);
+                loadedFiles.delete(file.path);
+                this.setFile(file.path, fi);
+                this.lastWords += fi.totalWords;
+                if (fi.totalWords > 0) {
+                    this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file: fi }, { filter: fi }));
+                }
+            } else {
+                fi = this.getFile(file.path);
+                if (fi === null) {
+                    fi = this.newFile(file.basename, file.path);
+                }
             }
             this.updateFile(file);
             // console.log(fi.getPath());
@@ -310,6 +328,10 @@ export class WSDataCollector {
 
             //console.log(frontMatter.wordStatsProject);
             this.update();
+        }
+        if (loadedFiles.size > 0) {
+            console.log("Failed to load the following files. Do they still exist in the file system?");
+            console.log(loadedFiles);
         }
     }
 }  

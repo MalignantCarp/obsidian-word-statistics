@@ -1,17 +1,18 @@
-import { debounce, Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, CachedMetadata, normalizePath, TFolder } from 'obsidian';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder } from 'obsidian';
 import { WSDataCollector } from './model/collector';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import type { WSProject } from './model/project';
-import { WSFile } from './model/file';
-import { Dispatcher, WSEvents, WSFocusEvent, WSProjectEvent, WSProjectGroupEvent } from './event';
+import type { WSFile } from './model/file';
+import { Dispatcher, WSDataEvent, WSEvents, WSFocusEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
-import { ParseProjectManagerContent } from './model/manager';
+import { WSFormat } from './model/formats';
 
 const PROJECT_PATH = "projects.json";
+const FILE_PATH = "files.json";
+const PATH_PATH = "paths.json";
 
 export default class WordStatisticsPlugin extends Plugin {
 	settings: WSPluginSettings;
@@ -44,33 +45,19 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
 
-		// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
-		this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
-
 		// custom events
 		this.events = new Dispatcher();
 
-		this.events.on(WSEvents.Project.Created, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Project.Deleted, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Project.Renamed, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Project.Updated, this.saveProjects.bind(this), { filter: null });
-
-		// this event currently doesn't ever fire
-		this.events.on(WSEvents.Group.Updated, this.saveProjects.bind(this), { filter: null });
+		// We don't want to queue saving of data until it's all loaded.
+		this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), { filter: null });
+		this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
+		this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
 
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
 
 		this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
 			return new ProjectManagementView(leaf, this);
-		});
-
-		this.addCommand({
-			id: 'open-project-manager',
-			name: 'Open Project Manager',
-			callback: () => {
-				this.openProjectManager();
-			}
 		});
 
 		// this.addCommand({
@@ -84,6 +71,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 		}
 		// 	}
 		// });
+
 		if (this.app.workspace.layoutReady) {
 			this.onStartup();
 			this.initializeProjectManagementLeaf();
@@ -97,6 +85,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onunload() {
 		this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
+		this.collector.manager.cleanup();
+		this.collector.cleanup();
 		console.log("Obsidian Word Statistics unloaded.");
 	}
 
@@ -109,12 +99,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		});
 	}
 
-	openProjectManager() {
-		let modal = this.collector.manager.modals.createProjectManagerModal();
-		//let modal = new ProjectManagerModal(this.app, this, this.collector.manager);
-		modal.open();
-	}
-
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_PLUGIN_SETTINGS, await this.loadData());
 		console.log("Obsidian Word Statistics settings loaded.");
@@ -125,7 +109,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("Obsidian Word Statistics settings saved.");
 	}
 
-	async loadSerialData(path: string) {
+	async loadSerialData(path: string): Promise<string> {
 		const adapter = this.app.vault.adapter;
 		const dir = this.manifest.dir;
 		const loadPath = normalizePath(`${dir}/${path}`);
@@ -139,6 +123,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async saveSerialData(path: string, data: string) {
+		return;
 		const adapter = this.app.vault.adapter;
 		const dir = this.manifest.dir;
 		const savePath = normalizePath(`${dir}/${path}`);
@@ -164,23 +149,43 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	async onStartup() {
 		if (!this.initialScan) {
-			// console.log("Initiating vault scan.");
-			await this.collector.scanVault();
+			// console.log("Loading existing file content...");
+			let fileData = await this.loadSerialData(FILE_PATH);
+			let files: WSFile[] = [];
+			if (fileData != undefined) {
+				files = WSFormat.LoadFileData(fileData);
+			}
+
+			await this.collector.scanVault(files);
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
 		}
 		if (!this.projectLoad && this.initialScan) {
-			// console.log(`Loading data from ${PROJECT_PATH}`);
-			let projects = await this.loadSerialData(PROJECT_PATH);
-			if (projects) {
-				// console.log(projects);
-				//this.collector.manager.populateFromSerialized(projects);
-				let contentLoad = ParseProjectManagerContent(this.collector.manager, projects);
-				this.collector.manager.loadProjectManagerData(contentLoad);
-				this.collector.manager.updateAllProjects();
+			// console.log(`Loading data from ${PROJECT_PATH}`);\
+			let projData = await this.loadSerialData(PROJECT_PATH);
+			if (projData != undefined) {
+				let projects = WSFormat.LoadProjectData(this.collector, projData);
+				if (projects.length > 0) {
+					// console.log(projects);
+					//this.collector.manager.populateFromSerialized(projects);
+					this.collector.manager.loadProjects(projects);
+				}
+				let pathData = await this.loadSerialData(PATH_PATH);
+				if (pathData != undefined) {
+					let paths = WSFormat.LoadPathData(pathData);
+					if (paths.length > 0) {
+						this.collector.manager.loadPaths(paths);
+					}
+				}
 			}
 			this.projectLoad = true;
-			await this.collector.scanVault();
+
+			// console.log("Initiating post-project vault re-scan...");
+			// await this.collector.scanVault();
+			// console.log("Complete.")
+			// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
+			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
+
 		}
 		this.updateFocusedFile();
 	}
@@ -200,16 +205,15 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	updateFocusedFile() {
-		let file: WSFile;
+		let file: WSFile = null;
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
 		if (view != null && view.file != null) {
-			file = this.collector.getFileSafer(view.file.path);
+			file = this.collector.getFile(view.file.path);
 		}
-		if (file instanceof WSFile) {
-			this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
-			this.focusFile = file;
-		}
+		// console.log("[!] Updating focused file:", file instanceof WSFile ? file.serialize() : null);
+		this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
+		this.focusFile = file;
 	}
 
 	onFileRename(file: TAbstractFile, data: string) {
@@ -267,11 +271,15 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async onFileOpen(file: TFile) {
-		//console.log("onFileOpen()");
+		// console.log("onFileOpen()");
 		//console.log(file);
-		let wFile = this.collector.getFileSafer(file.path);
-		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
-			this.debounceRunCount(file, await this.app.vault.cachedRead(file));
+		if (file instanceof TFile) {
+			let wFile = this.collector.getFile(file.path);
+			if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
+				this.debounceRunCount(file, await this.app.vault.cachedRead(file));
+			}
+		} else {
+			this.updateFocusedFile();
 		}
 	}
 
@@ -282,16 +290,22 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	saveProjects(evt: WSProjectEvent | WSProjectGroupEvent) {
-		// project has been updated, we now want to save all project data
-		let data = this.collector.manager.serialize();
+	saveProjects(evt: WSDataEvent) {
+		let data = WSFormat.SaveProjectData(this, this.collector.manager.projectList);
+		// console.log(data);
 		this.saveSerialData(PROJECT_PATH, data);
 	}
 
-	onProjectFilesUpdate(proj: WSProject) {
-		// update UI that project has been updated; anything watching for this project will need to obtain a new count
-		// this.view.updateForProject(proj); // this needs to go through any project groups as well
-		// we may not even need this
+	saveFiles(event: WSDataEvent) {
+		let data = WSFormat.SaveFileData(this, this.collector.fileList);
+		// console.log(data);
+		this.saveSerialData(FILE_PATH, data);
+	}
+
+	savePaths(event: WSDataEvent) {
+		let data = WSFormat.SavePathData(this, this.collector.manager.getSetPaths());
+		// console.log(data);
+		this.saveSerialData(PATH_PATH, data);
 	}
 
 	onFileWordCount(file: WSFile) {

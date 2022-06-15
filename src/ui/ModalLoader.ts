@@ -1,14 +1,38 @@
-import { ButtonComponent, Modal, Setting } from "obsidian";
+import { Modal, Setting } from "obsidian";
 import type WordStatisticsPlugin from "src/main";
 import type { WSProjectManager } from "src/model/manager";
-import { WSProject, WSPType } from "src/model/project";
-import ProjectEditor from "./svelte/ProjectManagerModal/ProjectEditor.svelte";
-import ProjectManager from "./svelte/ProjectManagerModal/ProjectManager.svelte";
+import type { WSPath } from "src/model/path";
+import type { WSProject } from "src/model/project";
+import MessagePanel from "./svelte/Modals/MessagePanel.svelte";
+import PathEditor from "./svelte/Modals/PathEditor.svelte";
+import ProjectEditor from "./svelte/Modals/ProjectEditor.svelte";
+
+class MessageModal extends Modal {
+    panel: MessagePanel;
+
+    constructor(public plugin: WordStatisticsPlugin, public messages: string[]) {
+        super(plugin.app);
+    }
+
+    onOpen() {
+        let {contentEl} = this;
+        this.panel = new MessagePanel({ target: contentEl, props: { messages: this.messages } });
+    }
+
+    onClose() {
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
+
+}
 
 class ConfirmationModal extends Modal {
     confirmation: boolean = false;
 
-    constructor(public plugin: WordStatisticsPlugin, public message: string, public cb: Function) {
+    constructor(public plugin: WordStatisticsPlugin, public message: string, public cb: Function, public label: string = "Delete") {
         super(plugin.app);
     }
 
@@ -28,7 +52,7 @@ class ConfirmationModal extends Modal {
             .setName("Deletion Confirmation")
             .setDesc(this.message);
         new Setting(contentEl).addButton((button) => {
-            button.setButtonText("Delete");
+            button.setButtonText(this.label);
             button.onClick(this.onDelete.bind(this));
         })
             .addButton((button) => {
@@ -45,38 +69,7 @@ class ConfirmationModal extends Modal {
 }
 
 
-// =======================
-//  Project Manager Modal
-// =======================
-
-class ProjectManagerModal extends Modal {
-    manager: WSProjectManager;
-    panel: ProjectManager;
-
-    constructor(public plugin: WordStatisticsPlugin) {
-        super(plugin.app);
-        this.manager = plugin.collector.manager;
-    }
-
-    onOpen() {
-        let { contentEl } = this;
-        this.panel = new ProjectManager({ target: contentEl, props: { manager: this.manager } });
-    }
-
-    onClose() {
-        if (this.panel) {
-            this.panel.$destroy();
-        }
-        let { contentEl } = this;
-        contentEl.empty();
-    }
-}
-
-// =======================
-//  Project Editor Modals
-// =======================
-
-class FileProjectModal extends Modal {
+class ProjectEditorModal extends Modal {
     manager: WSProjectManager;
     panel: ProjectEditor;
 
@@ -87,7 +80,7 @@ class FileProjectModal extends Modal {
 
     onOpen() {
         let { contentEl } = this;
-        this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.File, onClose: this.close.bind(this), _project: this.project } });
+        this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, onClose: this.close.bind(this), _project: this.project } });
     }
 
     onClose() {
@@ -99,18 +92,18 @@ class FileProjectModal extends Modal {
     }
 }
 
-class FolderProjectModal extends Modal {
+class PathEditorModal extends Modal {
     manager: WSProjectManager;
-    panel: ProjectEditor;
+    panel: PathEditor;
 
-    constructor(public plugin: WordStatisticsPlugin, public project?: WSProject) {
+    constructor(public plugin: WordStatisticsPlugin, public path?: WSPath) {
         super(plugin.app);
         this.manager = plugin.collector.manager;
     }
 
     onOpen() {
         let { contentEl } = this;
-        this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.Folder, onClose: this.close.bind(this), _project: this.project } });
+        this.panel = new PathEditor({ target: contentEl, props: { manager: this.manager, onClose: this.close.bind(this), path: this.path } });
     }
 
     onClose() {
@@ -122,70 +115,24 @@ class FolderProjectModal extends Modal {
     }
 }
 
-class TagProjectModal extends Modal {
-    manager: WSProjectManager;
-    panel: ProjectEditor;
-
-    constructor(public plugin: WordStatisticsPlugin, public project?: WSProject) {
-        super(plugin.app);
-        this.manager = plugin.collector.manager;
-    }
-
-    onOpen() {
-        let { contentEl } = this;
-        this.panel = new ProjectEditor({ target: contentEl, props: { manager: this.manager, type: WSPType.Tag, onClose: this.close.bind(this), _project: this.project } });
-    }
-
-    onClose() {
-        if (this.panel) {
-            this.panel.$destroy();
-        }
-        let { contentEl } = this;
-        contentEl.empty();
-    }
-}
 
 export class ModalLoader {
     constructor(public plugin: WordStatisticsPlugin, public manager: WSProjectManager) { }
 
-    createProjectManagerModal() {
-        return new ProjectManagerModal(this.plugin);
+    createProjectEditorModal(project?: WSProject) {
+        return new ProjectEditorModal(this.plugin, project);
     }
 
-    createFileProjectModal(project?: WSProject) {
-        return new FileProjectModal(this.plugin, project);
+    createConfirmationModal(message: string, cb: Function, label: string = "Delete") {
+        return new ConfirmationModal(this.plugin, message, cb, label);
     }
 
-    createFolderProjectModal(project?: WSProject) {
-        return new FolderProjectModal(this.plugin, project);
+    createMessageModal(messages: string[]) {
+        return new MessageModal(this.plugin, messages);
     }
 
-    createTagProjectModal(project?: WSProject) {
-        return new TagProjectModal(this.plugin, project);
-    }
-
-    createModalFromType(type: WSPType) {
-        if (type === WSPType.File) {
-            return this.createFileProjectModal();
-        } else if (type === WSPType.Folder) {
-            return this.createFolderProjectModal();
-        } else if (type === WSPType.Tag) {
-            return this.createTagProjectModal();
-        }
-    }
-
-    createModalFromProject(project: WSProject) {
-        if (project.type === WSPType.File) {
-            return this.createFileProjectModal(project);
-        } else if (project.type === WSPType.Folder) {
-            return this.createFolderProjectModal(project);
-        } else if (project.type === WSPType.Tag) {
-            return this.createTagProjectModal(project);
-        }
-    }
-
-    createConfirmationModal(message: string, cb: Function) {
-        return new ConfirmationModal(this.plugin, message, cb);
+    createPathEditorModal(path: WSPath) {
+        return new PathEditorModal(this.plugin, path);
     }
 
 }

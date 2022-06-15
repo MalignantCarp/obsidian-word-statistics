@@ -9,7 +9,7 @@ export class WSFile {
 	backlinks: WSFile[];
 	wordGoal: number;
 
-	constructor(name: string, path: string) {
+	constructor(name: string, path: string, wordGoal?: number) {
 		this.name = name;
 		this.path = path;
 		this.currentWords = 0;
@@ -18,7 +18,22 @@ export class WSFile {
 		this.tags = [];
 		this.links = new Map<WSFile, string>();
 		this.backlinks = [];
-		this.wordGoal = 0;
+		this.wordGoal = wordGoal || 0;
+		// console.log(`New File(${this.path}`);
+	}
+
+	private toObject() {
+		return ({
+			name: this.name,
+			path: this.path,
+			words: this.currentWords,
+			lastUpdate: this.lastUpdate,
+			wordGoal: this.wordGoal
+		});
+	}
+
+	serialize() {
+		return this.toObject();
 	}
 
 	clearTags() {
@@ -119,7 +134,7 @@ export class WSFile {
 		this.lastUpdate = Date.now();
 	}
 
-	setWords(count: number) {
+	set words(count: number) {
 		this.currentWords = count;
 		this.lastUpdate = Date.now();
 	}

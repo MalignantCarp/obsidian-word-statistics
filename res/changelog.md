@@ -1,4 +1,91 @@
 ## Changelog
+### 2022-06-15
+ - BUGFIX: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty
+ - BUGFIX: Delete project doesn't reset the path buttons correct for the paths above it.
+ - BUGFIX: Purge path results in an exception when a root child is purged.
+
+### 2022-06-13
+ - BUGFIX: Purge path does not function -- the clearEmptyPath setting was being queried as a conditional for purging, rather than for auto purging following the deletion of its contained project
+  - BUG: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty
+  - purgePath() now returns the parent path of the purged path
+
+### 2022-06-12
+ - Added box-glyph as a new icon in PathItemButtons and related CSS to always have an icon in its place where the reset/purge icon would go.
+ - Added a label to the confirmation dialog modal to control whether it says Delete or Purge.
+ - BUGFIX: Reset path doesn't remove path from the paths.json file.
+ - BUGFIX: SuggestBox attempted to use highlightedElement when it was undefined
+ - BUGFIX: Reset path doesn't reset the button to its default appearance
+ - BUG: Delete project doesn't reset the path buttons correctly for the paths above it.
+ - BUG: Purge path does not function properly.
+ - Disabled saving of file, project, and path JSON files for testing.  
+
+### 2022-06-11
+ - BUGFIX: JSON.parse errors when file, project, and path files do not exist.
+ - BUGFIX: category was still part of the Path structures in formats.ts
+ - Path editor appears to work.
+ - BUG: Reset path doesn't reset the button to its default (hidden) appearance
+ - BUG: Reset path doesn't remove the path from the paths.json file.
+  - If it has no content, it does not need to appear.
+ - Need to alter the reset button so that it shows a neutral icon when the path is already clear and shows the reset button when it is set.
+
+### 2022-05-29
+ - Added a svelte file for SettingItems to help cleanup the ProjectEditor.svelte.
+ - Cleaned up ProjectEditor.svelte using the new SettingItems.svelte.
+ - Some CSS and container fixes to make ValidatedInput and SuggestBox components not jump around when validation messages appear.
+ - BUGFIX: SuggestBox was not scrolling with the moved highlight.
+ - Made it so SuggestBox can scroll in either direction and will loop around.
+ - Removed Category from WSPath. Category will be per-project.
+ - Built PathEditor (untested)
+ - A few changes to accommodate the PathEditor and updates to goals, so that they are accounted for by the Project and File word counters.
+
+### 2022-05-25
+ - Removed PMFileInfo panel.
+ - Removed serialization code from WSProject.
+ - BUGFIX: Project Title is not saved.
+ - Moved check code from ProjectEditor.svelte into the respective WSProjectManager.setProject* methods to determine whether to fire events.
+ - Finished the TreeProjectContainer and its subcomponents.
+ - Added progress bars to TreeProjectContainer and TreePathContainer and file and project status bar counters.
+ - BUGFIX: Since caching file state, Vault Counter read 0. Needed to account for the word totals for each file already being set, so now setting them when the file is initially set and triggering a word count change event as required.
+
+### 2022-05-24
+ - Built new WSFormat namespace for saving and loading files, paths, and projects. Moved all supporting code there to get it out of the main files to declutter. Will be considering CSV for a similar smaller format for minifying files.json, as it could get rather enormous for large vaults. Alternatively, it may be that only monitored files (i.e., project files) will be included, though that could be cumbersome in determining project files to output whenever saving is required.
+ - BUGFIX: Closing all open files resulted in an unhandled exception.
+ - BUGFIX: Status Bar had excess padding when particular word counter not present. Now we don't show the file or project counters if no file is open, and we do not show the project counter if the focused file has no project.
+ - Modified the Status Bar widgets (File/Project) a bit to account for no longer needing to check that they are monitoring a focused file, as they will not be shown if that is the case.
+ - Broke apart PMProjectTreePathItem into multiple components. Will continue to break down the interface into easily manageable building blocks.
+ - Project Manager now shows word count for paths.
+ - BUGFIX: Contents of the file collector filled prior to running scanVault. This was due to getFileSafer() being called on all metadata changes and when leaf changes were done. Have replaced with getFile() and deferred adding event listeners to metadata changes until everything has been loaded.
+
+### 2022-05-23
+ - Minor cleanups in WSProjectManager arround path building and purging.
+ - Added some CSS for PMProjectTree
+
+### 2022-05-22
+ - Added method of WSProjectManager to reset the path of a project.
+ - Added a few helper methods to WSPath.
+ - Added WSEvents.Project event types for setting various aspects of the project. This way the UI can focus only on ones that matter to display.
+ - Added WSEvents.Data.File/Project/Path and respect event types.
+ - Event dispatcher now fires a Data event for File, Project, and Path events to indicate it is time to save data. This way we don't have to monitor dozens of events in main.ts.
+ - Tested ProjectEditor. A few layout issues, but it otherwise works.
+ - Moved was WSPath content from projects.ts into new paths.ts.
+ - Added a modal to provide messages in an unordered list (for now).
+ - Need to test some more and then complete the project items for the project viewer and complete CSS.
+ - BUG: For some reason, the contents of the file collector seem to be filled in prior to running scanVault, which makes no sense. Need to see why this is happening. Have entered some debug prints for now to see. May need to add one in the WSFile constructor to see if it's being created elsewhere (though can't imagine where).
+
+### 2022-05-20
+ - Added IFile and file recording in preparation of bringing in statistics for the files.
+ - Updated SuggestBox to allow non-options to be valid (optional flag) or to specify a custom validation routine that will alternatively provide validation even if an option is not selected.
+ - Removed the old Project Manager.
+ - Updated the ProjectEditor to allow for the creation and editing of any type of project. The type of project will be determined by the input project, or in the case of new projects, the selected project. Once saved, a project's type is immutable.
+ - Removed the non-existent null project type.
+ - Added View settings
+ - Refined WSPath to act as a full tree.
+ - Completed new version of ProjectEditor. (untested)
+ - Began new PMProjectTree.
+
+### 2022-05-19
+ - Taking a slightly different route, eliminating the file/folder/tag grouping of project groups and opting for a path-based tree of projects to allow custom organization. The new system will utilize a basic path structure, and paths are set on a per-project basis. The UI will allow certain modifications to these paths—including giving them titles (and eventually icons) and word goals for the folder, contained groups, and files—but they are otherwise largely immutable and based entirely upon their presence under the path field of the projects. If a particular path has settings and has its final project deleted, then if the user has opted in via settings, the empty paths will be removed. Otherwise, they will remain.
+
 ### 2022-05-17
  - Eliminated the project menu in the PMProjectListItem and changed the menu button into an edit and a delete button.
  - Changed the hover-selection of files for the PMFileInfo panel and changed it to click. Added a back button to go back to the current file. This also eliminates the need for fixed height on the info panel, so it can now show as many projects as it needs to.

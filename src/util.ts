@@ -1,10 +1,19 @@
-export const FormatWords = (words: number) : string => {
+export const FormatWords = (words: number): string => {
     return Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
-}
+};
 
-export const FormatWordsNumOnly = (words: number) : string => {
+export const FormatWordsNumOnly = (words: number): string => {
     return Intl.NumberFormat().format(words);
-}
+};
+
+export const GetProgressGrade = (percent: number): string => {
+    if (percent < 25) return "1"; // 0-24
+    if (percent < 50) return "2"; // 25-49
+    if (percent < 75) return "3"; // 50-74
+    if (percent < 90) return "4"; // 75-89
+    if (percent < 100) return "5"; // 90-99
+    return "6"; // 100
+};
 
 export const FindRawText = (el: Node): string => {
     /* This function returns the raw text found within the given node's childNodes, unless contained in <pre> or <code> blocks.

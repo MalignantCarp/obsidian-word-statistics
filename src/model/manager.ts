@@ -1,225 +1,31 @@
-import { WSEvents, WSProjectEvent, WSProjectGroupEvent } from "src/event";
+import { WSEvents, WSProjectEvent, WSPathEvent } from "./event";
 import type WordStatisticsPlugin from "src/main";
 import { ModalLoader } from "src/ui/ModalLoader";
 import type { WSDataCollector } from "./collector";
 import type { WSFile } from "./file";
-import { LoadProjectGroupFromSerial, WSProjectGroup, type IProjectGroupV0 } from "./group";
-import { LoadProjectFromSerial, PROJECT_TYPE_STRING, WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, type IProjectV0, type IProjectV1 } from "./project";
-
-export function CanProjectMoveUpInGroup(project: WSProject, group: WSProjectGroup) {
-    return (group.projects.contains(project) && group.projects.indexOf(project) > 0);
-}
-
-export function CanProjectMoveDownInGroup(project: WSProject, group: WSProjectGroup) {
-    return (group.projects.contains(project) && group.projects.indexOf(project) < (group.projects.length - 1));
-}
-
-export function GetFileWordGoal(file: WSFile, project?: WSProject, group?: WSProjectGroup) {
-    if (file.wordGoal > 0) {
-        return file.wordGoal;
-    }
-    if (project?.wordGoalFile > 0) {
-        return project.wordGoalFile;
-    }
-    if (group?.wordGoalFile > 0) {
-        return group.wordGoalFile;
-    }
-    return null;
-}
-
-export function GetProjectWordGoal(project: WSProject, group?: WSProjectGroup) {
-    if (project.wordGoal > 0) {
-        return project.wordGoal;
-    }
-    if (group?.wordGoalProject > 0) {
-        return group.wordGoalProject;
-    }
-    return null;
-}
-
-export function GetGroupWordGoal(group: WSProjectGroup) {
-    if (group.wordGoal > 0) {
-        return group.wordGoal;
-    }
-    return null;
-}
-
-interface ProjectManagerJSON {
-    tagProjects: string[],
-    fileProjects: string[],
-    folderProjects: string[],
-    projectGroups: string[],
-}
-
-export interface IProjectManagerV0 {
-    tagProjects: IProjectV0[],
-    fileProjects: IProjectV0[],
-    folderProjects: IProjectV0[],
-    projectGroups: IProjectGroupV0[];
-}
-
-export interface IProjectManagerV1 {
-    tagProjects: IProjectV1[],
-    fileProjects: IProjectV1[],
-    folderProjects: IProjectV1[],
-    projectGroups: IProjectGroupV0[];
-}
-
-export interface IProjectManager {
-    tagProjects: WSTagProject[],
-    fileProjects: WSFileProject[],
-    folderProjects: WSFolderProject[],
-    projectGroups: WSProjectGroup[];
-}
-
-function ProcessAllContent(manager: WSProjectManager, content: IProjectManagerV0 | IProjectManagerV1): IProjectManager {
-    let tagProjects: WSTagProject[] = [];
-    let fileProjects: WSFileProject[] = [];
-    let folderProjects: WSFolderProject[] = [];
-    let projectGroups: WSProjectGroup[] = [];
-
-    content.tagProjects.forEach((info) => {
-        let proj = LoadProjectFromSerial(manager.collector, info);
-        if (proj instanceof WSTagProject) {
-            tagProjects.push(proj);
-        } else {
-            console.log(`Error processing project manager content for project '${info.name}'. Deserialization returned invalid type '${typeof (proj)}'`);
-        }
-    });
-
-    content.fileProjects.forEach((info) => {
-        let proj = LoadProjectFromSerial(manager.collector, info);
-        if (proj instanceof WSFileProject) {
-            fileProjects.push(proj);
-        } else {
-            console.log(`Error processing project manager content for project '${info.name}'. Deserialization returned invalid type '${typeof (proj)}'`);
-        }
-    });
-
-    content.folderProjects.forEach((info) => {
-        let proj = LoadProjectFromSerial(manager.collector, info);
-        if (proj instanceof WSFolderProject) {
-            folderProjects.push(proj);
-        } else {
-            console.log(`Error processing project manager content for project '${info.name}'. Deserialization returned invalid type '${typeof (proj)}'`);
-        }
-    });
-
-    content.projectGroups.forEach((info) => {
-        let [error, group] = LoadProjectGroupFromSerial(manager, info);
-        if (!error && group instanceof WSProjectGroup) {
-            projectGroups.push(group);
-        }
-    });
-
-    return { tagProjects, fileProjects, folderProjects, projectGroups };
-}
-
-function ParseProjectManagerContentV0(manager: WSProjectManager, data: string) {
-    try {
-        // console.log("Attempting to parse data into ProjectManagerJSON");
-        let content = JSON.parse(data) as ProjectManagerJSON;
-        // console.log(content);
-        // console.log("Attempting to parse Tag Projects into IProjectV0");
-        let tagProjects: IProjectV0[] = [];
-        content.tagProjects.forEach((value) => {
-            tagProjects.push(JSON.parse(value) as IProjectV0);
-        });
-        // console.log(tagProjects);
-        // console.log("Attempting to parse File Projects into IProjectV0");
-        let fileProjects: IProjectV0[] = [];
-        content.fileProjects.forEach((value) => {
-            fileProjects.push(JSON.parse(value) as IProjectV0);
-        });
-        // console.log(fileProjects);
-        // console.log("Attempting to parse Folder Projects into IProjectV0");
-        let folderProjects: IProjectV0[] = [];
-        content.folderProjects.forEach((value) => {
-            folderProjects.push(JSON.parse(value) as IProjectV0);
-        });
-        // console.log(folderProjects);
-        // console.log("Attempting to parse Project Groups into IProjectGroupV0");
-        let projectGroups: IProjectGroupV0[] = [];
-        content.projectGroups.forEach((value) => {
-            projectGroups.push(JSON.parse(value) as IProjectGroupV0);
-        });
-        // console.log(projectGroups);
-        return ProcessAllContent(manager, { tagProjects, fileProjects, folderProjects, projectGroups });
-    } catch (error) {
-        console.log("Error parsing project manager content (V0):", error);
-        return undefined;
-    }
-}
-
-function ParseProjectManagerContentV1(manager: WSProjectManager, data: string) {
-    try {
-        // console.log("Attempting to parse data into ProjectManagerJSON");
-        let content = JSON.parse(data) as ProjectManagerJSON;
-        // console.log(content);
-        // console.log("Attempting to parse Tag Projects into IProjectV0");
-        let tagProjects: IProjectV1[] = [];
-        content.tagProjects.forEach((value) => {
-            tagProjects.push(JSON.parse(value) as IProjectV1);
-        });
-        // console.log(tagProjects);
-        // console.log("Attempting to parse File Projects into IProjectV0");
-        let fileProjects: IProjectV1[] = [];
-        content.fileProjects.forEach((value) => {
-            fileProjects.push(JSON.parse(value) as IProjectV1);
-        });
-        // console.log(fileProjects);
-        // console.log("Attempting to parse Folder Projects into IProjectV0");
-        let folderProjects: IProjectV1[] = [];
-        content.folderProjects.forEach((value) => {
-            folderProjects.push(JSON.parse(value) as IProjectV1);
-        });
-        // console.log(folderProjects);
-        // console.log("Attempting to parse Project Groups into IProjectGroupV0");
-        let projectGroups: IProjectGroupV0[] = [];
-        content.projectGroups.forEach((value) => {
-            projectGroups.push(JSON.parse(value) as IProjectGroupV0);
-        });
-        // console.log(projectGroups);
-        return ProcessAllContent(manager, { tagProjects, fileProjects, folderProjects, projectGroups });
-    } catch (error) {
-        console.log("Error parsing project manager content (V0):", error);
-        return undefined;
-    }
-}
-
-export function ParseProjectManagerContent(manager: WSProjectManager, data: string) {
-    let content: IProjectManager;
-
-    content = content = ParseProjectManagerContentV1(manager, data);
-    if (content === undefined) {
-        console.log("Failed to load as V1, falling back to V0.");
-        content = ParseProjectManagerContentV0(manager, data);
-    }
-    if (content === undefined) {
-        console.log("Failed to load project manager");
-        return null;
-    }
-    return content;
-}
+import { WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, SortProjectList } from "./project";
+import { WSPath } from "./path";
 
 export class WSProjectManager {
-    tagProjects: WSTagProject[] = [];
-    fileProjects: WSFileProject[] = [];
-    folderProjects: WSFolderProject[] = [];
-    projectGroups: Map<string, WSProjectGroup>;
-    plugin: WordStatisticsPlugin = null;
-    collector: WSDataCollector = null;
+    projectList: WSProject[];
+    paths: Map<string, WSPath>;
+    pathRoot: WSPath = new WSPath("", "All Projects", 0);
     projects: Map<string, [WSPType, WSProject]>;
     errorState: boolean = false;
     errorMessages: string[] = [];
     modals: ModalLoader;
 
-    constructor(plugin: WordStatisticsPlugin, collector: WSDataCollector) {
-        this.plugin = plugin;
-        this.collector = collector;
+    constructor(public plugin: WordStatisticsPlugin, public collector: WSDataCollector) {
+        this.projectList = [];
         this.projects = new Map<string, [WSPType, WSProject]>();
-        this.projectGroups = new Map<string, WSProjectGroup>();
+        this.paths = new Map<string, WSPath>();
         this.modals = new ModalLoader(this.plugin, this);
+    }
+
+    cleanup() {
+        this.paths.clear();
+        this.projects.clear();
+        this.projectList = [];
     }
 
     /* ===========================
@@ -234,67 +40,43 @@ export class WSProjectManager {
         Serialization
        =============== */
 
-    private toObject() {
-        let fileProjects: string[] = [];
-        let folderProjects: string[] = [];
-        let tagProjects: string[] = [];
-        let projectGroups: string[] = [];
-
-        this.fileProjects.forEach((proj) => {
-            fileProjects.push(proj.serialize());
-        });
-        this.folderProjects.forEach((proj) => {
-            folderProjects.push(proj.serialize());
-        });
-        this.tagProjects.forEach((proj) => {
-            tagProjects.push(proj.serialize());
-        });
-        this.projectGroups.forEach((grp) => {
-            projectGroups.push(grp.serialize());
-        });
-        return { fileProjects, folderProjects, tagProjects, projectGroups };
-    }
-
-    serialize() {
-        return JSON.stringify(this.toObject());
-    }
-
     validateProjectLoad(projects: WSProject[]) {
-        let names: string[] = [];
+        let ids: string[] = [];
         projects.forEach((proj) => {
-            if (names.contains(proj.name)) {
-                console.log(`Project name already in use: ${proj.name}`);
+            if (ids.contains(proj.id)) {
+                console.log(`Project ID already in use: ${proj.id}`);
                 return false;
             }
-            names.push(proj.name);
+            ids.push(proj.id);
         });
         return true;
     }
 
-    validateProjectGroupLoad(groups: WSProjectGroup[]) {
+    validatePathLoad(paths: WSPath[]) {
         let names: string[] = [];
-        groups.forEach((group) => {
-            if (names.contains(group.name)) {
-                console.log(`Project Group name already in use: ${group.name}`);
+        paths.forEach((path) => {
+            if (names.contains(path.path)) {
+                console.log(`Project Path already exists: ${path.path}`);
                 return false;
             }
-            names.push(group.name);
+            names.push(path.path);
         });
         return true;
     }
 
-    loadProjectManagerData(data: IProjectManager) {
-        if (this.validateProjectLoad(data.fileProjects as WSProject[]) && this.validateProjectLoad(data.folderProjects as WSProject[]) && this.validateProjectLoad(data.tagProjects as WSProject[])) {
-            if (this.validateProjectGroupLoad(data.projectGroups)) {
-                [data.fileProjects, data.folderProjects, data.tagProjects].forEach((projectLoad) => {
-                    projectLoad.forEach((proj) => {
-                        this.registerProject(proj);
-                    });
-                });
-                data.projectGroups.forEach((group) => {
-                    this.registerProjectGroup(group);
-                });
-            }
+    loadProjects(projects: WSProject[]) {
+        if (this.validateProjectLoad(projects)) {
+            projects.forEach((project) => {
+                this.registerProject(project);
+            });
+        }
+    }
+
+    loadPaths(paths: WSPath[]) {
+        if (this.validatePathLoad(paths)) {
+            paths.forEach((path) => {
+                this.registerPath(path);
+            });
         }
     }
 
@@ -312,18 +94,53 @@ export class WSProjectManager {
         Checkers
        ========== */
 
-    checkProjectName(name: string) {
-        return !this.projects.has(name);
+    checkProjectID(id: string) {
+        return !this.projects.has(id);
     }
 
-    checkProjectGroupName(name: string) {
-        return !this.projectGroups.has(name);
+    checkPathName(name: string) {
+        return !this.paths.has(name);
     }
 
     isIndexFile(file: WSFile) {
-        let matches = this.fileProjects.filter(fp => fp.file === file);
+        let matches = this.projectList.filter(fp => fp.pType === WSPType.File && (<WSFileProject>fp).file === file);
         // console.log(`isIndexFile(${file.path}) = ${matches.length > 0}`);
         return matches.length > 0;
+    }
+
+    getWordGoalForProjectByContext(project: WSProject) {
+        if (project.wordGoalForProject) {
+            return project.wordGoalForProject;
+        }
+        if (this.paths.has(project.path)) {
+            let path = this.paths.get(project.path);
+            if (path instanceof WSPath) {
+                if (path.wordGoalForProjects) {
+                    return path.wordGoalForProjects;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    getWordGoalForFileByContext(file: WSFile, project: WSProject) {
+        if (file.wordGoal) {
+            return file.wordGoal;
+        }
+        if (project instanceof WSProject) {
+            if (project.wordGoalForFiles) {
+                return project.wordGoalForFiles;
+            }
+            if (this.paths.has(project.path)) {
+                let path = this.paths.get(project.path);
+                if (path instanceof WSPath) {
+                    if (path.wordGoalForFiles) {
+                        return path.wordGoalForFiles;
+                    }
+                }
+            }
+        }
+        return undefined;
     }
 
     /* =================
@@ -332,41 +149,38 @@ export class WSProjectManager {
 
     getAllProjects(): WSProject[] {
         let projects: WSProject[] = [];
-        projects.push(...this.fileProjects);
-        projects.push(...this.folderProjects);
-        projects.push(...this.tagProjects);
-        projects.sort((a, b) => a.name > b.name ? 1 : (b.name > a.name ? -1 : 0));
-        return projects;
+        projects.push(...this.projectList);
+        return SortProjectList(projects);
+    }
+
+    getProjectsByPath(path: string) {
+        return SortProjectList(this.projectList.filter((proj) => proj.fullPath.startsWith(path)));
+    }
+
+    getProjectsByExactPath(path: string) {
+        return SortProjectList(this.projectList.filter((proj) => proj.path === path));
     }
 
     getProjectsByType(type: WSPType): WSProject[] {
-        switch (type) {
-            case WSPType.File:
-                return this.fileProjects as WSProject[];
-            case WSPType.Folder:
-                return this.folderProjects as WSProject[];
-            case WSPType.Tag:
-                return this.tagProjects as WSProject[];
-        }
-        return [];
+        return SortProjectList(this.projectList.filter((proj) => proj.pType == type));
     }
 
     getFileProjects() {
-        return this.fileProjects as WSProject[];
+        return SortProjectList(this.projectList.filter((proj) => proj.pType == WSPType.File));
     }
 
     getFolderProjects() {
-        return this.folderProjects as WSProject[];
+        return SortProjectList(this.projectList.filter((proj) => proj.pType == WSPType.Folder));
     }
 
     getTagProjects() {
-        return this.tagProjects as WSProject[];
+        return SortProjectList(this.projectList.filter((proj) => proj.pType == WSPType.Tag));
     }
 
     getProjectsByFile(file: WSFile) {
         let projects: WSProject[] = [];
 
-        this.projects.forEach(([type, project]) => {
+        this.projectList.forEach((project) => {
             if (project.files.contains(file)) {
                 projects.push(project);
             }
@@ -374,39 +188,35 @@ export class WSProjectManager {
         return projects;
     }
 
-    getProjectByName(name: string) {
-        let [, proj] = this.projects.get(name);
+    getProjectByID(id: string) {
+        let [, proj] = this.projects.get(id);
         return proj;
     }
 
-    getProjectNames() {
+    getProjectIDs() {
         return Array.from(this.projects.keys());
     }
 
     getProjectList(): WSProject[] {
-        let list: WSProject[] = [];
-        Array.from(this.projects.values()).forEach(([, proj]) => {
-            list.push(proj);
-        });
-        return list;
+        return this.projectList;
     }
 
     getIndexFile(proj: WSProject) {
-        if (proj.type === WSPType.File) {
+        if (proj.pType === WSPType.File) {
             return this.collector.getFile(proj.index);
         }
         return undefined;
     }
 
     getIndexTag(proj: WSProject) {
-        if (proj.type === WSPType.Tag) {
+        if (proj.pType === WSPType.Tag) {
             return proj.index;
         }
         return undefined;
     }
 
     getIndexFolder(proj: WSProject) {
-        if (proj.type === WSPType.Folder) {
+        if (proj.pType === WSPType.Folder) {
             return proj.index;
         }
         return undefined;
@@ -420,31 +230,31 @@ export class WSProjectManager {
     }
 
     updateProjectsForIndex(file: WSFile) {
-        this.fileProjects.forEach(proj => {
-            if (proj.file === file) {
+        this.projectList.forEach(proj => {
+            if (proj.pType === WSPType.File && (<WSFileProject>proj).file === file) {
                 this.updateProject(proj);
             }
         });
     }
 
     updateProjectsForTag(tag: string) {
-        this.tagProjects.forEach((proj) => {
-            if (proj.tag == tag) {
+        this.projectList.forEach((proj) => {
+            if (proj.pType === WSPType.Tag && (<WSTagProject>proj).tag === tag) {
                 this.updateProject(proj);
             }
         });
     }
 
     updateProjectsForFolder(folder: string) {
-        this.folderProjects.forEach((proj) => {
-            if (proj.folder == folder) {
+        this.projectList.forEach((proj) => {
+            if (proj.pType === WSPType.Folder && (<WSFolderProject>proj).folder === folder) {
                 this.updateProject(proj);
             }
         });
     }
 
     updateProjectsForFile(file: WSFile) {
-        this.projects.forEach(([type, project]) => {
+        this.projectList.forEach((project) => {
             if (project.files.contains(file)) {
                 this.updateProject(project);
             }
@@ -457,127 +267,138 @@ export class WSProjectManager {
         });
     }
 
-    /* =======================
-        Project Group Methods
-       ======================= */
+    /* ======================
+        Project Path Methods
+       ====================== */
 
-    getProjectGroupFromName(name: string): WSProjectGroup {
-        return this.projectGroups.get(name);
+    getSetPaths() {
+        return Array.from(this.paths.values()).sort((a, b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
     }
 
-    getProjectsForGroupName(name: string): WSProject[] {
-        return this.projectGroups.get(name)?.projects || [];
+    getPaths() {
+        return this.pathRoot.getAll();
     }
 
-    getProjectGroupNames() {
-        return Array.from(this.projectGroups.keys()).sort();
-    }
-
-    getProjectGroupsAlpha() {
-        let names = this.getProjectGroupNames();
-        let groups: WSProjectGroup[] = [];
-        names.forEach((name) => {
-            groups.push(this.projectGroups.get(name));
+    getPathStrings() {
+        let paths = this.pathRoot.getAll();
+        let pathStrings: string[] = [];
+        paths.forEach((path) => {
+            pathStrings.push(path.path);
         });
+        return pathStrings;
     }
 
-    getProjectGroupDescendents(group: WSProjectGroup) {
-        let descendents: WSProjectGroup[] = [];
-        let names = this.getProjectGroupNames();
-        names.forEach((name) => {
-            if (name.startsWith(group.name + "/")) {
-                descendents.push(this.projectGroups.get(name));
+    setPath(path: string, title: string, wordGoalForPath: number, wordGoalForProjects: number, wordGoalForFiles: number) {
+        let pathObj = this.getPath(path);
+        pathObj._title = title;
+        pathObj.wordGoalForPath = wordGoalForPath;
+        pathObj.wordGoalForProjects = wordGoalForProjects;
+        pathObj.wordGoalForFiles = wordGoalForFiles;
+        this.registerPath(pathObj);
+        return pathObj;
+    }
+
+    updatePath(path: WSPath, title: string, wordGoalForPath: number, wordGoalForProjects: number, wordGoalForFiles: number) {
+        let updated = title !== path._title || wordGoalForPath !== path.wordGoalForPath || wordGoalForProjects !== path.wordGoalForProjects || wordGoalForFiles !== path.wordGoalForProjects;
+        this.setPathTitle(path, title);
+        this.setPathWordGoals(path, wordGoalForPath, wordGoalForProjects, wordGoalForFiles);
+        if (!this.paths.has(path.path) && updated) {
+            this.registerPath(path);
+        }
+    }
+
+    getPath(path: string): WSPath {
+        return this.pathRoot.getPath(path);
+    }
+
+    getParentPath(path: WSPath) {
+        return this.pathRoot.findParentOfChild(path);
+    }
+
+    buildPath(path: string) {
+        if (path.length > 0 && !(this.paths.has(path) || this.pathRoot.getPath(path))) {
+            let root = this.pathRoot;
+            let currentPath = root;
+            let pathRe = new RegExp(/([^/]+)/, 'gmu');
+            let segments: string[] = [];
+            let lastIndex = 0;
+            // console.log(`Building segments for '${path}'.`)
+            while (pathRe.test(path)) {
+                segments.push(path.slice(lastIndex, pathRe.lastIndex));
+                lastIndex = pathRe.lastIndex + 1;
             }
-        });
-        return descendents;
-    }
-
-    projectGroupHasDescendents(group: WSProjectGroup) {
-        let names = this.getProjectGroupNames();
-        return names.some((checkName) => checkName.startsWith(group.name + "/"));
-    }
-
-    getProjectGroupNamesWithDescendents() {
-        let groups: string[] = [];
-        let names = this.getProjectGroupNames();
-        names.forEach((name) => {
-            //let matches = Array.from(name.matchAll(/([^/]+)/gmu));
-            if (names.some((checkName) => checkName.startsWith(name + "/"))) {
-                groups.push(name);
+            let builtPath: string = "";
+            for (let i = 0; i < segments.length; i++) {
+                builtPath += segments[i];
+                // console.log(`Building path for '${builtPath}'`)
+                if (this.paths.has(builtPath)) {
+                    currentPath = this.paths.get(builtPath);
+                    // console.log(`Current path set.`);
+                } else {
+                    currentPath = new WSPath(builtPath, "", WSPCategory.None);
+                    // console.log(`Current path created and set.`);
+                    if (!root.hasChild(currentPath)) {
+                        // console.log(`Current path added to root (${root.path}/).`)
+                        root.addChild(currentPath);
+                    }
+                    // console.log("Triggering path creation event.")
+                    this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Created, path: currentPath }, { filter: currentPath }));
+                }
+                // console.log("Setting root to current path.")
+                root = currentPath;
+                if (i < segments.length - 1) {
+                    builtPath += "/";
+                };
             }
-        });
-        return groups;
-    }
-
-    getProjectGroupsWithDescendents() {
-        let groups: WSProjectGroup[];
-
-        this.getProjectGroupNamesWithDescendents().forEach((name) => {
-            groups.push(this.projectGroups.get(name));
-        });
-        return groups;
-    }
-
-    getProjectGroupsFromProject(proj: WSProject) {
-        let groups: WSProjectGroup[] = [];
-        this.projectGroups.forEach((group: WSProjectGroup) => {
-            if (group.projects.contains(proj)) {
-                groups.push(group);
-            }
-        });
-        return groups;
+        }
     }
 
     /* ====================
         Project Management
        ==================== */
 
-    updateProjectGoals(project: WSProject, wordGoal: number, wordGoalFile: number) {
-        let oldGoal = project.wordGoal;
-        let oldFileGoal = project.wordGoalFile;
-        project.wordGoal = wordGoal;
-        project.wordGoalFile = wordGoalFile;
-        if (oldGoal != project.wordGoal || oldFileGoal != project.wordGoalFile) {
-            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: project }, { filter: project }));
-        }
+    setProjectGoals(project: WSProject, wordGoalForProject: number, wordGoalForFiles: number) {
+        project.wordGoalForProject = wordGoalForProject;
+        project.wordGoalForFiles = wordGoalForFiles;
+        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.GoalsSet, project: project }, { filter: project }));
     }
 
-    updateProjectIndex(project: WSProject, projectIndex: string) {
-        if (project.type === WSPType.File) {
+    setProjectIndex(project: WSProject, projectIndex: string) {
+        if (project.pType === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
             let fp = <WSFileProject>project;
             if (file != fp.file) {
                 fp.file = file;
-                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.IndexSet, project }, { filter: project }));
                 this.updateProject(project);
             }
-        } else if (project.type === WSPType.Folder) {
+        } else if (project.pType === WSPType.Folder) {
             let fp = <WSFolderProject>project;
             if (fp.folder != projectIndex) {
                 fp.folder = projectIndex;
-                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.IndexSet, project }, { filter: project }));
                 this.updateProject(project);
             }
-        } else if (project.type === WSPType.Tag) {
+        } else if (project.pType === WSPType.Tag) {
             let tp = <WSTagProject>project;
             if (tp.tag != projectIndex) {
                 tp.tag = projectIndex;
-                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project }, { filter: project }));
+                this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.IndexSet, project }, { filter: project }));
                 this.updateProject(project);
             }
         }
     }
 
-    createProject(type: WSPType, projectName: string, projectIndex: string, projectCategory: WSPCategory, wordGoal: number, wordGoalFile: number) {
+    createProject(type: WSPType, projectID: string, path: string, projectIndex: string, projectCategory: WSPCategory, title: string, wordGoalForProject: number, wordGoalForFiles: number) {
         let project: WSProject;
 
         if (type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
-            project = new WSFileProject(this.collector, projectName, file, projectCategory, wordGoal, wordGoalFile);
+            project = new WSFileProject(this.collector, projectID, path, file, projectCategory, title, wordGoalForProject, wordGoalForFiles);
         } else if (type === WSPType.Folder) {
-            project = new WSFolderProject(this.collector, projectName, projectIndex, projectCategory, wordGoal, wordGoalFile);
+            project = new WSFolderProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles);
         } else if (type === WSPType.Tag) {
-            project = new WSTagProject(this.collector, projectName, projectIndex, projectCategory, wordGoal, wordGoalFile);
+            project = new WSTagProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles);
         } else {
             this.logError(`Attempted to create a project with an invalid type: ${type}`);
             return;
@@ -586,188 +407,166 @@ export class WSProjectManager {
         // return (project);
     }
 
-    // projectEditorCallback(type: WSPType, projectName?: string, projectIndex?: string, project?: WSProject) {
-    //     if (project instanceof WSProject) {
-    //         if (project.name != projectName) {
-    //             this.renameProject(project, projectName);
-    //         }
-    //         this.updateProjectIndex(project, projectIndex);
-    //     } else {
-    //         this.createProject(type, projectName, projectIndex);
-    //     }
-    // }
-
     registerProject(proj: WSProject) {
-        if (this.projects.has(proj.name)) {
-            console.log(this.projects, proj, proj.name);
-            this.logError(`Tried to register project '${proj.name}', but one with that name already exists of type '${PROJECT_TYPE_STRING[proj.type]}'.`);
+        if (this.projects.has(proj.id)) {
+            this.logError(`Tried to register project with ID '${proj.id}', but one with that ID already exists: ${this.projects.get(proj.id)[1].fullPath}`);
             throw Error();
         }
-        this.projects.set(proj.name, [proj.type, proj]);
-        switch (proj.type) {
-            case WSPType.File:
-                this.fileProjects.push(<WSFileProject>proj);
-                this.collector.forceUpdateFile((<WSFileProject>proj).file);
-                break;
-            case WSPType.Folder:
-                this.folderProjects.push(<WSFolderProject>proj);
-                break;
-            case WSPType.Tag:
-                this.tagProjects.push(<WSTagProject>proj);
-                break;
-            default:
-                console.log(proj);
-                this.logError(`Invalid project type: ${proj.type} for project: ${proj}`);
-                break;
+        this.projects.set(proj.id, [proj.pType, proj]);
+        this.projectList.push(proj);
+        if (proj.pType === WSPType.File) {
+            this.collector.forceUpdateFile((<WSFileProject>proj).file);
         }
+        this.buildPath(proj.path);
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Created, project: proj }, { filter: proj }));
         this.updateProject(proj);
     }
 
     unregisterProject(proj: WSProject) {
-        if (!this.projects.has(proj.name)) {
-            this.logError(`Tried to unregister project '${proj.name}', but it is not registered.`);
+        if (!this.projects.has(proj.id)) {
+            this.logError(`Tried to unregister project with ID '${proj.id}', but it is not registered.`);
             throw Error();
         }
-        switch (proj.type) {
-            case WSPType.File:
-                this.fileProjects.remove(<WSFileProject>proj);
-                break;
-            case WSPType.Folder:
-                this.folderProjects.remove(<WSFolderProject>proj);
-                break;
-            case WSPType.Tag:
-                this.tagProjects.remove(<WSTagProject>proj);
-                break;
-            default:
-                console.log(proj);
-                this.logError(`Invalid project type: ${proj.type} for project: ${proj}`);
-                break;
-        }
-        this.projects.delete(proj.name);
+        let path = proj.path;
+        this.projects.delete(proj.id);
+        this.projectList.remove(proj);
         this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Deleted, project: proj }, { filter: proj }));
     }
 
-    renameProject(proj: WSProject, newName: string) {
-        if (this.projects.has(newName)) {
-            let [, existingProj] = this.projects.get(newName);
+    setProjectID(proj: WSProject, newID: string) {
+        if (this.projects.has(newID)) {
+            let [, existingProj] = this.projects.get(newID);
             if (existingProj != proj) {
-                console.log(`Attempted to rename project '${proj.name}' to '${newName}', but a project with that name already exists.`);
+                console.log(`Attempted to re-assign project ID from '${proj.id}' to '${newID}', but a project with the new ID already exists.`);
             }
             // else do nothing, as there is no need to rename it
             return;
         }
-        let oldName = proj.name;
-        this.projects.delete(proj.name);
-        proj.name = newName;
-        this.projects.set(newName, [proj.type, proj]);
-        this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Renamed, project: proj, data: [oldName, newName] }, { filter: proj }));
+        let oldID = proj.id;
+        this.projects.delete(proj.id);
+        proj.id = newID;
+        this.projects.set(newID, [proj.pType, proj]);
+        if (proj.id != oldID) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Renamed, project: proj, data: [oldID, newID] }, { filter: proj }));
+        }
         // this.updateProject(proj);
+    }
+
+    setProjectTitle(proj: WSProject, newTitle: string) {
+        let oldTitle = proj._title;
+        proj._title = newTitle;
+        if (oldTitle != newTitle) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.TitleSet, project: proj, data: [oldTitle, newTitle] }, { filter: proj }));
+        }
+    }
+
+    setProjectCategory(proj: WSProject, newCategory: WSPCategory) {
+        let oldCategory = proj.category;
+        proj.category = newCategory;
+        if (oldCategory != newCategory) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.CategorySet, project: proj }, { filter: proj }));
+        }
+    }
+
+    setProjectPath(proj: WSProject, newPath: string) {
+        let oldPath = proj.path;
+        proj.path = newPath;
+        this.purgePath(this.getPath(oldPath));
+        this.buildPath(newPath);
+        if (oldPath != newPath) {
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.PathSet, project: proj }, { filter: proj }));
+        }
     }
 
     deleteProject(proj: WSProject) {
         // unregister project
         this.unregisterProject(proj);
-        // remove project from any outstanding groups
-        this.projectGroups.forEach((group: WSProjectGroup) => {
-            if (group.projects.contains(proj)) {
-                group.projects.remove(proj);
-                this.updateProjectGroup(group);
+        // cleanup paths
+        let path = this.getPath(proj.path);
+        if (this.plugin.settings.clearEmptyPaths) {
+            let parent = this.purgePath(path);
+            while (parent instanceof WSPath && (parent !== this.pathRoot && !parent.hasChildren() && !parent.hasProjects(this))) {
+                parent = this.purgePath(parent);
             }
-        });
+        }
     }
 
     /* ==================
-        Group Management
+        Path Management
        ================== */
 
-    registerProjectGroup(group: WSProjectGroup) {
-        if (this.projectGroups.has(group.name)) {
-            console.log(this.projectGroups.get(group.name));
-            this.logError(`Tried to register project group '${group.name}' but a group already exists with that name.`);
+    registerPath(path: WSPath) {
+        if (this.paths.has(path.path)) {
+            console.log(this.paths.get(path.path));
+            this.logError(`Tried to set path '${path.path}', but it is already registered.`);
             return;
         }
-        this.projectGroups.set(group.name, group);
-        this.plugin.events.trigger(new WSProjectGroupEvent({ type: WSEvents.Group.Created, group }, { filter: group }));
+        this.paths.set(path.path, path);
+        this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Set, path }, { filter: path }));
     }
 
-    unregisterProjectGroup(group: WSProjectGroup) {
-        if (!this.projectGroups.has(group.name)) {
-            console.log(this.projectGroups.get(group.name));
-            this.logError(`Tried to unregister project group '${group.name}', but it is not registered.`);
+    unregisterPath(path: WSPath) {
+        if (!this.paths.has(path.path)) {
+            console.log(this.paths.get(path.path));
+            this.logError(`Tried to clear path '${path.path}', but it is not set.`);
             return;
         }
-        this.projectGroups.delete(group.name);
-        this.plugin.events.trigger(new WSProjectGroupEvent({ type: WSEvents.Group.Deleted, group }, { filter: group }));
+        this.paths.delete(path.path);
+        this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Cleared, path }, { filter: path }));
     }
 
-    renameProjectGroup(group: WSProjectGroup, newName: string) {
-        if (this.projectGroups.has(newName)) {
-            let existingGroup = this.projectGroups.get(newName);
-            if (existingGroup != group) {
-                console.log(`Attempted to rename project group '${group.name}' to '${newName}', but a project with that name already exists.`);
+    resetPath(path: WSPath) {
+        if (path instanceof WSPath) {
+            this.setPathTitle(path, "");
+            this.setPathWordGoals(path, 0, 0, 0);
+            if (this.paths.has(path.path)) {
+                this.unregisterPath(path);
             }
-            // else do nothing, as there is no need to rename it
-            return;
-        }
-        this.projectGroups.delete(group.name);
-        let oldName = group.name;
-        group.name = newName;
-        this.projectGroups.set(newName, group);
-        this.plugin.events.trigger(new WSProjectGroupEvent({ type: WSEvents.Group.Renamed, group, data: [oldName, newName] }, { filter: group }));
-    }
-
-    updateProjectGroup(group: WSProjectGroup) {
-        group.projects.forEach((project) => {
-            this.updateProject(project);
-        });
-        this.plugin.events.trigger(new WSProjectGroupEvent({ type: WSEvents.Group.Updated, group }, { filter: group }));
-    }
-
-    addProjectToGroup(project: WSProject, group: WSProjectGroup) {
-        if (!group.projects.contains(project)) {
-            group.projects.push(project);
-            this.updateProjectGroup(group);
-            this.plugin.events.trigger(new WSProjectGroupEvent({ type: WSEvents.Group.ProjectAdded, group, project }, { filter: group }));
         }
     }
 
-    removeProjectFromGroup(project: WSProject, group: WSProjectGroup) {
-        if (group.projects.contains(project)) {
-            group.projects.remove(project);
-            this.updateProjectGroup(group);
-            this.plugin.events.trigger(new WSProjectGroupEvent({ type: WSEvents.Group.ProjectDeleted, group, project }, { filter: group }));
-
-        }
-    }
-
-    moveProjectUpInGroup(project: WSProject, group: WSProjectGroup) {
-        if (group.projects.contains(project)) {
-            let position = group.projects.indexOf(project);
-            if (position > 0) {
-                group.projects.remove(project);
-                group.projects.splice(position - 1, 0, project);
-                this.updateProjectGroup(group);
-            } else {
-                console.log(`Attempted to move project '${project.name}' up in group '${group.name},' but it is first in group.`);
+    purgePath(path: WSPath): WSPath {
+        if (path !== this.pathRoot && !path.hasChildren() && !path.hasProjects(this)) {
+            // this shouldn't happen, since you can't purge in the interface until you have cleared it
+            if (this.paths.has(path.path)) {
+                this.unregisterPath(path);
             }
-        } else {
-            console.log(`Attempted to move project '${project.name}' up in group '${group.name},' but it is not in group.`);
+            // console.log("Determining parent");
+            let parent = this.getParentPath(path);
+            // console.log("Parent: ", parent?.path);
+            if (parent instanceof WSPath) {
+                parent.removeChild(path);
+            }
+            // console.log("Firing deletion event");
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Deleted, path, data: [parent] }, { filter: path }));
+            return parent;
+        }
+        return null;
+    }
+
+    canPurgePath(path: WSPath) {
+        return path !== this.pathRoot && !path.hasChildren() && !path.hasProjects(this);
+    }
+
+    canClearPath(path: WSPath) {
+        return this.paths.has(path.path);
+    }
+
+    setPathTitle(path: WSPath, title: string = "") {
+        if (title != path.title) {
+            path.title = title;
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Titled, path }, { filter: path }));
         }
     }
 
-    moveProjectDownInGroup(project: WSProject, group: WSProjectGroup) {
-        if (group.projects.contains(project)) {
-            let position = group.projects.indexOf(project);
-            if (position < (group.projects.length - 1)) {
-                group.projects.remove(project);
-                group.projects.splice(position + 1, 0, project);
-                this.updateProjectGroup(group);
-            } else {
-                console.log(`Attempted to move project '${project.name}' down in group '${group.name},' but it is last in group.`);
-            }
-        } else {
-            console.log(`Attempted to move project '${project.name}' down in group '${group.name},' but it is not in group.`);
+    setPathWordGoals(path: WSPath, goalForPath: number = 0, goalForProjects: number = 0, goalForFiles: number = 0) {
+        let changed = path.wordGoalForPath != goalForPath || path.wordGoalForProjects != goalForProjects || path.wordGoalForFiles != goalForFiles;
+
+        path.wordGoalForPath = goalForPath;
+        path.wordGoalForProjects = goalForProjects;
+        path.wordGoalForFiles = goalForFiles;
+        if (changed) {
+            this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.GoalsSet, path }, { filter: path }));
         }
     }
 
@@ -775,18 +574,25 @@ export class WSProjectManager {
         Validation Routines
        ===================== */
 
-    validateProjectName(name: string): [boolean, string] {
-        let empty = name.length === 0;
-        let valid = this.checkProjectName(name);
+    validateProjectID(id: string): [boolean, string] {
+        let empty = id.length === 0;
+        let valid = this.checkProjectID(id);
         let error = empty ? "Project name must not be blank." : !valid ? "Project name must be unique." : "";
         return [!empty && valid, error];
     }
 
-    validateProjectGroupName(name: string): [boolean, string] {
-        let empty = name.length === 0;
-        let valid = this.checkProjectGroupName(name);
-        let error = empty ? "Project Group name must not be blank." : !valid ? "Project Group name must be unique." : "";
-        return [!empty && valid, error];
+    validatePath(path: string): [boolean, string] {
+        let invalidChars = ["/", " "];
+        let endingSlash = invalidChars.contains(path.charAt(path.length - 1));
+        let startingSlash = path.length > 0 && invalidChars.contains(path.charAt(0));
+        let error = "";
+        if (startingSlash && !endingSlash) {
+            error = "Path must not begin with a forward-slash (/) or space.";
+        } else if (endingSlash && !startingSlash) {
+            error = "Path must not end with a forward-slash (/) or space.";
+        } else {
+            error = "Path must not begin or end with a forward-slash (/) or space.";
+        }
+        return [!endingSlash && !startingSlash, error];
     }
-
 }

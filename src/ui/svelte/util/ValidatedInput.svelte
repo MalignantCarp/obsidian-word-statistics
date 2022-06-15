@@ -36,12 +36,12 @@
 	}
 </script>
 
-<div class="setting-item-control ws-validated-input">
-	<div class="ws-validated-input-container">
+<div class="ws-validated-input-container">
+	<div class="ws-validated-input">
 		<i class="ws-text-icon" bind:this={icon} class:error={!isValid} />
 		<input class="ws-input" type="text" class:invalid={!isValid} bind:value={inputText} spellcheck="false" {placeholder} />
-		<div class="ws-validation-error">
-			<div class="ws-validation-message" class:hidden={isValid}>{validationMessage}</div>
-		</div>
+	</div>
+	<div class="ws-validation-error">
+		<div class="ws-validation-message" class:hidden={isValid}>{validationMessage}</div>
 	</div>
 </div>

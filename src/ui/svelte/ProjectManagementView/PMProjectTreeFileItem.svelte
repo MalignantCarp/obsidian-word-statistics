@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { WSEvents, WSFocusEvent } from "src/event";
+	import { WSEvents, WSFocusEvent } from "src/model/event";
 	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSFileProject, WSProject } from "src/model/project";
