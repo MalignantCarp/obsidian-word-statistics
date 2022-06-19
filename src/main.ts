@@ -42,6 +42,8 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
 
+		this.registerEvent(this.app.workspace.on("editor-paste", this.onPasteEvent.bind(this)));
+
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
 
@@ -58,6 +60,18 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
 			return new ProjectManagementView(leaf, this);
+		});
+
+		this.addCommand({
+			id: 'open-project-manager',
+			name: 'Open Project Management View',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length > 0;
+				} else {
+					this.initializeProjectManagementLeaf();
+				}
+			}
 		});
 
 		// this.addCommand({
@@ -90,8 +104,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("Obsidian Word Statistics unloaded.");
 	}
 
+	onPasteEvent(evt: ClipboardEvent) {
+		// we can capture clipboard data like so:
+		// console.log(evt.clipboardData.getData("text"))
+		// but there is no Obsidian event that can fire when something is copied or cut
+	}
+
 	initializeProjectManagementLeaf() {
-		if (this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length) {
+		if (this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length > 0) {
 			return;
 		}
 		this.app.workspace.getRightLeaf(false).setViewState({
@@ -123,7 +143,6 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async saveSerialData(path: string, data: string) {
-		return;
 		const adapter = this.app.vault.adapter;
 		const dir = this.manifest.dir;
 		const savePath = normalizePath(`${dir}/${path}`);

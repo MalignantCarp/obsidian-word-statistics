@@ -1,8 +1,13 @@
 ## Changelog
+### 2022-06-19
+ - Re-enabled saving of serialized data.
+ - Added command to open the project management view if it has been closed.
+
 ### 2022-06-15
  - BUGFIX: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty
  - BUGFIX: Delete project doesn't reset the path buttons correct for the paths above it.
  - BUGFIX: Purge path results in an exception when a root child is purged.
+ - Pulled WSPath branch back into master.
 
 ### 2022-06-13
  - BUGFIX: Purge path does not function -- the clearEmptyPath setting was being queried as a conditional for purging, rather than for auto purging following the deletion of its contained project
