@@ -14,12 +14,14 @@
 
 	export let deleteProject: (project: WSProject) => void;
 
-	function onEdit() {
+	function onEdit(evt: MouseEvent) {
+		evt.stopImmediatePropagation();
 		let modal = manager.modals.createProjectEditorModal(project);
 		modal.open();
 	}
 
-	function onDelete() {
+	function onDelete(evt: MouseEvent) {
+		evt.stopImmediatePropagation();
 		deleteProject(project);
 	}
 
@@ -35,10 +37,15 @@
 			progress.style.width = "0";
 		}
 	}
+
+	function onClick() {
+		let modal = manager.modals.createProjectInfoModal(project);
+		modal.open();
+	}
 </script>
 
 <div class="ws-project-item tree-item">
-	<div class="ws-project-item-self tree-item-self is-clickable">
+	<div class="ws-project-item-self tree-item-self is-clickable" on:click={onClick}>
 		<TreeProjectLabel {manager} {project} />
 		<div class="ws-project-item-end">
 			<ProjectWordCount {project} {manager} {onWordCountUpdate} />

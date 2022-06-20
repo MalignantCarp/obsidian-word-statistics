@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
 
-	export let onEdit: () => void;
-	export let onDelete: () => void;
+	export let onEdit: (evt: MouseEvent) => void;
+	export let onDelete: (evt: MouseEvent) => void;
 
 	let editIcon: HTMLElement;
 	let clearIcon: HTMLElement;

@@ -2,6 +2,7 @@
 	import { WSEvents, WSFileEvent } from "src/model/event";
 	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
+import { FormatWords } from 'src/util';
 	import { onDestroy, onMount } from "svelte";
 
 	export let file: WSFile;
@@ -32,8 +33,8 @@
 	}
 </script>
 
-<div class="ws-pmv-proj-file">
-	<div class="title">{file.title}</div>
-	<div class="path">{file.path}</div>
-	<div class="word-count">{file.words}</div>
-</div>
+<tr class="ws-pmv-proj-file">
+	<td class="title">{file.title}</td>
+	<td class="path">{file.path}</td>
+	<td class="word-count">{FormatWords(file.words)}</td>
+</tr>

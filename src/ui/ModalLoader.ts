@@ -40,7 +40,7 @@ class ProjectInfoModal extends Modal {
 
     onOpen() {
         let {contentEl} = this;
-        this.panel = new ProjectInfo({target: contentEl, props: {project: this.project, manager: this.manager}});
+        this.panel = new ProjectInfo({target: contentEl, props: {project: this.project, manager: this.manager, onClose: this.close.bind(this)}});
     }
 
     onClose() {

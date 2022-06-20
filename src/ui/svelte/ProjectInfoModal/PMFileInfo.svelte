@@ -132,7 +132,7 @@ import { setIcon } from "obsidian";
 				<td>
 					<ul>
 						{#each focusProjects as project}
-							<li>{project.name}</li>
+							<li>{project.id}</li>
 						{/each}
 					</ul>
 				</td>

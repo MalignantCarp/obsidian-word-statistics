@@ -26,6 +26,7 @@
 		manager.plugin.events.off(WSEvents.Project.PathSet, reset, { filter: project });
 		manager.plugin.events.off(WSEvents.Project.TitleSet, reset, { filter: project });
 	});
+
 </script>
 
 <div class="ws-project-item-inner tree-item-inner" aria-label={fullPath}>
