@@ -93,7 +93,15 @@ export interface WSEventFilter {
 }
 
 export abstract class WSEvent {
-    constructor(public info: WSEventInfo, public focus: WSEventFilter) {
+    constructor(public info: WSEventInfo, public focus: WSEventFilter, private stop: boolean = false) {
+    }
+
+    stopPropagation() {
+        this.stop = true;
+    }
+
+    get stopped() {
+        return this.stop;
     }
 }
 
@@ -146,6 +154,9 @@ class DispatcherEvent {
         // console.log("Ping!", this.name, event.info.type, event.focus);
         this.callbacks.forEach(([cbRun, filter]) => {
             // console.log("Pong!", filter);
+            if (event.stopped) {
+                return;
+            }
             if ((filter == null || filter == undefined) || (filter?.filter == null || filter?.filter == undefined) || filter?.filter == event.focus?.filter) {
                 // console.log("Dispatching event.");
                 cbRun(event);

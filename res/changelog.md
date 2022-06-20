@@ -2,6 +2,17 @@
 ### 2022-06-19
  - Re-enabled saving of serialized data.
  - Added command to open the project management view if it has been closed.
+ - BUGFIX: Exception when creating a project with a file index that has no links.
+ - Added ability to stop propagation of events in event system.
+ - Added ProjectInfo Modal, which can be used to get more detailed info about a particular project when the project is clicked on. (UNFINISHED)
+ - Hooked into file creation event to create WSFile object prior to it coming up in getFileSafer();
+ - BUGFIX: Paths are not loading from file (data events were firing and causing the data files to be overwritten before path data could be read)
+ - BUGFIX: Path data loaded from file is ignored (paths were being registered after they were all created, and their data was not part of the tree)
+ - buildPath() will now build up to a path, such as one loaded from paths.json
+ - BUGFIX: Path data from paths.json was not being loaded into existing path structure. Now paths are loaded first, before projects, so they can be populated as necessary from saved path data. Then projects are loaded and any remaining path structures built. (It might be worth just saving all paths at some point.)
+ - BUGFIX: ProjectWordCount.svelte was not watching project or path events for GoalsSet, so was not updating when goals were set
+
+
 
 ### 2022-06-15
  - BUGFIX: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty

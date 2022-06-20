@@ -120,6 +120,12 @@ export class WSDataCollector {
         }
     }
 
+    onCreate(file: TAbstractFile) {
+        if (! this.fileMap.has(file.path)) {
+            this.newFile(file.name, file.path)
+        }
+    }
+
     logWords(path: string, newCount: number) {
         if (this.fileMap.has(path)) {
             let file = this.fileMap.get(path);
@@ -211,15 +217,17 @@ export class WSDataCollector {
                 // update index
                 let links = this.mdCache.getCache(file.path).links;
                 let newLinks: [WSFile, string][] = [];
-                for (let i = 0; i < links.length; i++) {
-                    let link = links[i];
-                    // let linkPath = getLinkpath(link.link);
-                    let linkedFile = this.mdCache.getFirstLinkpathDest(link.link, file.path);
-                    // if there is no link, we don't want to add it to the list
-                    if (linkedFile != null) {
-                        let lFile = this.getFileSafer(linkedFile.path);
-                        let dText = link.displayText == lFile.name ? null : link.displayText;
-                        newLinks.push([lFile, dText || lFile.title]);
+                if (links) {
+                    for (let i = 0; i < links.length; i++) {
+                        let link = links[i];
+                        // let linkPath = getLinkpath(link.link);
+                        let linkedFile = this.mdCache.getFirstLinkpathDest(link.link, file.path);
+                        // if there is no link, we don't want to add it to the list
+                        if (linkedFile != null) {
+                            let lFile = this.getFileSafer(linkedFile.path);
+                            let dText = link.displayText == lFile.name ? null : link.displayText;
+                            newLinks.push([lFile, dText || lFile.title]);
+                        }
                     }
                 }
                 // clear old links

@@ -6,6 +6,7 @@ import type { WSProject } from "src/model/project";
 import MessagePanel from "./svelte/Modals/MessagePanel.svelte";
 import PathEditor from "./svelte/Modals/PathEditor.svelte";
 import ProjectEditor from "./svelte/Modals/ProjectEditor.svelte";
+import ProjectInfo from "./svelte/ProjectInfoModal/ProjectInfo.svelte";
 
 class MessageModal extends Modal {
     panel: MessagePanel;
@@ -26,7 +27,29 @@ class MessageModal extends Modal {
         let { contentEl } = this;
         contentEl.empty();
     }
+}
 
+class ProjectInfoModal extends Modal {
+    panel: ProjectInfo;
+    manager: WSProjectManager;
+
+    constructor(public plugin: WordStatisticsPlugin, public project: WSProject) {
+        super(plugin.app);
+        this.manager = plugin.collector.manager;
+    }
+
+    onOpen() {
+        let {contentEl} = this;
+        this.panel = new ProjectInfo({target: contentEl, props: {project: this.project, manager: this.manager}});
+    }
+
+    onClose() {
+        if (this.panel) {
+            this.panel.$destroy();
+        }
+        let { contentEl } = this;
+        contentEl.empty();
+    }
 }
 
 class ConfirmationModal extends Modal {
@@ -135,4 +158,7 @@ export class ModalLoader {
         return new PathEditorModal(this.plugin, path);
     }
 
+    createProjectInfoModal(project: WSProject) {
+        return new ProjectInfoModal(this.plugin, project)
+    }
 }

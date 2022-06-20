@@ -123,14 +123,6 @@
 	row-gap: 0.5em;
 }
 
-.ws-suggest-box-container .ws-text-icon,
-.ws-validated-input-container .ws-text-icon {
-}
-
-.ws-suggest-box-container .ws-input,
-.ws-validated-input-container .ws-input {
-}
-
 .ws-suggest-box-container .ws-validation-error,
 .ws-validated-input-container .ws-validation-error {
 	flex-basis: 100%;
@@ -162,12 +154,6 @@
 	flex-direction: row;
 }
 
-.ws-project-editor .setting-item .setting-item-info {
-}
-
-.ws-project-editor .setting-item .setting-item-control {
-}
-
 .ws-validated-input,
 .ws-suggest-input {
 	display: flex;
@@ -189,15 +175,6 @@ input.ws-number {
 
 .ws-project-edit-panel-header {
 	display: grid;
-}
-
-.ws-project-edit-panel-header h3 {
-}
-
-.ws-project-edit-panel-header .ws-project-edit-description {
-}
-
-.ws-project-edit-panel-header button {
 }
 
 div.ws-project-management-view {
@@ -256,8 +233,6 @@ table.ws-file-info {
 	width: 100%;
 }
 
-.ws-file-info tr td {}
-
 table.ws-file-info.hover {
 	transition: cubic-bezier(1, 0, 0, 1);
 	background-image: linear-gradient(to right, var(--ws-pm-file-info), transparent)
@@ -295,8 +270,6 @@ tr.ws-pm-fi-project-list {
 .ws-pm-project-list-item:nth-child(even) {
 	background-image: linear-gradient(var(--ws-table-highlight), var(--ws-table-highlight));
 }
-
-.ws-pm-project-list {}
 
 .ws-pm-project-list-header {
 	margin-top: 0.25em;

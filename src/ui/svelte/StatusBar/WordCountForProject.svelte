@@ -3,7 +3,7 @@
 	import { Dispatcher, WSEvents, WSFileEvent, WSFocusEvent, WSProjectEvent } from "src/model/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
-import type { WSPath } from "src/model/path";
+	import type { WSPath } from "src/model/path";
 	import { WSProject } from "src/model/project";
 	import { FormatWords, GetProgressGrade } from "src/util";
 	import { onDestroy, onMount } from "svelte";
@@ -25,13 +25,13 @@ import type { WSPath } from "src/model/path";
 	let progressData: string;
 
 	onMount(() => {
-		events.on(WSEvents.Focus.File, onFocus, { filter: null });
-		events.on(WSEvents.Project.FilesUpdated, onProjectsUpdated, { filter: null });
-		events.on(WSEvents.File.WordsChanged, updateCount, { filter: null });
 		setIcon(containerEl, "folder", 16);
 		setIcon(errorEl, "alert-triangle", 16);
 		loadProjects();
 		updateCount();
+		events.on(WSEvents.Focus.File, onFocus, { filter: null });
+		events.on(WSEvents.Project.FilesUpdated, onProjectsUpdated, { filter: null });
+		events.on(WSEvents.File.WordsChanged, updateCount, { filter: null });
 	});
 
 	onDestroy(() => {
@@ -42,11 +42,11 @@ import type { WSPath } from "src/model/path";
 	});
 
 	function RegisterEvents() {
-		events.on(WSEvents.Path.GoalsSet, updateCount, {filter: path});
+		events.on(WSEvents.Path.GoalsSet, updateCount, { filter: path });
 	}
 
 	function UnregisterEvents() {
-		events.off(WSEvents.Path.GoalsSet, updateCount, {filter: path});
+		events.off(WSEvents.Path.GoalsSet, updateCount, { filter: path });
 	}
 
 	function loadProjects() {
@@ -89,14 +89,18 @@ import type { WSPath } from "src/model/path";
 			let words = project.totalWords;
 			wordCount = FormatWords(words);
 			let goal = manager.getWordGoalForProjectByContext(project);
-			if (goal) {
-				let percent = Math.round((words / goal) * 100);
-				percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
-				progressData = GetProgressGrade(percent);
-				progress.style.width = percent.toString() + "%";
+			if (progress !== null && progress !== undefined) {
+				if (goal) {
+					let percent = Math.round((words / goal) * 100);
+					percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
+					progressData = GetProgressGrade(percent);
+					progress.style.width = percent.toString() + "%";
+				} else {
+					progressData = "0";
+					progress.style.width = "0";
+				}
 			} else {
-				progressData = "0";
-				progress.style.width = "0";
+				console.log("Tried to update progress bars, but prograss bar is ", progress);
 			}
 		}
 	}

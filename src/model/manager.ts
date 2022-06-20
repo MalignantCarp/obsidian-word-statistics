@@ -52,16 +52,20 @@ export class WSProjectManager {
         return true;
     }
 
-    validatePathLoad(paths: WSPath[]) {
+    validatePathLoad(paths: WSPath[]): [boolean, WSPath] {
         let names: string[] = [];
+        let root: WSPath = null;
         paths.forEach((path) => {
+            if (root === null && path.path.length === 0) {
+                root = path;
+            }
             if (names.contains(path.path)) {
                 console.log(`Project Path already exists: ${path.path}`);
-                return false;
+                return [false, path];
             }
             names.push(path.path);
         });
-        return true;
+        return [true, root];
     }
 
     loadProjects(projects: WSProject[]) {
@@ -73,9 +77,16 @@ export class WSProjectManager {
     }
 
     loadPaths(paths: WSPath[]) {
-        if (this.validatePathLoad(paths)) {
+        let [validPaths, root] = this.validatePathLoad(paths);
+        if (validPaths) {
+            if (root != null) {
+                this.pathRoot.copyFrom(root);
+                this.registerPath(this.pathRoot);
+            }
             paths.forEach((path) => {
-                this.registerPath(path);
+                if (path != root) {
+                    this.registerPath(path);
+                }
             });
         }
     }
@@ -316,7 +327,9 @@ export class WSProjectManager {
     }
 
     buildPath(path: string) {
-        if (path.length > 0 && !(this.paths.has(path) || this.pathRoot.getPath(path))) {
+        // path.length of 0 === root
+        // if this.pathRoot.getPath(path) resolves to something other than null, then the entire tree already exists
+        if (path.length > 0 && this.pathRoot.getPath(path) === null) {
             let root = this.pathRoot;
             let currentPath = root;
             let pathRe = new RegExp(/([^/]+)/, 'gmu');
@@ -334,6 +347,10 @@ export class WSProjectManager {
                 if (this.paths.has(builtPath)) {
                     currentPath = this.paths.get(builtPath);
                     // console.log(`Current path set.`);
+                    if (!root.hasChild(currentPath)) {
+                        // console.log(`Current path added to root (${root.path}/).`)
+                        root.addChild(currentPath);
+                    }
                 } else {
                     currentPath = new WSPath(builtPath, "", WSPCategory.None);
                     // console.log(`Current path created and set.`);

@@ -53,6 +53,23 @@ export class WSPath {
         return this.toObject();
     }
 
+    samePathAs(path: WSPath) {
+        return path.path === this.path;
+    }
+
+    sameObjAs(path: WSPath) {
+        return path === this;
+    }
+
+    copyFrom(path: WSPath) {
+        this.path = path.path;
+        this._title = path._title;
+        this.wordGoalForFiles = path.wordGoalForFiles;
+        this.wordGoalForProjects = path.wordGoalForProjects;
+        this.wordGoalForPath = path.wordGoalForPath;
+        this.iconID = path.iconID;
+    }
+
     getPath(path: string) {
         if (path === this.path) {
             return this;

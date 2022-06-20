@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { WSProjectManager } from "src/model/manager";
 	import type { WSProject } from "src/model/project";
-import { GetProgressGrade } from "src/util";
+	import { GetProgressGrade } from "src/util";
 	import ProjectItemButtons from "./ProjectItemButtons.svelte";
 	import ProjectWordCount from "./ProjectWordCount.svelte";
 	import TreeProjectLabel from "./TreeProjectLabel.svelte";
@@ -31,7 +31,7 @@ import { GetProgressGrade } from "src/util";
 			progressData = GetProgressGrade(percent);
 			progress.style.width = percent.toString() + "%";
 		} else {
-            progressData = "0";
+			progressData = "0";
 			progress.style.width = "0";
 		}
 	}

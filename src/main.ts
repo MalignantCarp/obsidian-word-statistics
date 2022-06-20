@@ -50,11 +50,6 @@ export default class WordStatisticsPlugin extends Plugin {
 		// custom events
 		this.events = new Dispatcher();
 
-		// We don't want to queue saving of data until it's all loaded.
-		this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), { filter: null });
-		this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
-		this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
-
 		this.statusBar = this.addStatusBarItem();
 		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
 
@@ -181,6 +176,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		if (!this.projectLoad && this.initialScan) {
 			// console.log(`Loading data from ${PROJECT_PATH}`);\
+			// Load paths first as projects will fill up paths and set children
+			let pathData = await this.loadSerialData(PATH_PATH);
+			if (pathData != undefined) {
+				let paths = WSFormat.LoadPathData(pathData);
+				if (paths.length > 0) {
+					this.collector.manager.loadPaths(paths);
+				}
+			}
 			let projData = await this.loadSerialData(PROJECT_PATH);
 			if (projData != undefined) {
 				let projects = WSFormat.LoadProjectData(this.collector, projData);
@@ -189,21 +192,20 @@ export default class WordStatisticsPlugin extends Plugin {
 					//this.collector.manager.populateFromSerialized(projects);
 					this.collector.manager.loadProjects(projects);
 				}
-				let pathData = await this.loadSerialData(PATH_PATH);
-				if (pathData != undefined) {
-					let paths = WSFormat.LoadPathData(pathData);
-					if (paths.length > 0) {
-						this.collector.manager.loadPaths(paths);
-					}
-				}
 			}
 			this.projectLoad = true;
 
 			// console.log("Initiating post-project vault re-scan...");
 			// await this.collector.scanVault();
 			// console.log("Complete.")
+			// We don't want to queue saving of data until it's all loaded.
+			this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
+
 			// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
+			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
 
 		}
 		this.updateFocusedFile();
@@ -251,11 +253,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
-	onFileDelete(file: TAbstractFile, data: string) {
+	onFileDelete(file: TAbstractFile) {
 		// console.log("'%s' deleted.", file.path);
 		//		if (file.path.search(/(.*)(\.md)/) >= 0) {
 		if (file instanceof TFile && file.extension === "md") {
 			this.collector.onDelete(file);
+		}
+	}
+
+	onFileCreate(file: TAbstractFile) {
+		if (file instanceof TFile && file.extension === "md") {
+			this.collector.onCreate(file);
 		}
 	}
 
