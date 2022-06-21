@@ -1,4 +1,8 @@
 ## Changelog
+### 2022-06-21
+ - ProjectInfo Modal now shows when there are no files rather than having an empty table.
+ - Preliminary CSS in place for ProjectInfo Modal
+
 ### 2022-06-20
  - Most of ProjectInfo Modal is complete. Might add some functionality from the old PMFileInfo panel to it as far as individual file info is concerned, but for now the key functionality is there.
  - Needed: Determine display for no files in ProjectInfo modal.

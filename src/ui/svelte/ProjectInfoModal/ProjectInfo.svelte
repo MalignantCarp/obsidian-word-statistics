@@ -59,26 +59,35 @@
 			<div>{FormatWords(project.totalWords)}</div>
 		</div>
 	</div>
-
-	<h2>File List</h2>
-	<table class="project-file-table">
-		<thead class="table-header">
-			<tr>
-				<th>Title</th>
-				<th>Path</th>
-				<th>Word Count</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each files as file, i}
-				<FileInfo {file} {manager} />
-			{/each}
-		</tbody>
-	</table>
+	{#if files.length > 0}
+		<h3>File List</h3>
+		<table class="project-file-table">
+			<thead class="table-header">
+				<tr>
+					<th>Title</th>
+					<th>Path</th>
+					<th>Word Count</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each files as file, i}
+					<FileInfo {file} {manager} />
+				{/each}
+			</tbody>
+			<tfoot>
+				<tr>
+					<td />
+					<td class="total-head">Total:</td>
+					<td class="word-count">{FormatWords(project.totalWords)}</td>
+				</tr>
+			</tfoot>
+		</table>
+	{:else}
+		<h3>No files in project.</h3>
+	{/if}
 	<div class="setting-item">
 		<div class="setting-item-control">
 			<button on:click={onClose}>Close</button>
 		</div>
 	</div>
-
 </div>

@@ -76,7 +76,7 @@
 
 }
 
-.ws-sb-tooltip > p {
+.ws-sb-tooltip>p {
 	margin: 0;
 	margin-block-start: 0em;
 	margin-block-end: 0em;
@@ -316,11 +316,11 @@ tr.ws-pm-fi-project-list {
 	background: inherit;
 }
 
-table.ws-pm-project-list-item-files > :is(tbody, tfoot) > tr.ws-pm-file-item > td.ws-pm-file-item-name {
+table.ws-pm-project-list-item-files> :is(tbody, tfoot)>tr.ws-pm-file-item>td.ws-pm-file-item-name {
 	text-align: left;
 }
 
-table.ws-pm-project-list-item-files > :is(tbody, tfoot) > tr.ws-pm-file-item > td.ws-pm-file-item-word-count {
+table.ws-pm-project-list-item-files> :is(tbody, tfoot)>tr.ws-pm-file-item>td.ws-pm-file-item-word-count {
 	text-align: right;
 }
 
@@ -441,7 +441,7 @@ table.ws-pm-project-list-item-files > :is(tbody, tfoot) > tr.ws-pm-file-item > t
 }
 
 .ws-icon-no-hover:hover {
-	filter:unset;
+	filter: unset;
 }
 
 .ws-pm-project-list-item-header .group i.edit-icon {
@@ -478,6 +478,39 @@ table.ws-pm-project-list-item-files > tfoot {
 }
 */
 
-tbody > tr.ws-pm-file-item:hover {
+tbody>tr.ws-pm-file-item:hover {
 	background-image: linear-gradient(to right, var(--ws-pm-file-info), transparent);
+}
+
+.ws-project-info .top-info {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	margin-bottom: 1.5em;
+}
+
+.top-info-heading {
+	font-weight: bold;
+}
+
+.ws-project-info .top-info div {
+	display: flex;
+	flex-direction: column;
+}
+
+.project-file-table {
+	width: 100%;
+}
+
+table.project-file-table tbody tr:nth-child(even) {
+	background-image: linear-gradient(var(--ws-table-highlight), var(--ws-table-highlight));
+}
+
+table.project-file-table tfoot tr td {
+	font-weight: bold;
+}
+
+td.word-count, td.total-head {
+	text-align: right;
 }
