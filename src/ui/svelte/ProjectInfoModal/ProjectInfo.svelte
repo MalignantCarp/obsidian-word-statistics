@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { WSEvents, WSProjectEvent } from "src/model/event";
+	import { WSEvents, WSPathEvent, WSProjectEvent } from "src/model/event";
 	import type { WSFile } from "src/model/file";
 
 	import type { WSProjectManager } from "src/model/manager";
+	import type { WSPath } from "src/model/path";
 	import { PROJECT_CATEGORY_NAME, type WSProject } from "src/model/project";
-	import { FormatWords } from "src/util";
+	import { FormatWords, FormatWordsNumOnly } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import FileInfo from "./FileInfo.svelte";
 
@@ -13,6 +14,10 @@
 	export let onClose: () => void;
 
 	let files: WSFile[] = [];
+
+	let path: WSPath;
+
+	let projectWordGoal: number = 0;
 
 	onMount(() => {
 		manager.plugin.events.on(WSEvents.Project.CategorySet, onProjectUpdate, { filter: project });
@@ -23,7 +28,10 @@
 		manager.plugin.events.on(WSEvents.Project.Renamed, onProjectUpdate, { filter: project });
 		manager.plugin.events.on(WSEvents.Project.TitleSet, onProjectUpdate, { filter: project });
 		manager.plugin.events.on(WSEvents.Project.Updated, onProjectUpdate, { filter: project });
+		path = manager.getPath(project.path);
+		manager.plugin.events.on(WSEvents.Path.GoalsSet, onProjectUpdate, { filter: path });
 		files = project.files;
+		projectWordGoal = manager.getWordGoalForProjectByContext(project);
 	});
 
 	onDestroy(() => {
@@ -35,11 +43,20 @@
 		manager.plugin.events.off(WSEvents.Project.Renamed, onProjectUpdate, { filter: project });
 		manager.plugin.events.off(WSEvents.Project.TitleSet, onProjectUpdate, { filter: project });
 		manager.plugin.events.off(WSEvents.Project.Updated, onProjectUpdate, { filter: project });
+		manager.plugin.events.off(WSEvents.Path.GoalsSet, onProjectUpdate, { filter: path });
 	});
 
-	function onProjectUpdate(evt: WSProjectEvent) {
+	function onProjectUpdate(evt: WSProjectEvent | WSPathEvent) {
 		project = project;
 		files = project.files;
+		if (evt.info.type === WSEvents.Project.PathSet && path.path != project.path) {
+			manager.plugin.events.off(WSEvents.Path.GoalsSet, onProjectUpdate, { filter: path });
+			path = manager.getPath(project.path);
+			manager.plugin.events.on(WSEvents.Path.GoalsSet, onProjectUpdate, { filter: path });
+		}
+		if (evt.info.type === WSEvents.Path.GoalsSet || evt.info.type === WSEvents.Project.GoalsSet) {
+			projectWordGoal = manager.getWordGoalForProjectByContext(project);
+		}
 	}
 </script>
 
@@ -56,7 +73,11 @@
 		</div>
 		<div class="wordcount">
 			<div class="top-info-heading">Total Words</div>
-			<div>{FormatWords(project.totalWords)}</div>
+			{#if projectWordGoal > 0}
+				<div>{FormatWordsNumOnly(project.totalWords)} / {FormatWords(projectWordGoal)}</div>
+			{:else}
+				<div>{FormatWords(project.totalWords)}</div>
+			{/if}
 		</div>
 	</div>
 	{#if files.length > 0}
@@ -71,7 +92,7 @@
 			</thead>
 			<tbody>
 				{#each files as file, i}
-					<FileInfo {file} {manager} />
+					<FileInfo {file} {manager} {project} />
 				{/each}
 			</tbody>
 			<tfoot>

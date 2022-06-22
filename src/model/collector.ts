@@ -121,8 +121,8 @@ export class WSDataCollector {
     }
 
     onCreate(file: TAbstractFile) {
-        if (! this.fileMap.has(file.path)) {
-            this.newFile(file.name, file.path)
+        if (!this.fileMap.has(file.path)) {
+            this.newFile(file.name, file.path);
         }
     }
 
@@ -176,6 +176,7 @@ export class WSDataCollector {
             let wordGoal = parseInt(parseFrontMatterEntry(cache.frontmatter, "word-goal"));
             if (wordGoal != null && !isNaN(+wordGoal)) {
                 fi.wordGoal = wordGoal;
+                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.GoalsSet, file: fi }, { filter: fi }));
             }
             //fi.setTitle(cache.frontmatter?.['title'] || file.basename);
             // this.checkFMLongform(file, cache.frontmatter);
@@ -297,7 +298,7 @@ export class WSDataCollector {
         }
         let af = this.vault.getAbstractFileByPath(path);
         if (af != null && af instanceof TFile) {
-            console.log(`Attempted to get file ${path}, but it did not exist. Creating...`)
+            console.log(`Attempted to get file ${path}, but it did not exist. Creating...`);
             return this.newFile(af.name, af.path);
         }
         return null;

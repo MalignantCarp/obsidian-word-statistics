@@ -57,12 +57,14 @@
 
 	function registerEvents() {
 		events.on(WSEvents.File.WordsChanged, updateCount, { filter: file });
+		events.on(WSEvents.File.GoalsSet, updateCount, { filter: null });
 		events.on(WSEvents.Project.GoalsSet, updateCount, { filter: null });
 		events.on(WSEvents.Path.GoalsSet, updateCount, { filter: null });
 	}
 
 	function unregisterEvents() {
 		events.off(WSEvents.File.WordsChanged, updateCount, { filter: file });
+		events.off(WSEvents.File.GoalsSet, updateCount, { filter: null });
 		events.off(WSEvents.Project.GoalsSet, updateCount, { filter: null });
 		events.off(WSEvents.Path.GoalsSet, updateCount, { filter: null });
 	}

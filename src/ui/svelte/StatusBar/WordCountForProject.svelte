@@ -43,10 +43,12 @@
 
 	function RegisterEvents() {
 		events.on(WSEvents.Path.GoalsSet, updateCount, { filter: path });
+		events.on(WSEvents.Project.GoalsSet, updateCount, { filter: project });
 	}
 
 	function UnregisterEvents() {
 		events.off(WSEvents.Path.GoalsSet, updateCount, { filter: path });
+		events.off(WSEvents.Project.GoalsSet, updateCount, { filter: project });
 	}
 
 	function loadProjects() {

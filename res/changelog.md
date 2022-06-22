@@ -1,12 +1,18 @@
 ## Changelog
+### 2022-06-22
+ - ProjectInfoModal now shows project word goal
+ - ProjectInfoModal file list now shows file word goal
+ - Added the GoalsSet event for WSEvent.File, which fires when file word goal is updated in YAML. Updated file word count status bar element to watch for this event
+ - BUGFIX: Progress bar for path is not beneath the tree item but at the side
+
 ### 2022-06-21
  - ProjectInfo Modal now shows when there are no files rather than having an empty table.
  - Preliminary CSS in place for ProjectInfo Modal
 
 ### 2022-06-20
  - Most of ProjectInfo Modal is complete. Might add some functionality from the old PMFileInfo panel to it as far as individual file info is concerned, but for now the key functionality is there.
- - Needed: Determine display for no files in ProjectInfo modal.
- - Needed: CSS for ProjectInfo Modal.
+ -[x] Needed: Determine display for no files in ProjectInfo modal.
+ -[x] Needed: CSS for ProjectInfo Modal.
  - Needed: svelte cleanup (there may be some old UI components still lingering).
  - Needed: CSS cleanup (there is some old CSS from prior UI iterations that are no longer required).
 
