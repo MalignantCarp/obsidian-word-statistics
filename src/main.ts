@@ -58,28 +58,28 @@ export default class WordStatisticsPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'open-project-manager',
-			name: 'Open Project Management View',
+			id: 'attach-project-manager',
+			name: 'Attach Project Management View',
 			editorCheckCallback: (checking: boolean) => {
 				if (checking) {
-					return this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length > 0;
+					return this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length === 0;
 				} else {
 					this.initializeProjectManagementLeaf();
 				}
 			}
 		});
 
-		// this.addCommand({
-		// 	id: 'insert-project-table-modal',
-		// 	name: 'Insert Project Table Modal',
-		// 	editorCheckCallback: (checking: boolean) => {
-		// 		if (checking) {
-		// 			return this.collector.manager.isEmpty;
-		// 		} else {
-		// 			this.insertProjectTableModal();
-		// 		}
-		// 	}
-		// });
+		this.addCommand({
+			id: 'insert-project-table-modal',
+			name: 'Insert Project Table Modal',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return !this.collector.manager.isEmpty;
+				} else {
+					this.insertProjectTableModal();
+				}
+			}
+		});
 
 		if (this.app.workspace.layoutReady) {
 			this.onStartup();
@@ -213,13 +213,19 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	insertProjectTableModal() {
 		if (this.collector.manager.projects.size > 0) {
+
 			let projects = this.collector.manager;
 			let modal = new ProjectTableModal(this.app, this, projects);
 			modal.open();
 			let project = modal.project;
-			modal.clear();
 			let tableText = BuildProjectTable(this.collector, this.settings.tableSettings, modal.project);
+			let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (view) {
+				let cursor = view.editor.replaceRange(tableText, view.editor.getCursor());
 
+			} else {
+				new Notice("Unable to insert table. Not editing a Markdown file.")
+			}
 		} else {
 			new Notice("There are no projects to display.");
 		}

@@ -1,9 +1,13 @@
 ## Changelog
+### 2022-06-23
+ - BUGFIX: Progress bar for path is not beneath the tree item but at the side
+ - Renamed Open Project Management View menu command to Attach Project Management View, as it does not open or focus it, but merely attaches it to the right leaf.
+ - Re-added the Insert Project Table Modal and associated command. (Incomplete)
+
 ### 2022-06-22
  - ProjectInfoModal now shows project word goal
  - ProjectInfoModal file list now shows file word goal
  - Added the GoalsSet event for WSEvent.File, which fires when file word goal is updated in YAML. Updated file word count status bar element to watch for this event
- - BUGFIX: Progress bar for path is not beneath the tree item but at the side
 
 ### 2022-06-21
  - ProjectInfo Modal now shows when there are no files rather than having an empty table.

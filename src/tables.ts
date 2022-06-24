@@ -36,9 +36,9 @@ export default class ProjectTableModal extends Modal {
         // if there are no projects, this modal cannot be created and a notice is given instead advising there are no projects
         // so this should never return a null value
         if (this.project == null) {
-            this.project = this.manager.getProjectByName(this.manager.getProjectNames()[0]); // get the first project in the project manager's list
+            this.project = this.manager.getProjectByID(this.manager.getProjectIDs()[0]); // get the first project in the project manager's list
         }
-        return this.project.name;
+        return this.project.id;
     }
 
     onOpen() {
@@ -49,13 +49,13 @@ export default class ProjectTableModal extends Modal {
             .setName('Project')
             .setDesc('Select the project for which to generate a table')
             .addDropdown((cb: DropdownComponent) => {
-                this.manager.getProjectNames().forEach((proj: string) => {
-                    cb.addOption(proj, proj);
+                this.manager.getAllProjects().forEach((proj: WSProject) => {
+                    cb.addOption(proj.id, proj.title);
                 });
                 cb.setValue(this.getProject()); // this should never be null
                 cb.onChange(async (value: string) => {
                     // value should always be valid as his is a modal, so no changes could be made, this this should never return null
-                    this.project = this.manager.getProjectByName(value);
+                    this.project = this.manager.getProjectByID(value);
                 });
             });
         new Setting(contentEl)

@@ -365,7 +365,7 @@ table.ws-pm-project-list-item-files> :is(tbody, tfoot)>tr.ws-pm-file-item>td.ws-
 	column-gap: 0.1em;
 }
 
-.ws-path-item {
+.ws-path-item-self {
 	flex-wrap: wrap;
 }
 
