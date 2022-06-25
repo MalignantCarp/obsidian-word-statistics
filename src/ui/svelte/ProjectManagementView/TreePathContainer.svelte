@@ -27,18 +27,19 @@
 	let progressData: string;
 
 	onMount(() => {
+		// console.log(`Creating UI for path (${path.path}/) === root = ${path === manager.pathRoot} with ${childPaths.length} children`);
 		manager.plugin.events.on(WSEvents.Path.Titled, reset, { filter: null });
 		manager.plugin.events.on(WSEvents.Path.Cleared, reset, { filter: null });
 		manager.plugin.events.on(WSEvents.Path.Set, reset, { filter: null });
-		manager.plugin.events.on(WSEvents.Path.Updated, reset, { filter: null });
+		manager.plugin.events.on(WSEvents.Path.Updated, updateChildren, { filter: null });
 		manager.plugin.events.on(WSEvents.Path.Created, updateChildren, { filter: null });
 		manager.plugin.events.on(WSEvents.Path.Deleted, updateChildren, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.Created, updateProjects, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.Deleted, updateProjects, { filter: null });
 		childPaths = path.getChildren();
 		childProjects = manager.getProjectsByExactPath(path.path);
-		buttons.reset()
-		label.reset()
+		buttons.reset();
+		label.reset();
 	});
 
 	onDestroy(() => {
@@ -69,10 +70,11 @@
 	}
 
 	function updateChildren(event: WSPathEvent) {
-		// console.log("updateChildren()", event.info.type, path.path, ">>", event.info.path.path, path.hasChild(event.info.path))
-		// we only need to update our path children if the created or deleted path is a direct child
-		if (path.hasChild(event.info.path) || (event.info.type === WSEvents.Path.Deleted && path === event.info.data[0])) {
+		// console.log(`updateChildren(${path.path}, ${event.info.type}, ${event.info.path.path}) = ${path === event.info.path || path.hasChild(event.info.path) || (event.info.type === WSEvents.Path.Deleted && path === event.info.data[0])}`);
+		// we only need to update our path children if the created or deleted path is a direct child, or if the path is the self
+		if (path === event.info.path || path.hasChild(event.info.path) || (event.info.type === WSEvents.Path.Deleted && path === event.info.data[0])) {
 			childPaths = path.getChildren();
+			// console.log(path, childPaths);
 			reset(event);
 		}
 	}
@@ -101,16 +103,24 @@
 	}
 
 	function pathDelete() {
-		let modal = manager.modals.createConfirmationModal(`Are you sure you want to purge this path ('/${path.title}/')?`, () => {
-			onConfirmDelete(modal.confirmation);
-		}, "Purge");
+		let modal = manager.modals.createConfirmationModal(
+			`Are you sure you want to purge this path ('/${path.title}/')?`,
+			() => {
+				onConfirmDelete(modal.confirmation);
+			},
+			"Purge"
+		);
 		modal.open();
 	}
 
 	function pathClear() {
-		let modal = manager.modals.createConfirmationModal(`Are you sure you want to reset this path ('/${path.title}/') to defaults?`, () => {
-			onConfirmClear(modal.confirmation);
-		}, "Reset");
+		let modal = manager.modals.createConfirmationModal(
+			`Are you sure you want to reset this path ('/${path.title}/') to defaults?`,
+			() => {
+				onConfirmClear(modal.confirmation);
+			},
+			"Reset"
+		);
 		modal.open();
 	}
 
@@ -126,8 +136,9 @@
 	}
 
 	function onWordCountUpdate(count: number) {
-		if (path.wordGoalForPath > 0) {
-			let percent = Math.round((count / path.wordGoalForPath) * 100);
+		let goal = manager.getWordGoalForPath(path);
+		if (goal > 0) {
+			let percent = Math.round((count / goal) * 100);
 			percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
 			progressData = GetProgressGrade(percent);
 			progress.style.width = percent.toString() + "%";
@@ -145,8 +156,8 @@
 			<PathWordCount {path} {manager} {onWordCountUpdate} />
 			<PathItemButtons bind:this={buttons} {manager} {path} {editPath} {pathClear} {pathDelete} />
 		</div>
-		<div class="ws-word-progress" data-progress={progressData} bind:this={progress} />
 	</div>
+	<div class="ws-word-progress" data-progress={progressData} bind:this={progress} />
 	{#if !collapsed && (path.hasChildren() || path.hasProjects(manager))}
 		<div class="ws-path-item-children tree-item-children">
 			{#each childPaths as childPath}

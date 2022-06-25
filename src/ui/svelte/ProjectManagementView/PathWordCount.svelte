@@ -18,6 +18,7 @@
 		manager.plugin.events.on(WSEvents.File.WordsChanged, updateWords, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.PathSet, updateProjects, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.Created, updateProjects, { filter: null });
+		manager.plugin.events.on(WSEvents.Path.GoalsSet, updateWords, { filter: null});
 		updateProjects();
 		updateWords;
 	});
@@ -26,6 +27,7 @@
 		manager.plugin.events.off(WSEvents.File.WordsChanged, updateWords, { filter: null });
 		manager.plugin.events.off(WSEvents.Project.PathSet, updateProjects, { filter: null });
 		manager.plugin.events.off(WSEvents.Project.Created, updateProjects, { filter: null });
+		manager.plugin.events.off(WSEvents.Path.GoalsSet, updateWords, { filter: null});
 	});
 
 	function updateProjects(event?: WSProjectEvent) {

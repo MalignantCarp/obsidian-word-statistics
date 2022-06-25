@@ -31,6 +31,6 @@
 
 <div class="ws-pm-project-tree">
 	{#if path instanceof WSPath}
-	<TreePathContainer {manager} {path} {onDeletePath}/>
+		<TreePathContainer {manager} {path} {onDeletePath} />
 	{/if}
 </div>

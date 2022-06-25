@@ -6,10 +6,12 @@ import type { WSFile } from "./file";
 import { WSFileProject, WSFolderProject, WSPCategory, WSProject, WSPType, WSTagProject, SortProjectList } from "./project";
 import { WSPath } from "./path";
 
+const ROOT_PATH_NAME = "All Projects";
+
 export class WSProjectManager {
     projectList: WSProject[];
     paths: Map<string, WSPath>;
-    pathRoot: WSPath = new WSPath("", "All Projects", 0);
+    readonly pathRoot: WSPath = new WSPath("", ROOT_PATH_NAME, 0);
     projects: Map<string, [WSPType, WSProject]>;
     errorState: boolean = false;
     errorMessages: string[] = [];
@@ -119,15 +121,29 @@ export class WSProjectManager {
         return matches.length > 0;
     }
 
+    getWordGoalForPath(path: WSPath) {
+        while (path instanceof WSPath) {
+            //console.log(path.path, path.wordGoalForPath)
+            if (path.wordGoalForPath) {
+                return path.wordGoalForPath;
+            } else {
+                path = this.getParentPath(path);
+            }
+        }
+        return undefined;
+    }
+
     getWordGoalForProjectByContext(project: WSProject) {
         if (project.wordGoalForProject) {
             return project.wordGoalForProject;
         }
         if (this.paths.has(project.path)) {
             let path = this.paths.get(project.path);
-            if (path instanceof WSPath) {
+            while (path instanceof WSPath) {
                 if (path.wordGoalForProjects) {
                     return path.wordGoalForProjects;
+                } else {
+                    path = this.getParentPath(path);
                 }
             }
         }
@@ -144,9 +160,11 @@ export class WSProjectManager {
             }
             if (this.paths.has(project.path)) {
                 let path = this.paths.get(project.path);
-                if (path instanceof WSPath) {
+                while (path instanceof WSPath) {
                     if (path.wordGoalForFiles) {
                         return path.wordGoalForFiles;
+                    } else {
+                        path = this.getParentPath(path);
                     }
                 }
             }
@@ -346,20 +364,23 @@ export class WSProjectManager {
                 // console.log(`Building path for '${builtPath}'`)
                 if (this.paths.has(builtPath)) {
                     currentPath = this.paths.get(builtPath);
-                    // console.log(`Current path set.`);
+                    // console.log(`Current path set (${currentPath.path}).`);
                     if (!root.hasChild(currentPath)) {
                         // console.log(`Current path added to root (${root.path}/).`)
                         root.addChild(currentPath);
+                        this.plugin.events.trigger(new WSPathEvent ({type: WSEvents.Path.Updated, path: root}, {filter: root}));
                     }
+                    this.plugin.events.trigger(new WSPathEvent ({type: WSEvents.Path.Updated, path: currentPath}, {filter: currentPath}));
                 } else {
                     currentPath = new WSPath(builtPath, "", WSPCategory.None);
+                    // console.log("Triggering path creation event.")
+                    this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Created, path: currentPath }, { filter: currentPath }));
                     // console.log(`Current path created and set.`);
                     if (!root.hasChild(currentPath)) {
                         // console.log(`Current path added to root (${root.path}/).`)
                         root.addChild(currentPath);
+                        this.plugin.events.trigger(new WSPathEvent ({type: WSEvents.Path.Updated, path: root}, {filter: root}));
                     }
-                    // console.log("Triggering path creation event.")
-                    this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Created, path: currentPath }, { filter: currentPath }));
                 }
                 // console.log("Setting root to current path.")
                 root = currentPath;
@@ -534,7 +555,7 @@ export class WSProjectManager {
 
     resetPath(path: WSPath) {
         if (path instanceof WSPath) {
-            this.setPathTitle(path, "");
+            this.setPathTitle(path, path === this.pathRoot ? ROOT_PATH_NAME : "");
             this.setPathWordGoals(path, 0, 0, 0);
             if (this.paths.has(path.path)) {
                 this.unregisterPath(path);

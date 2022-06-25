@@ -181,6 +181,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			if (pathData != undefined) {
 				let paths = WSFormat.LoadPathData(pathData);
 				if (paths.length > 0) {
+					// console.log(paths);
 					this.collector.manager.loadPaths(paths);
 				}
 			}
@@ -189,7 +190,6 @@ export default class WordStatisticsPlugin extends Plugin {
 				let projects = WSFormat.LoadProjectData(this.collector, projData);
 				if (projects.length > 0) {
 					// console.log(projects);
-					//this.collector.manager.populateFromSerialized(projects);
 					this.collector.manager.loadProjects(projects);
 				}
 			}

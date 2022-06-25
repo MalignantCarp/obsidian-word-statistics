@@ -365,10 +365,6 @@ table.ws-pm-project-list-item-files> :is(tbody, tfoot)>tr.ws-pm-file-item>td.ws-
 	column-gap: 0.1em;
 }
 
-.ws-path-item-self {
-	flex-wrap: wrap;
-}
-
 .ws-path-item-end,
 .ws-project-item-end {
 	display: flex;
@@ -376,6 +372,7 @@ table.ws-pm-project-list-item-files> :is(tbody, tfoot)>tr.ws-pm-file-item>td.ws-
 }
 
 .ws-word-progress {
+	margin-top: auto;
 	height: 2px;
 	width: 0%;
 	background-repeat: no-repeat;
