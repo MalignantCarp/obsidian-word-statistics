@@ -9,6 +9,7 @@ import { Dispatcher, WSDataEvent, WSEvents, WSFocusEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
 import { WSFormat } from './model/formats';
+import type { WSProject } from './model/project';
 
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
@@ -215,20 +216,23 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (this.collector.manager.projects.size > 0) {
 
 			let projects = this.collector.manager;
-			let modal = new ProjectTableModal(this.app, this, projects);
+			let modal = new ProjectTableModal(this.app, this, projects, this.runBuildTable.bind(this));
 			modal.open();
-			let project = modal.project;
-			let tableText = BuildProjectTable(this.collector, this.settings.tableSettings, modal.project);
-			let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-			if (view) {
-				let cursor = view.editor.replaceRange(tableText, view.editor.getCursor());
-
-			} else {
-				new Notice("Unable to insert table. Not editing a Markdown file.")
-			}
 		} else {
 			new Notice("There are no projects to display.");
 		}
+	}
+
+	runBuildTable(project: WSProject) {
+		let tableText = BuildProjectTable(this.collector, this.settings.tableSettings, project);
+		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (view) {
+			let cursor = view.editor.replaceRange(tableText, view.editor.getCursor());
+
+		} else {
+			new Notice("Unable to insert table. Not editing a Markdown file.")
+		}
+
 	}
 
 	updateFocusedFile() {

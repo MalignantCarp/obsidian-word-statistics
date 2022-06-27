@@ -2,19 +2,16 @@
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
 import type { WSDataCollector } from "./model/collector";
 import type WordStatisticsPlugin from "./main";
-import type { WSProject } from "./model/project";
+import { WSFileProject, type WSProject } from "./model/project";
 import type { WSTableSettings } from "./settings";
 import type { WSProjectManager } from "./model/manager";
+import { FormatWordsNumOnly } from './util';
 
 export default class ProjectTableModal extends Modal {
-    plugin: WordStatisticsPlugin;
-    manager: WSProjectManager;
     project: WSProject;
 
-    constructor(app: App, plugin: WordStatisticsPlugin, manager: WSProjectManager) {
+    constructor(public app: App, public plugin: WordStatisticsPlugin, public manager: WSProjectManager, public builder: Function) {
         super(app);
-        this.plugin = plugin;
-        this.manager = manager;
         this.project = null;
     }
 
@@ -61,6 +58,7 @@ export default class ProjectTableModal extends Modal {
         new Setting(contentEl)
             .addButton((button) => {
                 button.setButtonText("Insert and close").onClick(async () => {
+                    this.builder(this.project)
                     this.close();
                 });
             });
@@ -70,7 +68,7 @@ export default class ProjectTableModal extends Modal {
 export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings, project: WSProject): string {
     let text = "";
 
-    let files = collector.manager.getProjectList();
+    let files = project.getFiles();
     let bar = "";
     if (settings.showNumber) {
         text += "|  #";
@@ -86,20 +84,21 @@ export function BuildProjectTable(collector: WSDataCollector, settings: WSTableS
     bar += "|\n";
     text += bar;
 
+    let projectWords = project.totalWords;
+
     for (let i = 0; i < files.length; i++) {
         let file = files[i];
-        // if (file.isCountExcludedFromProject() && !settings.showExcluded) {
-        //     continue;
-        // }
-        // let line = `${settings.showNumber ? `|${i}` : ``}|${collector.getPluginSettings().useDisplayText?`${file.getTitleForProject(project)}`:`${file.getTitle()}`}`;
-        // if (settings.showNumber) {
-        //     line = "|" + i;
-        // }
-        if (collector.pluginSettings.useDisplayText) {
-            // if (file.getProject() != project) {
-            //     // we need to see if there is a special name tied to the backlink to the project
-
-            // }
+        let name = file.title;
+        if (collector.plugin.settings.useDisplayText && project instanceof WSFileProject) {
+            name = project.file.getLinkTitle(file) || file.title;
+        }
+        let share = file.totalWords / projectWords * 100;
+        let shareText = share.toFixed(2) + "%";
+        text += `| ${i}|${name}| ${FormatWordsNumOnly(file.totalWords)}|`;
+        if (settings.showShare) {
+            text += ` ${shareText}|\n`;
+        } else {
+            text += "\n";
         }
     }
 

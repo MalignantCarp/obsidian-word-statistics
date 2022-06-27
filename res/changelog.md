@@ -1,4 +1,9 @@
 ## Changelog
+### 2022-06-27
+ - FileInfo now displays the display text for a file if that option is enabled in settings.
+ - Can now build basic project table.
+ - BUGFIX: Insert table no longer inserts the default project table upon opening the modal, it is not done when you hit insert and close.
+
 ### 2022-06-23
  - Renamed Open Project Management View menu command to Attach Project Management View, as it does not open or focus it, but merely attaches it to the right leaf.
  - Re-added the Insert Project Table Modal and associated command. (Incomplete)

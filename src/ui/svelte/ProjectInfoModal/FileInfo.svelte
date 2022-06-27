@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { getPackedSettings } from "http2";
+	import { getLinkpath, Plugin } from "obsidian";
 	import { WSEvents, WSFileEvent } from "src/model/event";
 	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
-	import type { WSProject } from "src/model/project";
+	import { WSFileProject, type WSProject } from "src/model/project";
 	import { FormatWords, FormatWordsNumOnly } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 
@@ -49,7 +51,11 @@
 </script>
 
 <tr class="ws-pmv-proj-file">
-	<td class="title">{file.title}</td>
+	{#if manager.plugin.settings.useDisplayText && project instanceof WSFileProject}
+		<td class="title">{project.file.getLinkTitle(file) || file.title}</td>
+	{:else}
+		<td class="title">{file.title}</td>
+	{/if}
 	<td class="path">{file.path}</td>
 	{#if wordGoal > 0}
 		<td class="word-count">{FormatWordsNumOnly(file.words)} / {FormatWords(wordGoal)}</td>
