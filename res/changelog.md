@@ -1,8 +1,12 @@
 ## Changelog
+### 2022-06-29
+ - Removed table settings from main settings window. These will now be accessed from the insert table modal, which will need to be adapted into Svelte to allow for greater customization. The new modal will allow current settings to be saved (sans project name, at this time). In the future, different settings can be saved as templates, including the project, and can additionally be mapped to commands and key-combinations (enhancement #2).
+ - Made table creation more modular to support enhancement #3. Rows are now constructed of all available information and then the table is built based on the settings and how the table is to be displayed (right now this is only inserted as a markdown table, but later enhancements will allow it to build an HTML table for a leaf view)
+
 ### 2022-06-27
  - FileInfo now displays the display text for a file if that option is enabled in settings.
  - Can now build basic project table.
- - BUGFIX: Insert table no longer inserts the default project table upon opening the modal, it is not done when you hit insert and close.
+ - BUGFIX: Insert table no longer inserts the default project table upon opening the modal, it is now done when you hit insert and close.
 
 ### 2022-06-23
  - Renamed Open Project Management View menu command to Attach Project Management View, as it does not open or focus it, but merely attaches it to the right leaf.

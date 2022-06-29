@@ -2,10 +2,13 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import type WordStatisticsPlugin from "./main";
 
 export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
-	showNumber: true,
-	sortAlpha: false,
-	showShare: true,
-	showExcluded: true,
+	showNumericIndex: true,
+	alphaSortForced: false,
+	alphaSortDisplayName: false,
+	showFileGoalProgress: true,
+	showProjectGoalProgress: true,
+	showPathGoalProgress: true,
+	showFileShare: true	
 };
 
 export const DEFAULT_VIEW_SETTINGS: WSViewSettings = {
@@ -35,10 +38,13 @@ export interface WSPluginSettings {
 };
 
 export interface WSTableSettings {
-	showNumber: boolean, // shows a number next to each entry as the primary key
-	sortAlpha: boolean, // sorts all entries alphabetically -- ignores index sort
-	showShare: boolean, // shorts the percentage of words the note holds of the project's total word count
-	showExcluded: boolean, // still shows an file in the table where counting is to be excluded 
+	showNumericIndex: boolean,
+	alphaSortForced: boolean,
+	alphaSortDisplayName: boolean,
+	showFileGoalProgress: boolean,
+	showProjectGoalProgress: boolean,
+	showPathGoalProgress: boolean,
+	showFileShare: boolean
 };
 
 export interface WSDatabaseSettings {
@@ -59,7 +65,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	showDatabaseSettings(containerEl: HTMLElement) {
+	addDatabaseSettings(containerEl: HTMLElement) {
 		containerEl.createEl('h3', { text: 'Database Settings' });
 		containerEl.createEl('p', { text: "These options will help to compact the JSON files used to store the file, project, and path databases. If enabled, no whitespace will be added to leave the JSON file more human readable." });
 		new Setting(containerEl)
@@ -116,39 +122,8 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h3', { text: 'Insert Table Settings' });
-		new Setting(containerEl)
-			.setName('Display number')
-			.setDesc('Show numerical index as first column of table')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.tableSettings.showNumber)
-				.onChange(async (value: boolean) => {
-					this.plugin.settings.tableSettings.showNumber = value;
-				}));
-		new Setting(containerEl)
-			.setName('Alphanumeric sorting')
-			.setDesc('Sort table entries alphabetically for tag-based and folder-based indices.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.tableSettings.sortAlpha)
-				.onChange(async (value: boolean) => {
-					this.plugin.settings.tableSettings.sortAlpha = value;
-				}));
-		new Setting(containerEl)
-			.setName('Show percentage of whole')
-			.setDesc('Show the percentage of words each entry holds to the total words represented by the table')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.tableSettings.showShare)
-				.onChange(async (value: boolean) => {
-					this.plugin.settings.tableSettings.showShare = value;
-				}));
-		new Setting(containerEl)
-			.setName('Show excluded notes')
-			.setDesc('Show notes within the project even if they are not to be counted (with "--" as their counts)')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.tableSettings.showExcluded)
-				.onChange(async (value: boolean) => {
-					this.plugin.settings.tableSettings.showExcluded = value;
-				}));
+		containerEl.createEl('h3', { text: "Database Settings" });
+		this.addDatabaseSettings(containerEl);
 	}
 
 }

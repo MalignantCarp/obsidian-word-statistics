@@ -58,49 +58,95 @@ export default class ProjectTableModal extends Modal {
         new Setting(contentEl)
             .addButton((button) => {
                 button.setButtonText("Insert and close").onClick(async () => {
-                    this.builder(this.project)
+                    this.builder(this.project);
                     this.close();
                 });
             });
     }
 }
 
-export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings, project: WSProject): string {
-    let text = "";
+interface IProjectTableRow {
+    noteTitle: string,
+    noteDisplayText: string;
+    words: number,
+    fileGoal: number,
+    percentOfFileGoal: number,
+    percentOfProject: number,
+    percentOfProjectGoal: number,
+    percentOfPathGoal: number;
+}
 
+const HEADER_PROJECT_TABLE = {
+    noteTitle: "Note Title",
+    words: "Word Count",
+    percentOfFileGoal: "% Complete",
+    percentOfProject: "Project %",
+    percentOfProjectGoal: "% Project Goal",
+    percentOfPathGoal: "% Path Goal"
+};
+
+export function BuildProjectTableRows(manager: WSProjectManager, project: WSProject) {
     let files = project.getFiles();
-    let bar = "";
-    if (settings.showNumber) {
-        text += "|  #";
-        bar += "|---";
-    }
-    text += "|Note|Count";
-    bar += "|----|-----";
-    if (settings.showShare) {
-        text += "|Share";
-        bar += "|-----";
-    }
-    text += "|\n";
-    bar += "|\n";
-    text += bar;
+    let rows: IProjectTableRow[] = [];
 
-    let projectWords = project.totalWords;
+    for (let file of files) {
+        let words = file.totalWords;
+        let fileGoal = manager.getWordGoalForFileByContext(file, project);
+        let projectGoal = manager.getWordGoalForProjectByContext(project);
+        let pathGoal = manager.getWordGoalForPath(manager.getPath(project.path));
 
-    for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-        let name = file.title;
-        if (collector.plugin.settings.useDisplayText && project instanceof WSFileProject) {
-            name = project.file.getLinkTitle(file) || file.title;
+        rows.push({
+            noteTitle: file.title,
+            noteDisplayText: project instanceof WSFileProject ? project.file.getLinkTitle(file) || file.title : file.title,
+            words,
+            fileGoal,
+            percentOfFileGoal: fileGoal ? words / fileGoal * 100 : undefined,
+            percentOfProject: words > 0 ? words / project.totalWords * 100 : 0,
+            percentOfProjectGoal: projectGoal ? words / projectGoal * 100 : undefined,
+            percentOfPathGoal: pathGoal ? words / pathGoal * 100 : undefined
+
+        });
+    }
+    return rows;
+}
+
+export function BuildProjectTable(collector: WSDataCollector, settings: WSTableSettings, project: WSProject): string {
+    let rows = BuildProjectTableRows(collector.manager, project);
+    let text = "|";
+    let bar = "|";
+
+    let lines: string[] = [];
+
+    if (settings.showNumericIndex) {
+        text += ` # |`;
+        bar += "---:|";
+    }
+    text += `${HEADER_PROJECT_TABLE.noteTitle}|${HEADER_PROJECT_TABLE.words}|`;
+    bar += "-----|-----:|";
+    if (settings.showFileGoalProgress) {
+        text += `${HEADER_PROJECT_TABLE.percentOfFileGoal}:|`;
+        bar += "-----:|";
+    }
+    if (settings.showFileShare) {
+        text += `${HEADER_PROJECT_TABLE.percentOfProject}:|`;
+        bar += "-----:|";
+    }
+    lines.push(text);
+    lines.push(bar);
+    for (let i = 0; i < rows.length; i++) {
+        let row = rows[i];
+        text = "|";
+        if (settings.showNumericIndex) {
+            text += `${i}|`;
         }
-        let share = file.totalWords / projectWords * 100;
-        let shareText = share.toFixed(2) + "%";
-        text += `| ${i}|${name}| ${FormatWordsNumOnly(file.totalWords)}|`;
-        if (settings.showShare) {
-            text += ` ${shareText}|\n`;
-        } else {
-            text += "\n";
+        text += `${collector.plugin.settings.useDisplayText ? row.noteDisplayText : row.noteTitle}|${FormatWordsNumOnly(row.words)}|`;
+        if (settings.showFileGoalProgress) {
+            text += `${row.percentOfFileGoal === undefined ? '--' : row.percentOfFileGoal.toFixed(2) + "%"}|`
         }
+        if (settings.showFileShare) {
+            text += `${row.percentOfProject.toFixed(2) + "%"}|`
+        }
+        lines.push(text)
     }
-
-    return text;
+    return lines.join("\n");
 }
