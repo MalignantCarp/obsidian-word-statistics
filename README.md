@@ -15,11 +15,11 @@ The basic word-counting algorithm, represented by the above regular expression, 
 1. Acronyms that utilize a period.
 2. Numbers with thousands separators (and optional decimals)
 3. Decimal numbers and decimal number-based statements that you might see in non-fiction, (e.g., 'Please refer to 1.2.2').
-4. One edge-case comes up in legal writings. For example, `18 U.S.C. 924(a)(1)(B)` is said to have only 3 words in it. The first two are adequately captured by just general numbers and the period-delimited acronym edge case, but the number followed by sections in parentheses are not. We've added an edgecase that allows not just parentheses but also other forms of brackets.
+4. One edge-case comes up in legal writings. For example, `18 U.S.C. 924(a)(1)(B)` is said to have only 3 words in it. The first two are adequately captured by just general numbers and the period-delimited acronym edge case, but the number followed by sections in parentheses are not. I've added an edgecase that allows not just parentheses but also other forms of brackets.
 
-The final statement is the basic word counting regex. The statement reads thus: Any sequence of letters or numbers or (a single dumb apostrophe or closing single quote both preceded by and followed by a letter or number) and optionally followed by the same with a connecting hyphen or non-breaking hyphen. This allows us to count hyphenated words as a single word.
+The final statement is the basic word counting regex. The statement reads thus: Any sequence of letters or numbers or (a single dumb apostrophe or closing single quote both preceded by and followed by a letter or number) and optionally followed by the same with a connecting hyphen or non-breaking hyphen. This allows us to count hyphenated words as a single compound word.
 
-Prior to counting words, the content of comments and YAML blocks will be removed from the to-be-counted text. I will also ensure that the contents of links are adjusted for both types of links so only the appropriate text is counted.
+Prior to counting words, the content of comments and YAML blocks will be removed from the to-be-counted text. Contents of links are adjusted for both types of links so only the appropriate text is counted.
 
 ## Limitations
 ### Non-English Languages
@@ -38,15 +38,14 @@ One caveat to note is that the word counts stored for a particular document will
 - [?] Project-based counting
     - [ ] Compatibility with Longform project index
 - [ ] Historical statistics on a per-project basis
-- [ ] Project groups
 - [x] Project manager view
 - [ ] Statistics view
 - [ ] Per-project statistics tables via code blocks
-- [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
-- [ ] Per-project word goals
-    - [ ] Macro (i.e., project word goal)
-    - [ ] Micro (i.e., individual note word goals, overridable on a per note basis)
-    - [ ] Progress indicators (status bar)
+- [x] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
+- [x] Per-project word goals
+    - [x] Macro (i.e., project word goal)
+    - [x] Micro (i.e., individual note word goals, overridable on a per note basis)
+    - [x] Progress indicators (status bar)
     - [ ] Progress indicators (tables)
 - [ ] Word counts for highlighted words (I believe now with CM6 that these may be universal, but I have separated them out in case they are not)
     - [ ] In Editor

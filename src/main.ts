@@ -1,4 +1,4 @@
-import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder } from 'obsidian';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View } from 'obsidian';
 import { WSDataCollector } from './model/collector';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
@@ -26,6 +26,8 @@ export default class WordStatisticsPlugin extends Plugin {
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
 	focusFile: WSFile = null;
+	noFileData: boolean = true;
+	fileExplorer: WorkspaceLeaf;
 
 	async onload() {
 		await this.loadSettings();
@@ -157,7 +159,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.wordsPerMS.push(wordsCounted / duration);
 		}
 
-		if (this.wordsPerMS.length > 0) {
+		if (this.wordsPerMS.length > 0 && this.settings.showWordCountSpeedDebug) {
 			console.log("Current average words/ms: ", this.wordsPerMS.reduce((a, v, i) => (a * i + v) / (i + 1)));
 		}
 	}
@@ -167,7 +169,8 @@ export default class WordStatisticsPlugin extends Plugin {
 			// console.log("Loading existing file content...");
 			let fileData = await this.loadSerialData(FILE_PATH);
 			let files: WSFile[] = [];
-			if (fileData != undefined) {
+			if (fileData) {
+				this.noFileData =  false;
 				files = WSFormat.LoadFileData(fileData);
 			}
 
@@ -179,7 +182,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			// console.log(`Loading data from ${PROJECT_PATH}`);\
 			// Load paths first as projects will fill up paths and set children
 			let pathData = await this.loadSerialData(PATH_PATH);
-			if (pathData != undefined) {
+			if (pathData) {
 				let paths = WSFormat.LoadPathData(pathData);
 				if (paths.length > 0) {
 					// console.log(paths);
@@ -187,7 +190,7 @@ export default class WordStatisticsPlugin extends Plugin {
 				}
 			}
 			let projData = await this.loadSerialData(PROJECT_PATH);
-			if (projData != undefined) {
+			if (projData) {
 				let projects = WSFormat.LoadProjectData(this.collector, projData);
 				if (projects.length > 0) {
 					// console.log(projects);
@@ -209,7 +212,25 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
 
 		}
+		if (this.collector.fileList && this.noFileData) {
+            this.events.trigger(new WSDataEvent({ type: WSEvents.Data.File }, { filter: null }));
+        }
+
 		this.updateFocusedFile();
+		let fe = this.app.workspace.getLeavesOfType("file-explorer");
+		if (fe.length != 1) {
+			console.log(`Found ${fe.length} file-explorer ${fe.length === 1? "leaf" : "leaves"}`)
+		}
+		this.fileExplorer = fe[0];
+		this.registerEvent(this.app.workspace.on("layout-change", this.onLayoutChange.bind(this)));
+	}
+
+	onLayoutChange() {
+		let fe = this.app.workspace.getLeavesOfType("file-explorer");
+		if (fe.length != 1) {
+			console.log(`Found ${fe.length} file-explorer ${fe.length === 1? "leaf" : "leaves"}`)
+		}
+		this.fileExplorer = fe[0];
 	}
 
 	insertProjectTableModal() {

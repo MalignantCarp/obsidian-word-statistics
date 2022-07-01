@@ -73,15 +73,19 @@
 		if (file instanceof WSFile) {
 			let words = event?.info.words | file.totalWords;
 			wordCount = Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
-			let goal = manager.getWordGoalForFileByContext(file, project);
-			if (goal) {
-				let percent = Math.round((words / goal) * 100);
-				percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
-				progressData = GetProgressGrade(percent);
-				progress.style.width = percent.toString() + "%";
+			if (progress) {
+				let goal = manager.getWordGoalForFileByContext(file, project);
+				if (goal) {
+					let percent = Math.round((words / goal) * 100);
+					percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
+					progressData = GetProgressGrade(percent);
+					progress.style.width = percent.toString() + "%";
+				} else {
+					progressData = "0";
+					progress.style.width = "0";
+				}
 			} else {
-				progressData = "0";
-				progress.style.width = "0";
+				console.log("Tried to update progress bars, but progress bar is ", progress);
 			}
 		}
 	}

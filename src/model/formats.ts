@@ -39,13 +39,13 @@ export namespace WSFormat {
 
     export function LoadFileData(data: string): WSFile[] {
         let table: IFile[];
+        let files: WSFile[] = [];
         try {
             table = JSON.parse(data) as IFile[];
-
+            files = DeserializeFiles(table);
         } catch (error) {
             console.log(`Error attempting to parse file data [${data}]: `, error)
         }
-        let files = DeserializeFiles(table);
         // console.log("File data loaded.");
         return files;
     }
@@ -125,8 +125,16 @@ export namespace WSFormat {
     }
 
     export function LoadProjectData(collector: WSDataCollector, data: string): WSProject[] {
-        let table = JSON.parse(data) as IProject[];
-        return DeserializeProjects(collector, table);
+        let table: IProject[];
+        let projects: WSProject[] = [];
+        try {
+            table = JSON.parse(data) as IProject[];
+            projects = DeserializeProjects(collector, table);
+        } catch (error) {
+            console.log(`Error attempting to parse project data [${data}]: `, error)
+        }
+        // console.log("Project data loaded.");
+        return projects;
     }
 
     export function SaveProjectData(plugin: WordStatisticsPlugin, projects: WSProject[]): string {
@@ -172,9 +180,17 @@ export namespace WSFormat {
     }
 
     export function LoadPathData(data: string): WSPath[] {
-        let table = JSON.parse(data) as IPath[];
-        return DeserializePaths(table);
-    }
+        let table: IPath[];
+        let paths: WSPath[] = [];
+        try {
+            table = JSON.parse(data) as IPath[];
+            paths = DeserializePaths(table);
+        } catch (error) {
+            console.log(`Error attempting to parse path data [${data}]: `, error)
+        }
+        // console.log("Path data loaded.");
+        return paths;
+   }
 
     export function SavePathData(plugin: WordStatisticsPlugin, paths: WSPath[]): string {
         let table = SerializePaths(paths);

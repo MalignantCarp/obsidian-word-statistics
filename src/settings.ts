@@ -8,7 +8,7 @@ export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showFileGoalProgress: true,
 	showProjectGoalProgress: true,
 	showPathGoalProgress: true,
-	showFileShare: true	
+	showFileShare: true
 };
 
 export const DEFAULT_VIEW_SETTINGS: WSViewSettings = {
@@ -24,6 +24,7 @@ export const DEFAULT_DATABASE_SETTINGS: WSDatabaseSettings = {
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	clearEmptyPaths: true,
+	showWordCountSpeedDebug: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
 	viewSettings: DEFAULT_VIEW_SETTINGS,
 	databaseSettings: DEFAULT_DATABASE_SETTINGS,
@@ -32,6 +33,7 @@ export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 export interface WSPluginSettings {
 	useDisplayText: boolean,
 	clearEmptyPaths: boolean,
+	showWordCountSpeedDebug: boolean,
 	tableSettings: WSTableSettings,
 	viewSettings: WSViewSettings,
 	databaseSettings: WSDatabaseSettings;
@@ -122,7 +124,17 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h3', { text: "Database Settings" });
+
+		new Setting(containerEl)
+			.setName('Show Word Count Speed Messages')
+			.setDesc('When enabled, console will log messages related to how quickly the plugin is counting words. Enable this if you are experiencing performance issues to see if they are related to word counting.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showWordCountSpeedDebug)
+				.onChange(async (value) => {
+					this.plugin.settings.showWordCountSpeedDebug = value;
+					await this.plugin.saveSettings();
+				}));
+
 		this.addDatabaseSettings(containerEl);
 	}
 

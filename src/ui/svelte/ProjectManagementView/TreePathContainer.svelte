@@ -136,15 +136,19 @@
 	}
 
 	function onWordCountUpdate(count: number) {
-		let goal = manager.getWordGoalForPath(path);
-		if (goal > 0) {
-			let percent = Math.round((count / goal) * 100);
-			percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
-			progressData = GetProgressGrade(percent);
-			progress.style.width = percent.toString() + "%";
+		if (progress) {
+			let goal = manager.getWordGoalForPath(path);
+			if (goal > 0) {
+				let percent = Math.round((count / goal) * 100);
+				percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;
+				progressData = GetProgressGrade(percent);
+				progress.style.width = percent.toString() + "%";
+			} else {
+				progressData = "0";
+				progress.style.width = "0";
+			}
 		} else {
-			progressData = "0";
-			progress.style.width = "0";
+			console.log("Tried to update progress bars, but progress bar is ", progress);
 		}
 	}
 </script>

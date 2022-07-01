@@ -1,4 +1,19 @@
 ## Changelog
+### 2022-07-01
+ - BUGFIX: Misplaced colons in some of the table headings.
+ - Removed a couple of old svelte files that were no longer being used.
+ - Added error checking in TreeProjectContainer and TreePathContainer for when progress is null/undefined
+ - BUGFIX: In WordCountForFile, sometimes progress is null/undefined, resulting in an exception when trying to modify its progress bar. Still unsure how this is ever null, but have put in a fix to ensure it's not modified unless it exists.
+ - BUGFIX: WSDataCollector was sometimes using TFile.name in place of TFile.basename
+ - BUGFIX: LoadFileData attempted to load file data even after failed JSON parsing
+ - BUGFIX: LoadProjectData and LoadPathData were missing JSON parsing error checking
+ - BUGFIX: onStartup() was passing empty file data, project data, and path data to formatting routines
+ - BUGFIX: LinkCache.displayText? always returns the link even when there is no displayText; this appears to be an Obsidian bug, for now have made it check to see if link.link === link.displayText and if so return null so that the proper TFile.basename is used instead
+ - Added a plugin setting to display the word count speed debug messages.
+ - BUGFIX: Database Settings heading was being displayed twice.
+ - Created model/statistics.ts to begin work on statistic history
+ - Updated package.json to include the latest version of Obsidian
+
 ### 2022-06-29
  - Removed table settings from main settings window. These will now be accessed from the insert table modal, which will need to be adapted into Svelte to allow for greater customization. The new modal will allow current settings to be saved (sans project name, at this time). In the future, different settings can be saved as templates, including the project, and can additionally be mapped to commands and key-combinations (enhancement #2).
  - Made table creation more modular to support enhancement #3. Rows are now constructed of all available information and then the table is built based on the settings and how the table is to be displayed (right now this is only inserted as a markdown table, but later enhancements will allow it to build an HTML table for a leaf view)

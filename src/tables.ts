@@ -124,11 +124,11 @@ export function BuildProjectTable(collector: WSDataCollector, settings: WSTableS
     text += `${HEADER_PROJECT_TABLE.noteTitle}|${HEADER_PROJECT_TABLE.words}|`;
     bar += "-----|-----:|";
     if (settings.showFileGoalProgress) {
-        text += `${HEADER_PROJECT_TABLE.percentOfFileGoal}:|`;
+        text += `${HEADER_PROJECT_TABLE.percentOfFileGoal}|`;
         bar += "-----:|";
     }
     if (settings.showFileShare) {
-        text += `${HEADER_PROJECT_TABLE.percentOfProject}:|`;
+        text += `${HEADER_PROJECT_TABLE.percentOfProject}|`;
         bar += "-----:|";
     }
     lines.push(text);

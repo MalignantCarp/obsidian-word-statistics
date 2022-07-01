@@ -91,7 +91,7 @@
 			let words = project.totalWords;
 			wordCount = FormatWords(words);
 			let goal = manager.getWordGoalForProjectByContext(project);
-			if (progress !== null && progress !== undefined) {
+			if (progress) {
 				if (goal) {
 					let percent = Math.round((words / goal) * 100);
 					percent = percent > 100 ? 100 : percent < 0 ? 0 : percent;

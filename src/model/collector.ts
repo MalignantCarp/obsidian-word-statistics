@@ -3,7 +3,7 @@ import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
-import { WSEvents, WSFileEvent } from './event';
+import { WSDataEvent, WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
 
 export class WSDataCollector {
@@ -121,8 +121,8 @@ export class WSDataCollector {
     }
 
     onCreate(file: TAbstractFile) {
-        if (!this.fileMap.has(file.path)) {
-            this.newFile(file.name, file.path);
+        if (!this.fileMap.has(file.path) && file instanceof TFile) {
+            this.newFile(file.basename, file.path);
         }
     }
 
@@ -226,7 +226,7 @@ export class WSDataCollector {
                         // if there is no link, we don't want to add it to the list
                         if (linkedFile != null) {
                             let lFile = this.getFileSafer(linkedFile.path);
-                            let dText = link.displayText == lFile.name ? null : link.displayText;
+                            let dText = link.link != link.displayText ? link.displayText : null;
                             newLinks.push([lFile, dText || lFile.title]);
                         }
                     }
@@ -299,7 +299,7 @@ export class WSDataCollector {
         let af = this.vault.getAbstractFileByPath(path);
         if (af != null && af instanceof TFile) {
             console.log(`Attempted to get file ${path}, but it did not exist. Creating...`);
-            return this.newFile(af.name, af.path);
+            return this.newFile(af.basename, af.path);
         }
         return null;
     }
