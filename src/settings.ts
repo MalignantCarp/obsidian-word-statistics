@@ -25,6 +25,7 @@ export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	clearEmptyPaths: true,
 	showWordCountSpeedDebug: true,
+	showWordCountsInFileExplorer: true,
 	tableSettings: DEFAULT_TABLE_SETTINGS,
 	viewSettings: DEFAULT_VIEW_SETTINGS,
 	databaseSettings: DEFAULT_DATABASE_SETTINGS,
@@ -34,6 +35,7 @@ export interface WSPluginSettings {
 	useDisplayText: boolean,
 	clearEmptyPaths: boolean,
 	showWordCountSpeedDebug: boolean,
+	showWordCountsInFileExplorer: boolean,
 	tableSettings: WSTableSettings,
 	viewSettings: WSViewSettings,
 	databaseSettings: WSDatabaseSettings;
@@ -46,7 +48,7 @@ export interface WSTableSettings {
 	showFileGoalProgress: boolean,
 	showProjectGoalProgress: boolean,
 	showPathGoalProgress: boolean,
-	showFileShare: boolean
+	showFileShare: boolean;
 };
 
 export interface WSDatabaseSettings {
@@ -121,6 +123,16 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.clearEmptyPaths)
 				.onChange(async (value) => {
 					this.plugin.settings.clearEmptyPaths = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Show Word Counts in File Explorer')
+			.setDesc('When enabled, the file explorer will have word counts added next to files and folders.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showWordCountsInFileExplorer)
+				.onChange(async (value) => {
+					this.plugin.settings.showWordCountsInFileExplorer = value;
 					await this.plugin.saveSettings();
 				}));
 

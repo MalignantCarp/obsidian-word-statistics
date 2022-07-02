@@ -512,6 +512,21 @@ table.project-file-table tfoot tr td {
 	font-weight: bold;
 }
 
-td.word-count, td.total-head {
+td.word-count,
+td.total-head {
 	text-align: right;
+}
+
+.mc-ws-file-explorer-counts .nav-folder-title::after,
+.mc-ws-file-explorer-counts .nav-file-title::after {
+	content: attr(data-mc-word-stats);
+	display: flex;
+	align-items: center;
+	font-size: 0.8em;
+	opacity: 0.8;
+}
+
+.mc-ws-file-explorer-counts .nav-folder-title-content,
+.mc-ws-file-explorer-counts .nav-file-title-content {
+	flex: 1;
 }

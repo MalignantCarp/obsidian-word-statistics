@@ -80,6 +80,23 @@ export class WSDataCollector {
         return this.vault.getMarkdownFiles().length;
     }
 
+    getFilesForFolder(folder: string) {
+        let files = this.fileList;
+        if (folder !== "" && folder !== "/") {
+            files = files.filter(file => file.path.startsWith(folder + "/"));
+        }
+        return files;
+    }
+
+    getWordCountForFolder(folder: string): number {
+        let files = this.getFilesForFolder(folder);
+        let count = 0;
+        files.forEach((file) => {
+            count += file.totalWords;
+        });
+        return count;
+    }
+
     onRename(file: TAbstractFile, oldPath: string) {
         if (this.fileMap.has(oldPath) && file instanceof TFile) {
             let fi = this.fileMap.get(oldPath);

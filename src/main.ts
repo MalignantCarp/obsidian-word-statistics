@@ -1,19 +1,35 @@
-import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View } from 'obsidian';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView } from 'obsidian';
 import { WSDataCollector } from './model/collector';
 import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
 import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
-import type { WSFile } from './model/file';
-import { Dispatcher, WSDataEvent, WSEvents, WSFocusEvent } from './model/event';
+import { WSFile } from './model/file';
+import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent } from './model/event';
 import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
 import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
 import { WSFormat } from './model/formats';
 import type { WSProject } from './model/project';
+import { FormatWords } from './util';
 
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
 const PATH_PATH = "paths.json";
+
+const FILE_EXP_CLASS = "mc-ws-file-explorer-counts";
+const FILE_EXP_DATA_ATTRIBUTE = "data-mc-word-stats";
+
+declare module "obsidian" {
+	export class FileExplorer extends View {
+		fileItems: { [key: string]: FileItem; };
+		getDisplayText(): string;
+		getViewType(): string;
+	}
+
+	export interface FileItem {
+		titleEl: HTMLDivElement;
+	}
+}
 
 export default class WordStatisticsPlugin extends Plugin {
 	settings: WSPluginSettings;
@@ -27,7 +43,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	projectLoad: boolean = false;
 	focusFile: WSFile = null;
 	noFileData: boolean = true;
-	fileExplorer: WorkspaceLeaf;
+	fileExplorer: FileExplorer;
 
 	async onload() {
 		await this.loadSettings();
@@ -125,6 +141,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 		console.log("Obsidian Word Statistics settings saved.");
+		this.updateFileExplorer();
 	}
 
 	async loadSerialData(path: string): Promise<string> {
@@ -170,7 +187,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			let fileData = await this.loadSerialData(FILE_PATH);
 			let files: WSFile[] = [];
 			if (fileData) {
-				this.noFileData =  false;
+				this.noFileData = false;
 				files = WSFormat.LoadFileData(fileData);
 			}
 
@@ -207,30 +224,34 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
 			this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
 
+			this.events.on(WSEvents.File.WordsChanged, this.onFileWordCount.bind(this), { filter: null });
+
 			// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
 
 		}
 		if (this.collector.fileList && this.noFileData) {
-            this.events.trigger(new WSDataEvent({ type: WSEvents.Data.File }, { filter: null }));
-        }
+			this.events.trigger(new WSDataEvent({ type: WSEvents.Data.File }, { filter: null }));
+		}
 
 		this.updateFocusedFile();
 		let fe = this.app.workspace.getLeavesOfType("file-explorer");
 		if (fe.length != 1) {
-			console.log(`Found ${fe.length} file-explorer ${fe.length === 1? "leaf" : "leaves"}`)
+			console.log(`Found ${fe.length} file-explorer ${fe.length === 1 ? "leaf" : "leaves"}`);
 		}
-		this.fileExplorer = fe[0];
+		this.fileExplorer = fe[0].view as FileExplorer;
 		this.registerEvent(this.app.workspace.on("layout-change", this.onLayoutChange.bind(this)));
+		this.updateFileExplorer();
 	}
 
 	onLayoutChange() {
 		let fe = this.app.workspace.getLeavesOfType("file-explorer");
 		if (fe.length != 1) {
-			console.log(`Found ${fe.length} file-explorer ${fe.length === 1? "leaf" : "leaves"}`)
+			console.log(`Found ${fe.length} file-explorer ${fe.length === 1 ? "leaf" : "leaves"}`);
 		}
-		this.fileExplorer = fe[0];
+		this.fileExplorer = fe[0].view as FileExplorer;
+		this.updateFileExplorer();
 	}
 
 	insertProjectTableModal() {
@@ -251,7 +272,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			let cursor = view.editor.replaceRange(tableText, view.editor.getCursor());
 
 		} else {
-			new Notice("Unable to insert table. Not editing a Markdown file.")
+			new Notice("Unable to insert table. Not editing a Markdown file.");
 		}
 
 	}
@@ -282,6 +303,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			// console.log(`Folder: '${file.path}'`);
 			this.collector.manager.updateProjectsForFolder(file.path);
 		}
+		this.updateFileExplorer();
 	}
 
 	onFileDelete(file: TAbstractFile) {
@@ -290,12 +312,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (file instanceof TFile && file.extension === "md") {
 			this.collector.onDelete(file);
 		}
+		this.updateFileExplorer();
 	}
 
 	onFileCreate(file: TAbstractFile) {
 		if (file instanceof TFile && file.extension === "md") {
 			this.collector.onCreate(file);
 		}
+		this.updateFileExplorer();
 	}
 
 	onMDChanged(file: TFile, data: string, cache: CachedMetadata) {
@@ -366,9 +390,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.saveSerialData(PATH_PATH, data);
 	}
 
-	onFileWordCount(file: WSFile) {
+	onFileWordCount(evt: WSFileEvent) {
 		// file word count has been updated, what to do?
-		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		// console.log("onFileWordCount()");
+		this.updateFileExplorer(evt.info.file);
 	}
 
 	RunCount(file: TFile, data: string) {
@@ -379,5 +404,39 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.logSpeed(words, startTime, endTime);
 		this.collector.logWords(file.path, words);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
+	}
+
+	updateFileExplorer(file: WSFile = null) {
+		if (this.fileExplorer instanceof View) {
+			if (this.settings.showWordCountsInFileExplorer) {
+				let container = this.fileExplorer.containerEl;
+				container.toggleClass(FILE_EXP_CLASS, true);
+				let fileList = this.fileExplorer.fileItems;
+				for (let path in fileList) {
+					// console.log(path, file?.path, file instanceof WSFile && file.path.contains(path));
+					if (file === null || (file instanceof WSFile && file.path.includes(path))) {
+						// console.log("Updating ", path);
+						let wFile = this.collector.getFile(path);
+						let item = fileList[path];
+						if (wFile instanceof WSFile) {
+							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.words));
+						} else {
+							let words = this.collector.getWordCountForFolder(path);
+							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
+						}
+					}
+				}
+			} else {
+				let container = this.fileExplorer.containerEl;
+				container.toggleClass(FILE_EXP_CLASS, false);
+				let fileList = this.fileExplorer.fileItems;
+				for (let path in fileList) {
+					let item = fileList[path];
+					item.titleEl.removeAttribute(FILE_EXP_DATA_ATTRIBUTE);
+				}
+			}
+		} else {
+			console.log("Tried to update file explorer, but it was invalid.");
+		}
 	}
 }

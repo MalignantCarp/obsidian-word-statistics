@@ -1,4 +1,8 @@
 ## Changelog
+### 2022-07-02
+ - Added methods to WSDataCollector to get files for a folder and get word count for a folder.
+ - Word counts may now be displayed in the file explorer (defaults to on). Idea from Isaac Lyman's Novel Word Count plugin.
+
 ### 2022-07-01
  - BUGFIX: Misplaced colons in some of the table headings.
  - Removed a couple of old svelte files that were no longer being used.

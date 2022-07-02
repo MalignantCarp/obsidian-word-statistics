@@ -3,7 +3,7 @@ __Please be aware that any modification of your files outside of Obsidian could 
 
 # Obsidian Word Statistics
 
-This will be a plugin for Obsidian (https://obsidian.md) that tracks word count statistics.
+This will be a plugin for [Obsidian](https://obsidian.md) that tracks word count statistics.
 
 `/((?:\p{L}\.)+)|(?:\p{N}+(?:[\.,]\p{N}{3})+(?:[\.,]\p{N}+)?)|((?:\p{N}+[\.,])+\p{N}+?)|(\p{N}+(?:\p{Ps}\S+\p{Pe})*)|((?:(?:[\p{L}\p{N}]|(?:(?<=[\p{L}\p{N}])['\u2019](?=[\p{L}\p{N}])))+)(?:(?:-|\u2011)(?:[\p{L}\p{N}]|(?:(?<=[\p{L}\p{N}])['\u2019](?<=[\p{L}\p{N}])))+)*)/gmu`
 
@@ -20,6 +20,9 @@ The basic word-counting algorithm, represented by the above regular expression, 
 The final statement is the basic word counting regex. The statement reads thus: Any sequence of letters or numbers or (a single dumb apostrophe or closing single quote both preceded by and followed by a letter or number) and optionally followed by the same with a connecting hyphen or non-breaking hyphen. This allows us to count hyphenated words as a single compound word.
 
 Prior to counting words, the content of comments and YAML blocks will be removed from the to-be-counted text. Contents of links are adjusted for both types of links so only the appropriate text is counted.
+
+## Acknowledgements
+ - Isaac Lyman's [Novel Word Count](https://github.com/isaaclyman/novel-word-count-obsidian) plugin for the idea to show word counts in the file explorer and some implementation and CSS details.
 
 ## Limitations
 ### Non-English Languages
