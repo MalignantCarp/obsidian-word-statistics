@@ -1,6 +1,8 @@
 # Caution
 __Please be aware that any modification of your files outside of Obsidian could break project and statistic storage. Please ensure you regularly backup your data.__
 
+__This plugin is BETA software. Please ensure you regularly backup your data. Should you encounter any issues, please file a bug report or contact me in Discord for assistance.__
+
 # Obsidian Word Statistics
 
 This will be a plugin for [Obsidian](https://obsidian.md) that tracks word count statistics.
@@ -40,7 +42,7 @@ One caveat to note is that the word counts stored for a particular document will
 - [x] Custom status bar for word counts
 - [?] Project-based counting
     - [ ] Compatibility with Longform project index
-- [ ] Historical statistics on a per-project basis
+- [ ] Word count statistics (see below for more information)
 - [x] Project manager view
 - [ ] Statistics view
 - [ ] Per-project statistics tables via code blocks
@@ -54,6 +56,13 @@ One caveat to note is that the word counts stored for a particular document will
     - [ ] In Editor
     - [ ] In Rendered View
     - [ ] Legacy editor? (Maybe; since the legacy editor will eventually be removed, not sure there is a huge userbase for whom this would be a useful feature.)
+
+## Word Count Statistics
+Word counts for all Markdown files are recorded in files.json. Further historical records are collected in segments that include duration, writing time, words added, and words deleted during that segment. So a complete record (segment) might show a duration of 15 minutes, which included 12 minutes of writing, 500 words added, 47 words deleted.
+
+There are two methods for reducing space. The first is to only maintain these records for files that are part of projects.
+
+The second method used to reduce database storage is the segment size itself, which can further be moderated by history consolidation and recent days (i.e., how many days in the past are considered "recent"), as well as the segment size used for "history". For example, you can set it so that one year (365 days) is considered "recent" and so anything recent should have a segment size of 20 minutes, but anything over that should be consolidated into segment sizes of 6 hours.
 
 ## Planned Features
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.

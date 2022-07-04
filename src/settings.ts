@@ -21,6 +21,15 @@ export const DEFAULT_DATABASE_SETTINGS: WSDatabaseSettings = {
 	pathMinify: false,
 };
 
+export const DEFAULT_STAT_SETTINGS: WStatSettings = {
+	writingTimeout: 200,
+	recentDays: 365,
+	recentSegmentSize: 15,
+	historySegmentSize: 4,
+	recordProjectsOnly: true,
+	consolidateHistory: false,
+};
+
 export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	useDisplayText: true,
 	clearEmptyPaths: true,
@@ -29,6 +38,7 @@ export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
 	tableSettings: DEFAULT_TABLE_SETTINGS,
 	viewSettings: DEFAULT_VIEW_SETTINGS,
 	databaseSettings: DEFAULT_DATABASE_SETTINGS,
+	statisticSettings: DEFAULT_STAT_SETTINGS,
 };
 
 export interface WSPluginSettings {
@@ -38,7 +48,8 @@ export interface WSPluginSettings {
 	showWordCountsInFileExplorer: boolean,
 	tableSettings: WSTableSettings,
 	viewSettings: WSViewSettings,
-	databaseSettings: WSDatabaseSettings;
+	databaseSettings: WSDatabaseSettings,
+	statisticSettings: WStatSettings;
 };
 
 export interface WSTableSettings {
@@ -61,12 +72,84 @@ export interface WSViewSettings {
 	treeView: boolean;
 }
 
+export interface WStatSettings {
+	writingTimeout: number,
+	recentDays: number,
+	recentSegmentSize: number,
+	historySegmentSize: number,
+	recordProjectsOnly: boolean,
+	consolidateHistory: boolean;
+}
+
 export default class WordStatsSettingTab extends PluginSettingTab {
 	plugin: WordStatisticsPlugin;
 
 	constructor(app: App, plugin: WordStatisticsPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	addStatisticSettings(containerEl: HTMLElement) {
+		containerEl.createEl('h3', { text: "Statistics History Settings" });
+		new Setting(containerEl)
+			.setName("Record Statistics for Projects Only")
+			.setDesc("If enabled, word count history records will only be stored for files that are included in projects. Please note that files with pre-existing records that are no longer in projects will continue to have their records.")
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.statisticSettings.recordProjectsOnly)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.recordProjectsOnly = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName("Writing Timeout")
+			.setDesc("The writing timeout (in seconds) is used to determine the amount of time writing. If you frequently pause while writing, set this to a higher value.")
+			.addSlider(slider => slider
+				.setValue(this.plugin.settings.statisticSettings.writingTimeout)
+				.setLimits(0, 600, 15)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.writingTimeout = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName("Segment Size (Recent)")
+			.setDesc("Word count and writing information is stored in segments of this size (in minutes). The lower the number, the more segments are recorded, though only segments during which there is active writing will be recorded. Use highern umbers to conserve space, or adjust the history consolidation settings.")
+			.addSlider(slider => slider
+				.setValue(this.plugin.settings.statisticSettings.recentSegmentSize)
+				.setLimits(10, 120, 5)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.recentSegmentSize = value;
+					await this.plugin.saveSettings();
+				}));
+		containerEl.createEl('h4', { text: "History Consolidation" });
+		new Setting(containerEl)
+			.setName("History Consolidation")
+			.setDesc("If enabled, records exceeding RECENT DAYS will be consolidated based on the historical segment size specified.")
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.statisticSettings.consolidateHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.consolidateHistory = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName("Recent Days")
+			.setDesc("The number of days old statistics records can be to be considered recent.")
+			.addSlider(slider => slider
+				.setValue(this.plugin.settings.statisticSettings.recentDays)
+				.setLimits(1, 365, 1)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.recentDays = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName("Segment Size (Historical)")
+			.setDesc("Word count and writing information is stored in segments of this size (in hours) for historical records if CONSOLIDATE HISTORY is enabled.")
+			.addSlider(slider => slider
+				.setValue(this.plugin.settings.statisticSettings.historySegmentSize)
+				.setLimits(2, 24, 2)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.historySegmentSize = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 
 	addDatabaseSettings(containerEl: HTMLElement) {
@@ -148,6 +231,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				}));
 
 		this.addDatabaseSettings(containerEl);
+		this.addStatisticSettings(containerEl);
 	}
 
 }

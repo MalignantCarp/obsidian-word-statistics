@@ -1,4 +1,8 @@
 ## Changelog
+### 2022-07-04
+ - Added new settings interface for Word Statistic settings.
+ - Added some information on how Word Stats will be stored to README.md. Added Beta warning in anticipation of first beta release.
+
 ### 2022-07-02
  - Added methods to WSDataCollector to get files for a folder and get word count for a folder.
  - Word counts may now be displayed in the file explorer (defaults to on). Idea from Isaac Lyman's Novel Word Count plugin.

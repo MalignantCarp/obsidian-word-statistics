@@ -1,3 +1,4 @@
+import type { WSDataCollector } from './collector';
 import type { WSFile } from "./file";
 
 export interface IFileStat {
@@ -7,7 +8,7 @@ export interface IFileStat {
 }
 
 export class StatisticsManager {
-    constructor() {
+    constructor(public collector: WSDataCollector) {
 
     }
 }
