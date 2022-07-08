@@ -1,4 +1,7 @@
 ## Changelog
+### 2022-07-08
+ - Main statistics code is done. Need to add save and load routines and then test.
+
 ### 2022-07-07
  - Start to the main statistics code. Need to further review and refine, as there are some logic gaps that are going to cause trouble with the way writingTime is calculcated right now.
 

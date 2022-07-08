@@ -1,4 +1,5 @@
 import { count } from 'console';
+import { current_component } from 'svelte/internal';
 import type { WSDataCollector } from './collector';
 import type { WSFile } from "./file";
 
@@ -103,68 +104,99 @@ export class WSCountHistory {
         }
     }
 
+    getStartTime(updateTime: number) {
+        let air = updateTime % 30000;
+        let startTime = updateTime - air;
+        return startTime;
+    }
+
+    getPercentTimeSpentWriting(counter: IWordCount) {
+        let writingTime = counter.writingTime;
+        let duration = counter.endTime - counter.startTime - counter.air;
+        return (writingTime / duration);
+    }
+
+    getDuration(counter: IWordCount) {
+        return counter.endTime - counter.startTime - counter.air;
+    }
+
+    getTotalDuration() {
+        let duration = 0;
+        for (let counter of this.history) {
+            duration += this.getDuration(counter);
+        }
+        return duration;
+    }
+
+    getTotalWritingTime() {
+        let writingTime = 0;
+        for (let counter of this.history) {
+            writingTime += counter.writingTime;
+        }
+        return writingTime;
+    }
+
+    initializeCounter(updateTime: number, startWords: number, endWords: number) {
+        let current = NewWordCount();
+        let startTime = this.getStartTime(updateTime);
+        let air = startTime - updateTime;
+        current.air = air;
+        current.startTime = startTime;
+        current.endTime = updateTime;
+        current.length = this.collector.plugin.settings.statisticSettings.recentSegmentSize * 60000;
+        current.lastWordAt = updateTime;
+        current.startWords = startWords;
+        current.endWords = endWords;
+        current.wordsAdded = 0;
+        current.wordsDeleted = 0;
+        current.writingTime = 0;
+        this.history.push(current);
+        return current;
+    }
+
     update(updateTime: number, count: number) {
         let writingTimeout = this.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
         let current = this.current;
-        let lastCount = count;
-        if (current !== undefined && current.startTime + current.length < updateTime) {
-            // This segment ended prior to this update
-            current.endTime = current.startTime + current.length;
-            let newStart = current.endTime;
-            let timeout = current.lastWordAt + writingTimeout;
-            let additionalWritingTime = 0;
-            if (timeout < updateTime) {
-                // Writing stopped prior to this update
-                if (timeout < current.endTime) {
-                    // Writing stopped prior to end of current segment
-                    current.writingTime += timeout - current.lastWordAt;
-                } else {
-                    // writing timed out after current segment, before this update
-                    current.writingTime += current.endTime - current.lastWordAt;
-                    additionalWritingTime = writingTimeout - (current.endTime - current.lastWordAt);
-                }
-            } else {
-                // Still writing
-                current.writingTime += current.endTime - current.lastWordAt;
-                current.lastWordAt = current.endTime;
+        if (current === undefined) {
+            current = this.initializeCounter(updateTime, count, count);
+        } else if (updateTime > current.startTime + current.length) {
+            // if the maximum end point of our existing counter is prior to updateTime,
+            // create a new counter for this count update
+            this.initializeCounter(updateTime, current.endWords, count);
+        } else {
+            // our update occurs within the prior counter, so now just need to make adjustments
+            // first calculcate adjustment to writing time
+            let writingGap = updateTime - current.lastWordAt;
+            if (writingGap < writingTimeout) {
+                current.writingTime += writingGap;
             }
-            lastCount = current.endWords;
-            current = NewWordCount();
-            this.history.push(current);
-            current.startTime = newStart;
-            current.startWords = lastCount;
-            current.endWords = lastCount;
-
-        } else if (current === undefined) {
-            current = NewWordCount();
-            this.history.push(current);
-            let air = updateTime % 30000;
-            let newStart = updateTime - air;
-            current.air = air;
-            current.startTime = newStart;
-            current.endTime = newStart;
-            current.startWords = count;
+            // should we add writingTimeout to writing time if we have exceeded the writing timeout?
+            // we could then just go:
+            // current.writingTime += Math.min(updateTime - current.lastWordAt, writingTimeout)
+            current.lastWordAt = updateTime;
+            let wordsAdded = Math.max(count - current.endWords, 0);
+            let wordsDeleted = Math.max(current.endWords - count, 0);
             current.endWords = count;
+            current.wordsAdded += wordsAdded;
+            current.wordsDeleted += wordsDeleted;
+            current.endTime = updateTime;
         }
-        let wordsAdded = Math.max(count - current.endWords, 0);
-        let wordsDeleted = Math.max(current.endWords - count, 0);
-        current.endWords = count;
-        current.wordsAdded += wordsAdded;
-        current.wordsDeleted += wordsDeleted;
-        current.lastWordAt = updateTime;
-        current.endTime = updateTime;
     }
 }
 
 export class WSStatisticManager {
-    public active: WSFile[] = [];
-
     constructor(
         public collector: WSDataCollector,
         public fileMap: Map<WSFile, WSCountHistory>
     ) { }
 
-    onTimer() {
-
+    onWordCountUpdate(file: WSFile, count: number) {
+        let updateTime = Date.now();
+        let counter = this.fileMap.get(file);
+        if (!(counter instanceof WSCountHistory)) {
+            counter = new WSCountHistory(this.collector, file);
+            this.fileMap.set(file, counter);
+        }
+        counter.update(updateTime, count);
     }
 }
