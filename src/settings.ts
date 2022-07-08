@@ -115,7 +115,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 			.setDesc("Word count and writing information is stored in segments of this size (in minutes). The lower the number, the more segments are recorded, though only segments during which there is active writing will be recorded. Use highern umbers to conserve space, or adjust the history consolidation settings.")
 			.addSlider(slider => slider
 				.setValue(this.plugin.settings.statisticSettings.recentSegmentSize)
-				.setLimits(10, 120, 5)
+				.setLimits(5, 120, 5)
 				.onChange(async (value) => {
 					this.plugin.settings.statisticSettings.recentSegmentSize = value;
 					await this.plugin.saveSettings();

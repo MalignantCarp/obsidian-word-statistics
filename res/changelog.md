@@ -1,4 +1,7 @@
 ## Changelog
+### 2022-07-07
+ - Start to the main statistics code. Need to further review and refine, as there are some logic gaps that are going to cause trouble with the way writingTime is calculcated right now.
+
 ### 2022-07-04
  - Added new settings interface for Word Statistic settings.
  - Added some information on how Word Stats will be stored to README.md. Added Beta warning in anticipation of first beta release.
