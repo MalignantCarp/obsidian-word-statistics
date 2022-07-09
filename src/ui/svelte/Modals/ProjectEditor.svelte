@@ -2,6 +2,7 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import { PROJECT_CATEGORY_NAME, PROJECT_TYPE_DESCRIPTION, PROJECT_INDEX_TYPE, WSProject, WSPType } from "src/model/project";
 	import { onMount } from "svelte";
+import Checkbox from "../util/Checkbox.svelte";
 	import SettingItem from "../util/SettingItem.svelte";
 	import SuggestBox from "../util/SuggestBox.svelte";
 	import ValidatedInput from "../util/ValidatedInput.svelte";
@@ -45,6 +46,8 @@
 			categoryEl.selectedIndex = project.category;
 			wordGoalProject.value = project.wordGoalForProject.toString();
 			wordGoalFile.value = project.wordGoalForFiles.toString();
+			monitoredWC = project.monitorCounts;
+			monitorCheck.setEnabled(monitoredWC);
 		}
 	});
 
@@ -52,6 +55,9 @@
 	let validID: boolean;
 	let validIndex: boolean;
 	let validPath: boolean;
+
+	let monitoredWC: boolean;
+	let monitorCheck: Checkbox;
 
 	function onSave() {
 		if (_project === null) {
@@ -63,7 +69,8 @@
 				categoryEl.selectedIndex,
 				titleStr,
 				parseInt(wordGoalProject.value) || 0,
-				parseInt(wordGoalFile.value) || 0
+				parseInt(wordGoalFile.value) || 0,
+				monitorCheck.getEnabled()
 			);
 		} else {
 			manager.setProjectPath(_project, path.getSearchString());
@@ -74,6 +81,7 @@
 			let newGoal = parseInt(wordGoalProject.value) || 0;
 			let newFileGoal = parseInt(wordGoalFile.value) || 0;
 			manager.setProjectGoals(_project, newGoal, newFileGoal);
+			manager.setProjectMonitored(_project, monitorCheck.getEnabled());
 		}
 		onClose();
 	}
@@ -178,6 +186,12 @@
 	<br/><em>A word goal specified in the file will override this goal.</em>`}
 	>
 		<input type="number" class="ws-number" min="0" max="1000000" step="100" bind:this={wordGoalFile} />
+	</SettingItem>
+	<SettingItem
+		name="Monitor Word Counts"
+		desc={`Record word counts for this project if Record Statistics option is set to Monitored Projects Only. Otherwise, this option has no effect.`}
+	>
+		<Checkbox enabled={monitoredWC} bind:this={monitorCheck}/>
 	</SettingItem>
 	<div class="setting-item">
 		<div class="setting-item-control">

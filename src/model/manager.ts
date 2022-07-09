@@ -368,9 +368,9 @@ export class WSProjectManager {
                     if (!root.hasChild(currentPath)) {
                         // console.log(`Current path added to root (${root.path}/).`)
                         root.addChild(currentPath);
-                        this.plugin.events.trigger(new WSPathEvent ({type: WSEvents.Path.Updated, path: root}, {filter: root}));
+                        this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path: root }, { filter: root }));
                     }
-                    this.plugin.events.trigger(new WSPathEvent ({type: WSEvents.Path.Updated, path: currentPath}, {filter: currentPath}));
+                    this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path: currentPath }, { filter: currentPath }));
                 } else {
                     currentPath = new WSPath(builtPath, "", WSPCategory.None);
                     // console.log("Triggering path creation event.")
@@ -379,7 +379,7 @@ export class WSProjectManager {
                     if (!root.hasChild(currentPath)) {
                         // console.log(`Current path added to root (${root.path}/).`)
                         root.addChild(currentPath);
-                        this.plugin.events.trigger(new WSPathEvent ({type: WSEvents.Path.Updated, path: root}, {filter: root}));
+                        this.plugin.events.trigger(new WSPathEvent({ type: WSEvents.Path.Updated, path: root }, { filter: root }));
                     }
                 }
                 // console.log("Setting root to current path.")
@@ -427,16 +427,16 @@ export class WSProjectManager {
         }
     }
 
-    createProject(type: WSPType, projectID: string, path: string, projectIndex: string, projectCategory: WSPCategory, title: string, wordGoalForProject: number, wordGoalForFiles: number) {
+    createProject(type: WSPType, projectID: string, path: string, projectIndex: string, projectCategory: WSPCategory, title: string, wordGoalForProject: number, wordGoalForFiles: number, monitorWC: boolean) {
         let project: WSProject;
 
         if (type === WSPType.File) {
             let file = this.collector.getFileSafer(projectIndex);
-            project = new WSFileProject(this.collector, projectID, path, file, projectCategory, title, wordGoalForProject, wordGoalForFiles);
+            project = new WSFileProject(this.collector, projectID, path, file, projectCategory, title, wordGoalForProject, wordGoalForFiles, undefined, monitorWC);
         } else if (type === WSPType.Folder) {
-            project = new WSFolderProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles);
+            project = new WSFolderProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles, undefined, monitorWC);
         } else if (type === WSPType.Tag) {
-            project = new WSTagProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles);
+            project = new WSTagProject(this.collector, projectID, path, projectIndex, projectCategory, title, wordGoalForProject, wordGoalForFiles, undefined, monitorWC);
         } else {
             this.logError(`Attempted to create a project with an invalid type: ${type}`);
             return;
@@ -513,6 +513,13 @@ export class WSProjectManager {
         this.buildPath(newPath);
         if (oldPath != newPath) {
             this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.PathSet, project: proj }, { filter: proj }));
+        }
+    }
+
+    setProjectMonitored(proj: WSProject, monitored: boolean) {
+        if (proj.monitorCounts != monitored) {
+            proj.monitorCounts = monitored;
+            this.plugin.events.trigger(new WSProjectEvent({ type: WSEvents.Project.Updated, project: proj }, { filter: proj }));
         }
     }
 

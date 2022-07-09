@@ -1,5 +1,11 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, ValueComponent } from "obsidian";
 import type WordStatisticsPlugin from "./main";
+
+export enum RECORD_STATS {
+	ALL = "Everything",
+	PROJECTS = "Projects Only",
+	MONITORED = "Monitored Projects Only"
+}
 
 export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
 	showNumericIndex: true,
@@ -27,7 +33,7 @@ export const DEFAULT_STAT_SETTINGS: WStatSettings = {
 	recentDays: 365,
 	recentSegmentSize: 15,
 	historySegmentSize: 4,
-	recordProjectsOnly: true,
+	record: RECORD_STATS.PROJECTS,
 	consolidateHistory: false,
 };
 
@@ -79,7 +85,7 @@ export interface WStatSettings {
 	recentDays: number,
 	recentSegmentSize: number,
 	historySegmentSize: number,
-	recordProjectsOnly: boolean,
+	record: RECORD_STATS,
 	consolidateHistory: boolean;
 }
 
@@ -94,12 +100,17 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 	addStatisticSettings(containerEl: HTMLElement) {
 		containerEl.createEl('h3', { text: "Statistics History Settings" });
 		new Setting(containerEl)
-			.setName("Record Statistics for Projects Only")
-			.setDesc("If enabled, word count history records will only be stored for files that are included in projects. Please note that files with pre-existing records that are no longer in projects will continue to have their records.")
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.statisticSettings.recordProjectsOnly)
+			.setName("Record Statistics")
+			.setDesc("Choose between recording statistics for all files, only files in projects, or only files in monitored projects (choose in project settings)")
+			.addDropdown(drop => drop
+				.addOption(RECORD_STATS.ALL, RECORD_STATS.ALL)
+				.addOption(RECORD_STATS.PROJECTS, RECORD_STATS.PROJECTS)
+				.addOption(RECORD_STATS.MONITORED, RECORD_STATS.MONITORED)
+				.setValue(this.plugin.settings.statisticSettings.record)
 				.onChange(async (value) => {
-					this.plugin.settings.statisticSettings.recordProjectsOnly = value;
+					if (RECORD_STATS.ALL == value) { this.plugin.settings.statisticSettings.record = value; }
+					else if (RECORD_STATS.PROJECTS == value) { this.plugin.settings.statisticSettings.record = value; }
+					else if (RECORD_STATS.MONITORED == value) { this.plugin.settings.statisticSettings.record = value; }
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)

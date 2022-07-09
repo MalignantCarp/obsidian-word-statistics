@@ -1,4 +1,10 @@
 ## Changelog
+### 2022-07-09
+ - Changed setting to record stats for projects into an option between all, projects only, and monitored projects only (i.e., opt-in).
+ - Added monitorCounts field to WSProject classes.
+ - Added Checkbox svelte to mimic the Obsidian checkbox.
+ - Updated Project Editor to include an option for monitoring word counts for when monitored-projects only is on.
+
 ### 2022-07-08
  - Main statistics code is done.
  - Added save and load code for statistics
@@ -7,7 +13,6 @@
  - Added simple mutex to WSStatisticsManager to prevent creating WSCountHistory objects prior to loading saved data, as well as a queue to process afterwards.
  - Linked onWordCountUpdate() in WSStatisticsManager with WSDataCollector's logWords()
  - TESTING IS REQUIRED
-
 
 ### 2022-07-07
  - Start to the main statistics code. Need to further review and refine, as there are some logic gaps that are going to cause trouble with the way writingTime is calculcated right now.

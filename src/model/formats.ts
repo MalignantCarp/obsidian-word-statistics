@@ -71,36 +71,37 @@ export namespace WSFormat {
         index: string,
         wordGoalForProject: number,
         wordGoalForFiles: number,
-        iconID: string;
+        iconID: string,
+        monitorCounts: boolean;
     }
 
     function SerializeProjects(projects: WSProject[]): IProject[] {
         let table: IProject[] = [];
         projects.forEach((p) => {
-            table.push({ id: p.id, path: p.path, pType: p.pType, title: p._title, category: p.category, index: p.index, wordGoalForProject: p.wordGoalForProject, wordGoalForFiles: p.wordGoalForFiles, iconID: p.iconID });
+            table.push({ id: p.id, path: p.path, pType: p.pType, title: p._title, category: p.category, index: p.index, wordGoalForProject: p.wordGoalForProject, wordGoalForFiles: p.wordGoalForFiles, iconID: p.iconID, monitorCounts: p.monitorCounts });
         });
         return table;
     }
 
     function BuildProject(collector: WSDataCollector, data: IProject): WSProject {
-        let { id, path, pType, title, category, index, wordGoalForProject, wordGoalForFiles, iconID } = data;
+        let { id, path, pType, title, category, index, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts } = data;
         switch (pType) {
             case WSPType.File:
                 let file = collector.getFileSafer(index);
                 if (file != null) {
-                    return new WSFileProject(collector, id, path, file, category, title, wordGoalForProject, wordGoalForFiles, iconID);
+                    return new WSFileProject(collector, id, path, file, category, title, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts);
                 }
                 console.log(`Attempted to load project from invalid data. File not found for '${index}':`, data);
                 break;
             case WSPType.Folder:
                 if (collector.getAllFolders().contains(index)) {
-                    return new WSFolderProject(collector, id, path, index, category, title, wordGoalForProject, wordGoalForFiles, iconID);
+                    return new WSFolderProject(collector, id, path, index, category, title, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts);
                 }
                 console.log(`Attempted to load project from invalid data. Folder not found for '${index}':`, data);
                 break;
             case WSPType.Tag:
                 if (collector.getAllTags().contains(index)) {
-                    return new WSTagProject(collector, id, path, index, category, title, wordGoalForProject, wordGoalForFiles, iconID);
+                    return new WSTagProject(collector, id, path, index, category, title, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts);
                 }
                 console.log(`Attempted to load project from invalid data. Tag not found for '${index}':`, data);
                 break;

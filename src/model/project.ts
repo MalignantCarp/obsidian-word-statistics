@@ -46,7 +46,8 @@ export abstract class WSProject {
         public _title: string,
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0,
-        public iconID: string = ""
+        public iconID: string = "",
+        public monitorCounts: boolean = false,
     ) { }
 
     abstract get index(): string;
@@ -96,9 +97,10 @@ export class WSFileProject extends WSProject {
         public _title: string,
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0,
-        public iconID: string = ""
+        public iconID: string = "",
+        public monitorCounts: boolean = false,
     ) {
-        super(collector, id, path, WSPType.File, category, _title, wordGoalForProject, wordGoalForFiles, iconID);
+        super(collector, id, path, WSPType.File, category, _title, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts);
         if (file instanceof WSFile) {
             this.file = file;
         } else {
@@ -132,9 +134,10 @@ export class WSFolderProject extends WSProject {
         public _title: string,
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0,
-        public iconID: string = ""
+        public iconID: string = "",
+        public monitorCounts: boolean = false,
     ) {
-        super(collector, id, path, WSPType.Folder, category, _title, wordGoalForProject, wordGoalForFiles, iconID);
+        super(collector, id, path, WSPType.Folder, category, _title, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts);
     }
 
     get index() {
@@ -156,9 +159,10 @@ export class WSTagProject extends WSProject {
         public _title: string,
         public wordGoalForProject: number = 0,
         public wordGoalForFiles: number = 0,
-        public iconID: string = ""
+        public iconID: string = "",
+        public monitorCounts: boolean = false,
         ) {
-        super(collector, id, path, WSPType.Tag, category, _title, wordGoalForProject, wordGoalForFiles, iconID);
+        super(collector, id, path, WSPType.Tag, category, _title, wordGoalForProject, wordGoalForFiles, iconID, monitorCounts);
     }
 
     get index() {
