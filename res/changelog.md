@@ -1,6 +1,13 @@
 ## Changelog
 ### 2022-07-08
- - Main statistics code is done. Need to add save and load routines and then test.
+ - Main statistics code is done.
+ - Added save and load code for statistics
+ - Added minify toggle for statistics/word count history database, default to on.
+ - Added WSEvents.Data.Stats and trigger in event trigger to fire when WSEvents.File.WordsChanged is triggered.
+ - Added simple mutex to WSStatisticsManager to prevent creating WSCountHistory objects prior to loading saved data, as well as a queue to process afterwards.
+ - Linked onWordCountUpdate() in WSStatisticsManager with WSDataCollector's logWords()
+ - TESTING IS REQUIRED
+
 
 ### 2022-07-07
  - Start to the main statistics code. Need to further review and refine, as there are some logic gaps that are going to cause trouble with the way writingTime is calculcated right now.

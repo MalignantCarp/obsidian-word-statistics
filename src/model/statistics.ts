@@ -1,5 +1,3 @@
-import { count } from 'console';
-import { current_component } from 'svelte/internal';
 import type { WSDataCollector } from './collector';
 import type { WSFile } from "./file";
 
@@ -185,18 +183,51 @@ export class WSCountHistory {
 }
 
 export class WSStatisticManager {
+    private locked = true;
+    private queue: [file: WSFile, count: number, updateTime: number][] = [];
+
     constructor(
         public collector: WSDataCollector,
-        public fileMap: Map<WSFile, WSCountHistory>
+        public fileMap: Map<WSFile, WSCountHistory> = new Map<WSFile, WSCountHistory>()
     ) { }
 
-    onWordCountUpdate(file: WSFile, count: number) {
-        let updateTime = Date.now();
+    unlock() {
+        while (this.queue.length > 0) {
+            let [file, count, updateTime] = this.queue.shift();
+            let counter = this.getHistoryItem(file);
+            counter.update(updateTime, count);
+        }
+        this.locked = false;
+    }
+
+    getHistoryItem(file: WSFile): WSCountHistory {
         let counter = this.fileMap.get(file);
         if (!(counter instanceof WSCountHistory)) {
             counter = new WSCountHistory(this.collector, file);
             this.fileMap.set(file, counter);
         }
-        counter.update(updateTime, count);
+        return counter;
+    }
+
+    onWordCountUpdate(file: WSFile, count: number) {
+        let updateTime = Date.now();
+        if (!this.locked) {
+            let counter = this.getHistoryItem(file);
+            counter.update(updateTime, count);
+        } else {
+            this.queue.push([file, count, updateTime]);
+        }
+    }
+
+    getExistingHistory() {
+        return Array.from(this.fileMap.values()).sort((a, b) =>
+            a.file.path.localeCompare(b.file.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true })
+        );
+    }
+
+    loadStats(stats: WSCountHistory[]) {
+        stats.forEach((stat) => {
+            this.fileMap.set(stat.file, stat);
+        })
     }
 }

@@ -7,6 +7,7 @@ export namespace WSEvents {
         export const File = "ws-event-data-file";
         export const Project = "ws-event-data-project";
         export const Path = "ws-event-data-path";
+        export const Stats = "ws-event-data-stats"
     }
 
     export namespace Focus {
@@ -49,7 +50,7 @@ export namespace WSEvents {
 }
 
 type WSEventType = WSDataEventType | WSFocusEventType | WSFileEventType | WSProjectEventType | WSPathEventType;
-export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.Project | typeof WSEvents.Data.Path;
+export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.Project | typeof WSEvents.Data.Path | typeof WSEvents.Data.Stats;
 export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project | typeof WSEvents.Focus.FileItem;
 export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged | typeof WSEvents.File.GoalsSet;
 export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated | typeof WSEvents.Project.PathSet | typeof WSEvents.Project.GoalsSet | typeof WSEvents.Project.IndexSet | typeof WSEvents.Project.CategorySet | typeof WSEvents.Project.TitleSet;
@@ -198,6 +199,9 @@ export class Dispatcher {
             this.trigger(new WSDataEvent({ type: WSEvents.Data.Project }, { filter: null }));
         } else if (event instanceof WSPathEvent) {
             this.trigger(new WSDataEvent({ type: WSEvents.Data.Path }, { filter: null }));
+        }
+        if (event.info.type === WSEvents.File.WordsChanged) {
+            this.trigger(new WSDataEvent({ type: WSEvents.Data.Stats }, { filter: null }));
         }
     }
 

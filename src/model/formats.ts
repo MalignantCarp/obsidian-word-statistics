@@ -3,6 +3,7 @@ import type { WSDataCollector } from "./collector";
 import { WSFile } from "./file";
 import { WSPath } from "./path";
 import { WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "./project";
+import { WSCountHistory, type IWordCount } from "./statistics";
 
 export namespace WSFormat {
 
@@ -196,6 +197,54 @@ export namespace WSFormat {
         let table = SerializePaths(paths);
         let data: string;
         if (plugin.settings.databaseSettings.pathMinify) {
+            data = JSON.stringify(table);
+        } else {
+            data = JSON.stringify(table, null, 2);
+        }
+        return data;
+    }
+
+    interface ICountHistory {
+        path: string;
+        history: IWordCount[];
+    }
+
+    function SerializeStatisticalData(stats: WSCountHistory[]) {
+        let table: ICountHistory[] = [];
+        stats.forEach((wcHistory) => {
+            table.push({path: wcHistory.file.path, history: wcHistory.history});
+        })
+        return table;
+    }
+
+    function DeserializeStatisticalData(collector: WSDataCollector, table: ICountHistory[]): WSCountHistory[] {
+        let stats: WSCountHistory[] = [];
+        table.forEach((row) => {
+            let {path, history} = row;
+            let file = collector.getFile(path);
+            let counter = new WSCountHistory(collector, file, history);
+            stats.push(counter);
+        })
+        return stats;
+    }
+
+    export function LoadStatisticalData(collector: WSDataCollector, data: string): WSCountHistory[] {
+        let table: ICountHistory[] = [];
+        let stats: WSCountHistory[] = [];
+        try {
+            table = JSON.parse(data) as ICountHistory[];
+            stats = DeserializeStatisticalData(collector, table);
+        } catch (error) {
+            console.log(`Error attempting to parse statistics data [${data}]: `, error)
+        }
+
+        return stats;
+    }
+
+    export function SaveStatsticalData(plugin: WordStatisticsPlugin, stats: WSCountHistory[]): string {
+        let table = SerializeStatisticalData(stats);
+        let data: string;
+        if (plugin.settings.databaseSettings.statisticsMinify) {
             data = JSON.stringify(table);
         } else {
             data = JSON.stringify(table, null, 2);

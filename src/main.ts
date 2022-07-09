@@ -15,6 +15,7 @@ import { FormatWords } from './util';
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
 const PATH_PATH = "paths.json";
+const STATS_PATH = "stats.json";
 
 const FILE_EXP_CLASS = "mc-ws-file-explorer-counts";
 const FILE_EXP_DATA_ATTRIBUTE = "data-mc-word-stats";
@@ -196,6 +197,14 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.initialScan = true;
 		}
 		if (!this.projectLoad && this.initialScan) {
+			let statsData = await this.loadSerialData(STATS_PATH);
+			if (statsData) {
+				let stats = WSFormat.LoadStatisticalData(this.collector, statsData);
+				if (stats.length > 0) {
+					this.collector.stats.loadStats(stats);
+				}
+			}
+			this.collector.stats.unlock();
 			// console.log(`Loading data from ${PROJECT_PATH}`);\
 			// Load paths first as projects will fill up paths and set children
 			let pathData = await this.loadSerialData(PATH_PATH);
@@ -223,6 +232,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), { filter: null });
 			this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
 			this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.Stats, this.saveStatistics.bind(this), { filter: null });
 
 			this.events.on(WSEvents.File.WordsChanged, this.onFileWordCount.bind(this), { filter: null });
 
@@ -388,6 +398,12 @@ export default class WordStatisticsPlugin extends Plugin {
 		let data = WSFormat.SavePathData(this, this.collector.manager.getSetPaths());
 		// console.log(data);
 		this.saveSerialData(PATH_PATH, data);
+	}
+
+	saveStatistics(event: WSDataEvent) {
+		let data = WSFormat.SaveStatsticalData(this, this.collector.stats.getExistingHistory());
+		// console.log(data);
+		this.saveSerialData(STATS_PATH, data);
 	}
 
 	onFileWordCount(evt: WSFileEvent) {

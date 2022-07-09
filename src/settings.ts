@@ -19,6 +19,7 @@ export const DEFAULT_DATABASE_SETTINGS: WSDatabaseSettings = {
 	fileMinify: true,
 	projectMinify: false,
 	pathMinify: false,
+	statisticsMinify: true,
 };
 
 export const DEFAULT_STAT_SETTINGS: WStatSettings = {
@@ -65,7 +66,8 @@ export interface WSTableSettings {
 export interface WSDatabaseSettings {
 	fileMinify: boolean,
 	projectMinify: boolean,
-	pathMinify: boolean;
+	pathMinify: boolean,
+	statisticsMinify: boolean,
 }
 
 export interface WSViewSettings {
@@ -177,6 +179,14 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.databaseSettings.pathMinify)
 				.onChange(async (value) => {
 					this.plugin.settings.databaseSettings.pathMinify = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Minify Word Count History Database')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.databaseSettings.statisticsMinify)
+				.onChange(async (value) => {
+					this.plugin.settings.databaseSettings.statisticsMinify = value;
 					await this.plugin.saveSettings();
 				}));
 	}

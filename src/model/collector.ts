@@ -5,6 +5,7 @@ import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
 import { WSDataEvent, WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
+import { WSStatisticManager } from './statistics';
 
 export class WSDataCollector {
     plugin: WordStatisticsPlugin;
@@ -12,6 +13,7 @@ export class WSDataCollector {
     mdCache: MetadataCache;
     private fileMap: Map<string, WSFile>;
     private files: WSFile[];
+    stats: WSStatisticManager;
     manager: WSProjectManager;
     lastUpdate: number = 0;
     //queue: [Function, unknown[]][] = [];
@@ -25,6 +27,7 @@ export class WSDataCollector {
         this.files = [];
         this.lastUpdate = 0;
         this.manager = new WSProjectManager(plugin, this);
+        this.stats = new WSStatisticManager(this);
     }
 
     cleanup() {
@@ -149,7 +152,8 @@ export class WSDataCollector {
             let oldCount = file.words;
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
-                this.fileMap.get(path).words = newCount;
+                file.words = newCount;
+                this.stats.onWordCountUpdate(file, newCount);
                 this.update();
                 this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
             }
