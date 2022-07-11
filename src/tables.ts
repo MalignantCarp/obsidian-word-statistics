@@ -5,7 +5,7 @@ import type WordStatisticsPlugin from "./main";
 import { WSFileProject, type WSProject } from "./model/project";
 import type { WSTableSettings } from "./settings";
 import type { WSProjectManager } from "./model/manager";
-import { FormatWordsNumOnly } from './util';
+import { FormatNumber } from './util';
 
 export default class ProjectTableModal extends Modal {
     project: WSProject;
@@ -139,7 +139,7 @@ export function BuildProjectTable(collector: WSDataCollector, settings: WSTableS
         if (settings.showNumericIndex) {
             text += `${i}|`;
         }
-        text += `${collector.plugin.settings.useDisplayText ? row.noteDisplayText : row.noteTitle}|${FormatWordsNumOnly(row.words)}|`;
+        text += `${collector.plugin.settings.useDisplayText ? row.noteDisplayText : row.noteTitle}|${FormatNumber(row.words)}|`;
         if (settings.showFileGoalProgress) {
             text += `${row.percentOfFileGoal === undefined ? '--' : row.percentOfFileGoal.toFixed(2) + "%"}|`
         }

@@ -5,7 +5,7 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import type { WSPath } from "src/model/path";
 	import { PROJECT_CATEGORY_NAME, type WSProject } from "src/model/project";
-	import { FormatWords, FormatWordsNumOnly } from "src/util";
+	import { FormatWords, FormatNumber } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import FileInfo from "./FileInfo.svelte";
 
@@ -74,7 +74,7 @@
 		<div class="wordcount">
 			<div class="top-info-heading">Total Words</div>
 			{#if projectWordGoal > 0}
-				<div>{FormatWordsNumOnly(project.totalWords)} / {FormatWords(projectWordGoal)}</div>
+				<div>{FormatNumber(project.totalWords)} / {FormatWords(projectWordGoal)}</div>
 			{:else}
 				<div>{FormatWords(project.totalWords)}</div>
 			{/if}

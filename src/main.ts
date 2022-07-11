@@ -11,6 +11,7 @@ import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectMana
 import { WSFormat } from './model/formats';
 import type { WSProject } from './model/project';
 import { FormatWords } from './util';
+import { StatisticsView, STATISTICS_VIEW } from './ui/StatisticsView';
 
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
@@ -77,6 +78,10 @@ export default class WordStatisticsPlugin extends Plugin {
 			return new ProjectManagementView(leaf, this);
 		});
 
+		this.registerView(STATISTICS_VIEW.type, (leaf) => {
+			return new StatisticsView(leaf, this);
+		})
+
 		this.addCommand({
 			id: 'attach-project-manager',
 			name: 'Attach Project Management View',
@@ -88,6 +93,18 @@ export default class WordStatisticsPlugin extends Plugin {
 				}
 			}
 		});
+
+		this.addCommand({
+			id: 'attach-statistics-view',
+			name: 'Attach Statistics View',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length === 0;
+				} else {
+					this.initializeStatisticsLeaf();
+				}
+			}
+		})
 
 		this.addCommand({
 			id: 'insert-project-table-modal',
@@ -107,6 +124,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		} else {
 			this.app.workspace.onLayoutReady(this.onStartup.bind(this));
 			this.app.workspace.onLayoutReady(this.initializeProjectManagementLeaf.bind(this));
+			this.app.workspace.onLayoutReady(this.initializeStatisticsLeaf.bind(this));
 		}
 
 		console.log("Obsidian Word Statistics loaded.");
@@ -131,6 +149,15 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		this.app.workspace.getRightLeaf(false).setViewState({
 			type: PROJECT_MANAGEMENT_VIEW.type,
+		});
+	}
+
+	initializeStatisticsLeaf() {
+		if (this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length > 0) {
+			return;
+		}
+		this.app.workspace.getRightLeaf(false).setViewState({
+			type: STATISTICS_VIEW.type
 		});
 	}
 

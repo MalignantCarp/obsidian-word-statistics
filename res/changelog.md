@@ -1,4 +1,7 @@
 ## Changelog
+### 2022-07-11
+ - Added a few util functions and added the new StatisticsView with a basic pane (untested) for display the current active stats. Need to add left and right buttons to go between items.
+
 ### 2022-07-09
  - Changed setting to record stats for projects into an option between all, projects only, and monitored projects only (i.e., opt-in).
  - Added monitorCounts field to WSProject classes.

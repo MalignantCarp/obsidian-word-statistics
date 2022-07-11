@@ -2,9 +2,17 @@ export const FormatWords = (words: number): string => {
     return Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
 };
 
-export const FormatWordsNumOnly = (words: number): string => {
+export const FormatNumber = (words: number): string => {
     return Intl.NumberFormat().format(words);
 };
+
+export const RightWordForNumber = (num: number, singular: string, plural: string, padLeft: boolean = true) => {
+    return (padLeft ? " " : "") + (num == 1 ? singular : plural);
+}
+
+export const SecondsToHMS = (seconds: number) => {
+    return new Date(seconds * 1000).toISOString().slice(11, 19);
+}
 
 export const GetProgressGrade = (percent: number): string => {
     if (percent < 25) return "1"; // 0-24

@@ -5,7 +5,7 @@
 	import type { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
 	import { WSFileProject, type WSProject } from "src/model/project";
-	import { FormatWords, FormatWordsNumOnly } from "src/util";
+	import { FormatWords, FormatNumber } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 
 	export let file: WSFile;
@@ -58,7 +58,7 @@
 	{/if}
 	<td class="path">{file.path}</td>
 	{#if wordGoal > 0}
-		<td class="word-count">{FormatWordsNumOnly(file.words)} / {FormatWords(wordGoal)}</td>
+		<td class="word-count">{FormatNumber(file.words)} / {FormatWords(wordGoal)}</td>
 	{:else}
 		<td class="word-count">{FormatWords(file.words)}</td>
 	{/if}
