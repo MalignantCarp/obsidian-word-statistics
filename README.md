@@ -40,9 +40,9 @@ One caveat to note is that the word counts stored for a particular document will
 ## Features
 - [x] Basic word counting
 - [x] Custom status bar for word counts
-- [?] Project-based counting
+- [x] Project-based counting
     - [ ] Compatibility with Longform project index
-- [ ] Word count statistics (see below for more information)
+- [x] Word count statistics (see below for more information)
 - [x] Project manager view
 - [ ] Statistics view
 - [ ] Per-project statistics tables via code blocks
@@ -67,6 +67,9 @@ There are two methods for reducing space consumed by the database. The first is 
 The second method used to reduce database storage is the segment size itself, which can further be moderated by history consolidation and recent days (i.e., how many days in the past are considered "recent"), as well as the segment size used for "history". For example, you can set it so that one year (365 days) is considered "recent" and so anything recent should have a segment size of 20 minutes, but anything over that should be consolidated into segment sizes of 6 hours.
 
 NOTE: Segment length for recent files will not change for any live files (i.e., files with open segments), but will come into effect for the following segment.
+
+### Limitation
+If the first change that is made to a file to be recorded in history is deletion, the initial word count that will show for that file for statistical purposes is 0.
 
 ## Planned Features
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.

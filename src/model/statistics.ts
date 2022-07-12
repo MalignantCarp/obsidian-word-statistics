@@ -137,7 +137,7 @@ export class WSCountHistory {
     initializeCounter(updateTime: number, startWords: number, endWords: number) {
         let current = NewWordCount();
         let startTime = this.getStartTime(updateTime);
-        let air = startTime - updateTime;
+        let air = updateTime - startTime;
         current.air = air;
         current.startTime = startTime;
         current.endTime = updateTime;
@@ -226,7 +226,9 @@ export class WSStatisticManager {
     }
 
     loadStats(stats: WSCountHistory[]) {
+        // console.log("Loading stats...")
         stats.forEach((stat) => {
+            // console.log("for ", stat.file.path, stat);
             this.fileMap.set(stat.file, stat);
         })
     }

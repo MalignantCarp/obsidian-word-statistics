@@ -530,3 +530,7 @@ td.total-head {
 .mc-ws-file-explorer-counts .nav-file-title-content {
 	flex: 1;
 }
+
+.ws-stat-view {
+	padding: 4px;
+}

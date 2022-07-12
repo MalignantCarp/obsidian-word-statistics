@@ -205,7 +205,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 
 		if (this.wordsPerMS.length > 0 && this.settings.showWordCountSpeedDebug) {
-			console.log("Current average words/ms: ", this.wordsPerMS.reduce((a, v, i) => (a * i + v) / (i + 1)));
+			let sum = this.wordsPerMS.reduce((accumulator, a) => accumulator + a, 0)
+			let avg = sum / this.wordsPerMS.length;
+			console.log(`Running average words counted per millisecond: ${avg}`);
 		}
 	}
 
@@ -225,8 +227,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		if (!this.projectLoad && this.initialScan) {
 			let statsData = await this.loadSerialData(STATS_PATH);
+			console.log("Read stats.json: ", statsData? statsData.length : undefined)
 			if (statsData) {
 				let stats = WSFormat.LoadStatisticalData(this.collector, statsData);
+				console.log(stats);
 				if (stats.length > 0) {
 					this.collector.stats.loadStats(stats);
 				}

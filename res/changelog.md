@@ -1,4 +1,14 @@
 ## Changelog
+### 2022-07-12
+ - Fixed a typo in settings
+ - BUG: Settings sliders don't show their value
+ - BUGFIX: Air recorded as negative.
+ - BUGFIX: Air is in milliseconds but display says seconds.
+ - BUGFIX: Length is in milliseconds but display says seconds.
+ - BUGFIX: Word stats pane not updated on file focus event.
+ - BUGFIX: Writing time stored in ms but used like stored in seconds.
+ - Started work on adding next/previous for stats viewing
+
 ### 2022-07-11
  - Added a few util functions and added the new StatisticsView with a basic pane (untested) for display the current active stats. Need to add left and right buttons to go between items.
 
