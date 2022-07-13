@@ -201,13 +201,15 @@ export default class WordStatisticsPlugin extends Plugin {
 		let duration = endTime - startTime;
 		// it must take at least 1 ms to be considered for the log
 		if (duration > 0) {
-			this.wordsPerMS.push(wordsCounted / duration);
+			// console.log(`Counted ${FormatWords(wordsCounted)} in ${duration} ms`)
+			this.wordsPerMS.push(wordsCounted / duration); // words per millisecond
 		}
 
 		if (this.wordsPerMS.length > 0 && this.settings.showWordCountSpeedDebug) {
 			let sum = this.wordsPerMS.reduce((accumulator, a) => accumulator + a, 0)
 			let avg = sum / this.wordsPerMS.length;
 			console.log(`Running average words counted per millisecond: ${avg}`);
+			// console.log(this.wordsPerMS);
 		}
 	}
 
@@ -227,10 +229,10 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		if (!this.projectLoad && this.initialScan) {
 			let statsData = await this.loadSerialData(STATS_PATH);
-			console.log("Read stats.json: ", statsData? statsData.length : undefined)
+			// console.log("Read stats.json: ", statsData? statsData.length : undefined)
 			if (statsData) {
 				let stats = WSFormat.LoadStatisticalData(this.collector, statsData);
-				console.log(stats);
+				// console.log(stats);
 				if (stats.length > 0) {
 					this.collector.stats.loadStats(stats);
 				}

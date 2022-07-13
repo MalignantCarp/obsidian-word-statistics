@@ -2,6 +2,7 @@
 	import type { WSDataCollector } from "src/model/collector";
 	import { WSEvents, WSFileEvent, WSFocusEvent } from "src/model/event";
 	import { WSFile } from "src/model/file";
+	import type { WSProject } from "src/model/project";
 	import { WSCountHistory, type IWordCount } from "src/model/statistics";
 	import { FormatNumber, FormatWords, RightWordForNumber, SecondsToHMS } from "src/util";
 	import { onDestroy, onMount } from "svelte";
@@ -12,10 +13,12 @@
 	let registered: boolean = false;
 	let currentStat: IWordCount;
 	let statIndex: number;
+	let project: WSProject;
 
 	onMount(() => {
 		collector.plugin.events.on(WSEvents.Focus.File, onFileFocus, { filter: null });
 		RegisterWCEvents();
+		initialize();
 	});
 
 	onDestroy(() => {
@@ -39,6 +42,17 @@
 		}
 	}
 
+	function getProject() {
+		if (focus instanceof WSFile) {
+			let projects = collector.manager.getProjectsByFile(focus);
+			if (projects.length === 1) {
+				project = projects[0];
+				return;
+			}
+		}
+		project = null;
+	}
+
 	function initialize() {
 		if (focus instanceof WSFile) {
 			statObj = collector.stats.getHistoryItem(focus);
@@ -49,6 +63,7 @@
 				currentStat = statObj.history[statIndex];
 			}
 		}
+		getProject();
 	}
 
 	function nextStat() {
@@ -82,19 +97,17 @@
 		UnregisterWCEvents();
 		focus = evt.info.file;
 		RegisterWCEvents();
-		if (focus instanceof WSFile) {
-			statObj = collector.stats.getHistoryItem(focus);
-			currentStat = statObj.current;
-		}
+		initialize();
 	}
 </script>
 
 <div class="ws-stat-view">
-	<h4>Word Statistics</h4>
+	<p class="ws-heading">Word Statistics<p>
 	{#if focus instanceof WSFile}
 		<div class="ws-sv-stat-obj">
-			<p>{focus.path}</p>
-			{#if statObj instanceof WSCountHistory}
+			<p class="ws-title">{collector.manager.getTitleForFile(focus, project)}</p>
+			<p class="ws-path">{focus.path}</p>
+			{#if statObj instanceof WSCountHistory && currentStat !== null}
 				<div class="ws-sv-stats">
 					<div>Air:</div>
 					<div>{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>

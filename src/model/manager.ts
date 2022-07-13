@@ -640,4 +640,21 @@ export class WSProjectManager {
         }
         return [!endingSlash && !startingSlash, error];
     }
+
+    /* ===============
+        Miscellaneous
+       ===============
+    */
+    getTitleForFile(file: WSFile, project?: WSProject) {
+        if (!(project instanceof WSProject)) {
+            let projects = this.getProjectsByFile(file);
+            if (projects.length === 1) {
+                project = projects[0];
+            }
+        }
+        if (this.plugin.settings.useDisplayText && project instanceof WSFileProject) {
+            return project.file.getLinkTitle(file) || file.title
+        }
+        return file.title
+    }
 }

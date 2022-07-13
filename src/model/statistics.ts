@@ -14,6 +14,10 @@ export interface IWordCount {
     writingTime: number;
 }
 
+function GetAir(time: number) {
+    return (time % 300000); // 300 seconds = 5 minute blocks
+}
+
 function NewWordCount(): IWordCount {
     return ({
         air: 0,
@@ -46,7 +50,7 @@ export class WSCountHistory {
     get recent(): IWordCount[] {
         let recent: IWordCount[] = [];
         let currentTime = Date.now();
-        let air = currentTime % 30000;
+        let air = GetAir(currentTime);
         let startTime = currentTime - air;
         let recentStart = startTime - this.collector.plugin.settings.statisticSettings.recentDays * 86400000;
         for (let counts of this.history) {
@@ -59,7 +63,7 @@ export class WSCountHistory {
 
     get recentLimit() {
         let currentTime = Date.now();
-        let air = currentTime % 30000;
+        let air = GetAir(currentTime);
         let startTime = currentTime - air;
         let recentStart = startTime - this.collector.plugin.settings.statisticSettings.recentDays * 86400000;
         return recentStart;
@@ -103,9 +107,9 @@ export class WSCountHistory {
     }
 
     getStartTime(updateTime: number) {
-        let air = updateTime % 30000;
+        let air = GetAir(updateTime);
         let startTime = updateTime - air;
-        return startTime;
+        return [air, startTime];
     }
 
     getPercentTimeSpentWriting(counter: IWordCount) {
@@ -136,8 +140,7 @@ export class WSCountHistory {
 
     initializeCounter(updateTime: number, startWords: number, endWords: number) {
         let current = NewWordCount();
-        let startTime = this.getStartTime(updateTime);
-        let air = updateTime - startTime;
+        let [air, startTime] = this.getStartTime(updateTime);
         current.air = air;
         current.startTime = startTime;
         current.endTime = updateTime;

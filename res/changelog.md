@@ -1,7 +1,15 @@
+## Bugs
+ - BUG: Settings sliders don't show their value, which makes it hard to apply settings. Considered svelte for the settings dialog to simplify things.
+ - BUG: Default Obsidian theme doesn't show status bar progress bars.
+
 ## Changelog
+### 2022-07-03
+ - BUGFIX: Air was being calculated as 30,000 ms instead of 300,000 ms. It is supposed to be 5 minutes, which is 300,000 ms, not 30 seconds.
+ - Added a helper function to WSProjectManager for getting the title for a file based on the project.
+ - Added some CSS for the word statistics view.
+
 ### 2022-07-12
  - Fixed a typo in settings
- - BUG: Settings sliders don't show their value
  - BUGFIX: Air recorded as negative.
  - BUGFIX: Air is in milliseconds but display says seconds.
  - BUGFIX: Length is in milliseconds but display says seconds.
