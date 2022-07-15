@@ -1,5 +1,5 @@
 import type { WSDataCollector } from './collector';
-import type { WSFile } from "./file";
+import { WSFile } from "./file";
 
 export interface IWordCount {
     air: number,
@@ -32,6 +32,21 @@ function NewWordCount(): IWordCount {
         writingTime: 0
     });
 }
+
+function GetPeriodInfo(newStartTime: number, lastStartTime: number, lastEndTime: number, lastDuration: number, newDuration: number) {
+    let normal = 300000;
+    let boundary = 60000 * 15; // 15 minute intervals
+    let air = newStartTime % normal;
+    let startTime = newStartTime - air;
+    if (startTime < lastEndTime || startTime < (lastStartTime + lastDuration)) {
+        console.log("New time period is out of bounds! Last period ends after start of new period.");
+    }
+    if (newDuration > boundary) {
+        newDuration = boundary;
+    }
+    return [air, startTime, newDuration];
+}
+
 
 export class WSCountHistory {
     constructor(
@@ -138,9 +153,17 @@ export class WSCountHistory {
         return writingTime;
     }
 
-    initializeCounter(updateTime: number, startWords: number, endWords: number) {
+    initializeCounter(updateTime: number, startWords: number, endWords: number, previous?: IWordCount) {
         let current = NewWordCount();
-        let [air, startTime] = this.getStartTime(updateTime);
+        let air: number;
+        let startTime: number;
+        let duration = this.collector.plugin.settings.statisticSettings.recentSegmentSize * 60000;
+        if (previous) {
+            [air, startTime, duration] = GetPeriodInfo(updateTime, previous.startTime, previous.endTime, previous.length, duration)
+        } else {
+            [air, startTime] = this.getStartTime(updateTime);
+            
+        }
         current.air = air;
         current.startTime = startTime;
         current.endTime = updateTime;
@@ -163,7 +186,7 @@ export class WSCountHistory {
         } else if (updateTime > current.startTime + current.length) {
             // if the maximum end point of our existing counter is prior to updateTime,
             // create a new counter for this count update
-            this.initializeCounter(updateTime, current.endWords, count);
+            this.initializeCounter(updateTime, current.endWords, count, current);
         } else {
             // our update occurs within the prior counter, so now just need to make adjustments
             // first calculcate adjustment to writing time
@@ -233,6 +256,43 @@ export class WSStatisticManager {
         stats.forEach((stat) => {
             // console.log("for ", stat.file.path, stat);
             this.fileMap.set(stat.file, stat);
-        })
+        });
+    }
+
+    getWPMforPeriod(file: WSFile): [number, number, number, number] {
+        if (file instanceof WSFile && this.fileMap.has(file)) {
+            let history = this.fileMap.get(file);
+            let current = history.current;
+            let duration = current.endTime - (current.startTime + current.air);
+            let wpm = current.wordsAdded / (duration / 60000);
+            let wpma = current.wordsAdded / (current.writingTime / 60000);
+            let nwpm = (current.endWords - current.startWords) / (duration / 60000);
+            let nwpma = (current.endWords - current.startWords) / (current.writingTime / 60000);
+            return [wpm, wpma, nwpm, nwpma];
+        }
+        return undefined;
+    }
+
+    getWPMForFile(file: WSFile): [number, number, number, number] {
+        if (file instanceof WSFile && this.fileMap.has(file)) {
+            let totalWordsAdded = 0;
+            let totalDuration = 0;
+            let totalNetWords = 0;
+            let totalWritingTime = 0;
+            let history = this.fileMap.get(file);
+            history.history.forEach((counter) => {
+                totalWordsAdded += counter.wordsAdded;
+                totalDuration += counter.endTime;
+            });
+            let current = history.current;
+            let duration = current.endTime - (current.startTime + current.air);
+            let wpm = current.wordsAdded / (duration / 60000);
+            let wpma = current.wordsAdded / (current.writingTime / 60000);
+            let nwpm = (current.endWords - current.startWords) / (duration / 60000);
+            let nwpma = (current.endWords - current.startWords) / (current.writingTime / 60000);
+            return [wpm, wpma, nwpm, nwpma];
+        }
+        return undefined;
+
     }
 }

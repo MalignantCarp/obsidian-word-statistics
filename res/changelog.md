@@ -3,6 +3,10 @@
  - BUG: Default Obsidian theme doesn't show status bar progress bars.
 
 ## Changelog
+### 2022-07-04
+ - Started adding WPM stats code
+ - Adjusted time period calculation to make everything always fall within 15 minute segments, so that will be the maximum time period for recent history so adjustments will be made to future segments to ensure there is no overlap beyond those periods. May just make 15 minutes the normal length for period instead of configurable.
+
 ### 2022-07-03
  - BUGFIX: Air was being calculated as 30,000 ms instead of 300,000 ms. It is supposed to be 5 minutes, which is 300,000 ms, not 30 seconds.
  - Added a helper function to WSProjectManager for getting the title for a file based on the project.
