@@ -1,13 +1,17 @@
 ## Bugs
- - BUG: Settings sliders don't show their value, which makes it hard to apply settings. Considered svelte for the settings dialog to simplify things.
+ - BUG: Settings sliders don't show their value, which makes it hard to apply settings. Considered svelte for the settings dialog to simplify things, or use dropdowns with a few different options.
  - BUG: Default Obsidian theme doesn't show status bar progress bars.
 
 ## Changelog
-### 2022-07-04
+### 2022-07-16
+ - Added methods to retrieve stats history based on project and time periods
+ - Completed WPM stats code
+
+### 2022-07-14
  - Started adding WPM stats code
  - Adjusted time period calculation to make everything always fall within 15 minute segments, so that will be the maximum time period for recent history so adjustments will be made to future segments to ensure there is no overlap beyond those periods. May just make 15 minutes the normal length for period instead of configurable.
 
-### 2022-07-03
+### 2022-07-13
  - BUGFIX: Air was being calculated as 30,000 ms instead of 300,000 ms. It is supposed to be 5 minutes, which is 300,000 ms, not 30 seconds.
  - Added a helper function to WSProjectManager for getting the title for a file based on the project.
  - Added some CSS for the word statistics view.
