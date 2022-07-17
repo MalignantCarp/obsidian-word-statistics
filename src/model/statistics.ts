@@ -1,5 +1,6 @@
 import type { WSDataCollector } from './collector';
 import { WSFile } from "./file";
+import type { WSProject } from './project';
 
 export interface IWordCount {
     air: number,
@@ -84,6 +85,21 @@ export class WSCountHistory {
         return recentStart;
     }
 
+    getHistoryForPeriod(startDate: Date, endDate?: Date): IWordCount[] {
+        let startTime = startDate.getTime();
+        let endTime = startTime + 86400000;
+        if (endDate) {
+            endTime = endDate.getTime();
+        }
+        let counters: IWordCount[] = [];
+        for (let counter of this.history) {
+            if (counter.startTime >= startTime && counter.endTime <= endTime) {
+                counters.push(counter);
+            }
+        }
+        return counters;
+    }
+
     consolidate() {
         if (this.collector.plugin.settings.statisticSettings.consolidateHistory) {
             let recentStart = this.recentLimit;
@@ -162,7 +178,6 @@ export class WSCountHistory {
             [air, startTime, duration] = GetPeriodInfo(updateTime, previous.startTime, previous.endTime, previous.length, duration)
         } else {
             [air, startTime] = this.getStartTime(updateTime);
-            
         }
         current.air = air;
         current.startTime = startTime;
@@ -259,40 +274,118 @@ export class WSStatisticManager {
         });
     }
 
-    getWPMforPeriod(file: WSFile): [number, number, number, number] {
+    getWPMforPeriod(file: WSFile, index: number = -1): [number, number, number, number] {
         if (file instanceof WSFile && this.fileMap.has(file)) {
             let history = this.fileMap.get(file);
-            let current = history.current;
-            let duration = current.endTime - (current.startTime + current.air);
-            let wpm = current.wordsAdded / (duration / 60000);
-            let wpma = current.wordsAdded / (current.writingTime / 60000);
-            let nwpm = (current.endWords - current.startWords) / (duration / 60000);
-            let nwpma = (current.endWords - current.startWords) / (current.writingTime / 60000);
+            let counter = history.history.slice(index)[0];
+            let duration = counter.endTime - (counter.startTime + counter.air);
+            let wpm = counter.wordsAdded / (duration / 60000);
+            let wpma = counter.wordsAdded / (counter.writingTime / 60000);
+            let nwpm = (counter.endWords - counter.startWords) / (duration / 60000);
+            let nwpma = (counter.endWords - counter.startWords) / (counter.writingTime / 60000);
             return [wpm, wpma, nwpm, nwpma];
         }
         return undefined;
     }
 
-    getWPMForFile(file: WSFile): [number, number, number, number] {
+    getTotalWPMForHistory(history: IWordCount[]): [number, number, number, number] {
+        let totalWordsAdded = 0;
+        let totalDuration = 0;
+        let totalNetWords = 0;
+        let totalWritingTime = 0;
+        history.forEach((counter) => {
+            totalWordsAdded += counter.wordsAdded;
+            totalDuration += (counter.endTime - (counter.startTime + counter.air));
+            totalNetWords += (counter.endWords - counter.startWords);
+            totalWritingTime += counter.writingTime;
+        });
+        let wpm = totalWordsAdded / (totalDuration / 60000);
+        let wpma = totalWordsAdded / (totalWritingTime / 60000);
+        let nwpm = totalNetWords / (totalDuration / 60000);
+        let nwpma = totalNetWords / (totalWritingTime / 60000);
+        return [wpm, wpma, nwpm, nwpma];
+    }
+
+    getTotalWPMForFile(file: WSFile): [number, number, number, number] {
         if (file instanceof WSFile && this.fileMap.has(file)) {
-            let totalWordsAdded = 0;
-            let totalDuration = 0;
-            let totalNetWords = 0;
-            let totalWritingTime = 0;
             let history = this.fileMap.get(file);
-            history.history.forEach((counter) => {
-                totalWordsAdded += counter.wordsAdded;
-                totalDuration += counter.endTime;
-            });
-            let current = history.current;
-            let duration = current.endTime - (current.startTime + current.air);
-            let wpm = current.wordsAdded / (duration / 60000);
-            let wpma = current.wordsAdded / (current.writingTime / 60000);
-            let nwpm = (current.endWords - current.startWords) / (duration / 60000);
-            let nwpma = (current.endWords - current.startWords) / (current.writingTime / 60000);
-            return [wpm, wpma, nwpm, nwpma];
+            return this.getTotalWPMForHistory(history.history)
         }
         return undefined;
 
+    }
+
+    getHistoryForTimePeriod(start: Date, end?: Date, filter?: WSFile[]) {
+        let history = new Map<WSFile, IWordCount[]>();
+
+        this.fileMap.forEach((countHistory) => {
+            if (filter && !filter.contains(countHistory.file)) {
+                return;
+            }
+            let counters = countHistory.getHistoryForPeriod(start, end);
+            if (counters.length > 0) {
+                history.set(countHistory.file, counters);
+            }
+        })
+        return history;
+    }
+
+    getHistoryForTimePeriodFlat(start: Date, end?: Date, filter?: WSFile[]) {
+        let history: IWordCount[] = [];
+
+        this.fileMap.forEach((countHistory) => {
+            if (filter && !filter.contains(countHistory.file)) {
+                return;
+            }
+            let counters = countHistory.getHistoryForPeriod(start, end);
+            if (counters.length > 0) {
+                history.concat(counters);
+            }
+        })
+
+        return history.sort((a, b) => (a.startTime > b.startTime) ? 1 : (b.startTime > a.startTime) ? -1 : 0);
+    }
+
+    flattenHistory(history: Map<WSFile,IWordCount[]>) {
+        let flattened: IWordCount[] = [];
+
+        for (let [file, counters] of history) {
+            flattened.concat(counters);
+        }
+
+        return flattened.sort((a, b) => (a.startTime > b.startTime) ? 1 : (b.startTime > a.startTime) ? -1 : 0);
+    }
+
+    getHistoryForProject(project: WSProject) {
+        let history = new Map<WSFile, IWordCount[]>();
+
+        project.files.forEach(file => {
+            if (this.fileMap.has(file)) {
+                history.set(file, this.fileMap.get(file).history);
+            }
+        })
+        return history;
+    }
+
+    getHistoryForProjectForPeriod(project: WSProject, start: Date, end?: Date) {
+        let pFiles = project.files;
+        let history = this.getHistoryForTimePeriod(start, end, pFiles);
+        return history;
+    }
+
+    getTotalWPMForTimePeriod(start: Date, end?: Date): [number, number, number, number] {
+        let history = this.getHistoryForTimePeriodFlat(start, end);
+
+        return this.getTotalWPMForHistory(history);
+    }
+
+    getTotalWPMForProject(project: WSProject) {
+        let history = this.flattenHistory(this.getHistoryForProject(project));
+        return this.getTotalWPMForHistory(history);
+    }
+
+    getTotalWPMForProjectForTimePeriod(project: WSProject, start: Date, end?: Date) {
+        let history = this.flattenHistory(this.getHistoryForProjectForPeriod(project, start, end));
+        return this.getTotalWPMForHistory(history);
     }
 }

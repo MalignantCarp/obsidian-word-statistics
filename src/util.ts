@@ -1,3 +1,7 @@
+export const GetDateStart = (day: Date): Date => {
+    return new Date(day.setHours(0,0,0,0));
+}
+
 export const FormatWords = (words: number): string => {
     return Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
 };
