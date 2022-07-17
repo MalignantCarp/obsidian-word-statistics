@@ -189,7 +189,7 @@ import Checkbox from "../util/Checkbox.svelte";
 	</SettingItem>
 	<SettingItem
 		name="Monitor Word Counts"
-		desc={`Record word counts for this project if Record Statistics option is set to Monitored Projects Only. Otherwise, this option has no effect.`}
+		desc={`Record word counts for this project if Statistics History Settings > Monitor option is set to Monitored Projects Only. Otherwise, this option has no effect.`}
 	>
 		<Checkbox enabled={monitoredWC} bind:this={monitorCheck}/>
 	</SettingItem>

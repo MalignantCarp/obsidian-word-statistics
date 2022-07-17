@@ -4,6 +4,7 @@
 	import { WSFile } from "src/model/file";
 	import type { WSProject } from "src/model/project";
 	import { WSCountHistory, type IWordCount } from "src/model/statistics";
+	import { Settings } from "src/settings";
 	import { FormatNumber, FormatWords, RightWordForNumber, SecondsToHMS } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 
@@ -66,24 +67,26 @@
 		getProject();
 	}
 
-	function nextStat() {
-		if (statIndex < statObj.history.length) {
+	function nextStat(evt: MouseEvent) {
+		if ((statIndex + 1) < statObj.history.length) {
 			statIndex += 1;
+			currentStat = statObj.history[statIndex];
 		}
 	}
 
-	function prevStat() {
+	function prevStat(evt: MouseEvent) {
 		if (statIndex > 0) {
 			statIndex -= 1;
+			currentStat = statObj.history[statIndex];
 		}
 	}
 
 	function hasNext() {
-		return statObj.history.length > statIndex + 1;
+		return statObj && statObj.history.length > statIndex + 1;
 	}
 
 	function hasPrev() {
-		return statObj.history.length > 0 && statIndex > 0;
+		return statIndex > 0 && statObj && statObj.history.length > 0;
 	}
 
 	function onWordCountChange(evt: WSFileEvent) {
@@ -92,6 +95,9 @@
 			currentStat = statObj.current;
 		}
 	}
+
+	$: disabledNext = (!statObj || statObj.history.length === 0 || (statIndex + 1) > statObj.history.length);
+	$: disabledPrev = (statIndex === 0 || statObj && statObj.history.length === 0);
 
 	function onFileFocus(evt: WSFocusEvent) {
 		UnregisterWCEvents();
@@ -102,47 +108,49 @@
 </script>
 
 <div class="ws-stat-view">
-	<p class="ws-heading">Word Statistics<p>
-	{#if focus instanceof WSFile}
-		<div class="ws-sv-stat-obj">
-			<p class="ws-title">{collector.manager.getTitleForFile(focus, project)}</p>
-			<p class="ws-path">{focus.path}</p>
-			{#if statObj instanceof WSCountHistory && currentStat !== null}
-				<div class="ws-sv-stats">
-					<div>Air:</div>
-					<div>{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>
-					<div>Start Time:</div>
-					<div>{new Date(currentStat.startTime).toLocaleString()}</div>
-					<div>Start Time: (air)</div>
-					<div>{new Date(currentStat.startTime + currentStat.air).toLocaleString()}</div>
-					<div>End Time:</div>
-					<div>{new Date(currentStat.endTime).toLocaleString()}</div>
-					<div>Length:</div>
-					<div>{FormatNumber(currentStat.length / 1000) + RightWordForNumber(currentStat.length, "second", "seconds")}</div>
-					<div>Closing Time:</div>
-					<div>{new Date(currentStat.startTime + currentStat.length).toLocaleString()}</div>
-					<div>Start Words:</div>
-					<div>{FormatWords(currentStat.startWords)}</div>
-					<div>End Words:</div>
-					<div>{FormatWords(currentStat.endWords)}</div>
-					<div>Words Added:</div>
-					<div>{FormatWords(currentStat.wordsAdded)}</div>
-					<div>Words Deleted:</div>
-					<div>{FormatWords(currentStat.wordsDeleted)}</div>
-					<div>Last Word At:</div>
-					<div>{new Date(currentStat.lastWordAt).toLocaleString()}</div>
-					<div>Writing Time:</div>
-					<div>{SecondsToHMS(currentStat.writingTime / 1000)}</div>
-				</div>
-			{:else}
-				<div class="ws-sv-no-history">
-					<p>No history.</p>
-				</div>
-			{/if}
-		</div>
-	{:else}
-		<div>
-			<p>No file focused.</p>
-		</div>
-	{/if}
+	<p class="ws-heading">Word Statistics</p>
+	<p>
+		{#if focus instanceof WSFile}
+			<div class="ws-sv-stat-obj">
+				<p class="ws-title">{collector.manager.getTitleForFile(focus, project)}</p>
+				<p class="ws-path">{focus.path}</p>
+				{#if statObj instanceof WSCountHistory && currentStat !== null}
+					<div class="ws-sv-stats">
+						<div>Air:</div>
+						<div>{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>
+						<div>Start Time:</div>
+						<div>{new Date(currentStat.startTime).toLocaleString()}</div>
+						<div>Start Time: (air)</div>
+						<div>{new Date(currentStat.startTime + currentStat.air).toLocaleString()}</div>
+						<div>End Time:</div>
+						<div>{new Date(currentStat.endTime).toLocaleString()}</div>
+						<div>Closing Time:</div>
+						<div>{new Date(currentStat.startTime + Settings.Statistics.PERIOD_LENGTH).toLocaleString()}</div>
+						<div>Start Words:</div>
+						<div>{FormatWords(currentStat.startWords)}</div>
+						<div>End Words:</div>
+						<div>{FormatWords(currentStat.endWords)}</div>
+						<div>Words Added:</div>
+						<div>{FormatWords(currentStat.wordsAdded)}</div>
+						<div>Words Deleted:</div>
+						<div>{FormatWords(currentStat.wordsDeleted)}</div>
+						<div>Last Word At:</div>
+						<div>{new Date(currentStat.lastWordAt).toLocaleString()}</div>
+						<div>Writing Time:</div>
+						<div>{SecondsToHMS(currentStat.writingTime / 1000)}</div>
+						<div><button on:click={prevStat} disabled={disabledPrev}>Previous</button></div>
+						<div><button on:click={nextStat} disabled={disabledNext}>Next</button></div>
+					</div>
+				{:else}
+					<div class="ws-sv-no-history">
+						<p>No history.</p>
+					</div>
+				{/if}
+			</div>
+		{:else}
+			<div>
+				<p>No file focused.</p>
+			</div>
+		{/if}
+	</p>
 </div>

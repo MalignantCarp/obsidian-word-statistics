@@ -2,6 +2,7 @@ export class WSFile {
 	name: string;
 	path: string;
 	private currentWords: number;
+	private startWords: number;
 	lastUpdate: number;
 	private ftitle: string;
 	tags: string[];
@@ -12,6 +13,7 @@ export class WSFile {
 	constructor(name: string, path: string, wordGoal?: number) {
 		this.name = name;
 		this.path = path;
+		this.startWords = 0;
 		this.currentWords = 0;
 		this.lastUpdate = Date.now();
 		this.ftitle = null;
@@ -142,6 +144,14 @@ export class WSFile {
 	addWords(count: number) {
 		this.currentWords += count;
 		this.lastUpdate = Date.now();
+	}
+
+	getStartWords() {
+		return this.startWords;
+	}
+
+	setStartWords(words: number) {
+		this.startWords = words;
 	}
 
 	get words() {

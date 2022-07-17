@@ -59,33 +59,39 @@ One caveat to note is that the word counts stored for a particular document will
 
 ## Word Count Statistics
 ### Overview
-Word Count Statistics can track words added and words deleted over time for all files, just project files, or just specific project files (tracked on the project level). It also tracks writing time (time spent writing) as configured under settings.
+Word Count Statistics can track words added and words deleted over time for all files, just project files, or just specific project files (tracked on the project level). It also tracks writing time (time spent writing) as configured under settings. Word count changes that occur outside of Obsidian will be recorded as words imported or exported.
+
+All times saved are saved in UTC to avoid time zone issues but will be viewed in local time. Word count statistics are batched in time periods of 15 minutes, which are calculated to always be discrete 15 minute periods (this has been chosen due to 30- and 45-minute time zones).
+
+Recent history (or all history if )
+
+### Configuration
+ - Monitor: Choose if word count statistics are monitored for All (Markdown) Files, just Project Files (those included as part of a project), or just Monitored Project Files (files included in projects that have been configured to record word statistics). Note that previously-recorded stats will not be removed if you change options.
+ - Writing Timeout: This configures the window in which you will still be considered writing
 
 ### Tracked Statistics
  - Words Added: Any time the word count goes up, it counts as words added.
  - Words Deleted: Any time the word count goes down, it counts as words deleted.
- - Writing time: Any time during which you are adding or deleting words is considered writing time. If you stop typing, the time period will end. If you resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing.
+ - Writing time: Any time during which you are adding or deleting words is considered writing time.
 
 ### Time Periods
-Time periods can be between 5 minutes and 60 minutes. If you choose to change the length of time period, the change will take effect for the next time period.
+Time periods are 15 minutes long and are calculcated to begin at exactly the :00, :15, :30, and :45 minute park of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC. The difference between when you actually start typing and the start of these periods is referred to as "air". This way you can still get proper WPM statistics.
 
-Because of 30-minute and 45-minute time zones, time periods will never extend over a :15, :30, or :45 mark, so if you change time period length, the next time period's length will be adjusted to the nearest 15-minute interval.
-
-### Air
-When a time period is created, it is always created in discrete 5 minute periods. So if you begin typing at 9:02:47, the first period will start at 9:00:00 and you will have 167 seconds of "air."
+Writing time interacts with time periods. If you stop typing and later resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing. If the time period had ended, writing time will not be adjusted and will instead begin anew in the new time period.
 
 ### WPM
 There are 4 WPM statistics:
  - WPM: Words per minute, which is equal to the number of words added divided by the duration of the period, minus air.
- - WPMA: Words per minute (adjusted), which is equal to the number of words added divided by writing time (this is pretty close to typing speed unless you make a lot of 10-30 second stops during writing)
- - NWPM: Net words per minute, which is equal to the net words (ending words - starting words) divided by the duration of the period, minus air.
+ - WPMA: Words per minute (adjusted), which is equal to the number of words added divided by writing time (this is pretty close to typing speed unless you make a lot of brief stops during writing)
+ - NWPM: Net words per minute, which is equal to the net words (words added - words deleted) divided by the duration of the period, minus air.
  - NWPMA: Net words per minute (adjusted), which is equal to the net words divided by writing time.
 
-### Limitation
-If the first change that is made to a file to be recorded in history is deletion, the initial word count that will show for that file for statistical purposes is 0.
+### Note
+If the first change that is made to a file to be recorded in history is deletion, the initial word count that will show for that file will be the word count post-deletion.
 
 ## Planned Features
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.
+- [ ] Clipboard fixes - A big challenge for the statistics is the handling of the clipboard and clipboard activities. If you paste in text, it will invalidate your WPM statistics, as you could potentially be adding hundreds or even thousands of words in a split-second. Words imported will eventually be used to record when things are pasted in. Determining just how to work that code-wise is proving to be a bit of a challenge, however.
 
 ## Future Possibilities
 - [ ] Statistics graphs

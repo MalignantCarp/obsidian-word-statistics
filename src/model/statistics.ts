@@ -1,3 +1,4 @@
+import { Settings } from 'src/settings';
 import type { WSDataCollector } from './collector';
 import { WSFile } from "./file";
 import type { WSProject } from './project';
@@ -6,17 +7,14 @@ export interface IWordCount {
     air: number,
     startTime: number,
     endTime: number,
-    length: number,
     startWords: number,
     endWords: number,
     wordsAdded: number,
     wordsDeleted: number,
+    wordsImported: number,
+    wordsExported: number,
     lastWordAt: number,
     writingTime: number;
-}
-
-function GetAir(time: number) {
-    return (time % 300000); // 300 seconds = 5 minute blocks
 }
 
 function NewWordCount(): IWordCount {
@@ -24,30 +22,16 @@ function NewWordCount(): IWordCount {
         air: 0,
         startTime: 0,
         endTime: 0,
-        length: 0,
         startWords: 0,
         endWords: 0,
         wordsAdded: 0,
         wordsDeleted: 0,
+        wordsImported: 0,
+        wordsExported: 0,
         lastWordAt: 0,
         writingTime: 0
     });
 }
-
-function GetPeriodInfo(newStartTime: number, lastStartTime: number, lastEndTime: number, lastDuration: number, newDuration: number) {
-    let normal = 300000;
-    let boundary = 60000 * 15; // 15 minute intervals
-    let air = newStartTime % normal;
-    let startTime = newStartTime - air;
-    if (startTime < lastEndTime || startTime < (lastStartTime + lastDuration)) {
-        console.log("New time period is out of bounds! Last period ends after start of new period.");
-    }
-    if (newDuration > boundary) {
-        newDuration = boundary;
-    }
-    return [air, startTime, newDuration];
-}
-
 
 export class WSCountHistory {
     constructor(
@@ -63,27 +47,25 @@ export class WSCountHistory {
         return undefined;
     }
 
-    get recent(): IWordCount[] {
-        let recent: IWordCount[] = [];
-        let currentTime = Date.now();
-        let air = GetAir(currentTime);
-        let startTime = currentTime - air;
-        let recentStart = startTime - this.collector.plugin.settings.statisticSettings.recentDays * 86400000;
-        for (let counts of this.history) {
-            if (counts.startTime >= recentStart) {
-                recent.push(counts);
-            }
-        }
-        return recent;
-    }
+    // get recent(): IWordCount[] {
+    //     let recent: IWordCount[] = [];
+    //     let currentTime = Date.now();
+    //     let [air, startTime] = this.getStartTime(currentTime);
+    //     let recentStart = startTime - this.collector.plugin.settings.statisticSettings.recentDays * 86400000;
+    //     for (let counts of this.history) {
+    //         if (counts.startTime >= recentStart) {
+    //             recent.push(counts);
+    //         }
+    //     }
+    //     return recent;
+    // }
 
-    get recentLimit() {
-        let currentTime = Date.now();
-        let air = GetAir(currentTime);
-        let startTime = currentTime - air;
-        let recentStart = startTime - this.collector.plugin.settings.statisticSettings.recentDays * 86400000;
-        return recentStart;
-    }
+    // get recentLimit() {
+    //     let currentTime = Date.now();
+    //     let [air, startTime] = this.getStartTime(currentTime);
+    //     let recentStart = startTime - this.collector.plugin.settings.statisticSettings.recentDays * 86400000;
+    //     return recentStart;
+    // }
 
     getHistoryForPeriod(startDate: Date, endDate?: Date): IWordCount[] {
         let startTime = startDate.getTime();
@@ -100,45 +82,46 @@ export class WSCountHistory {
         return counters;
     }
 
-    consolidate() {
-        if (this.collector.plugin.settings.statisticSettings.consolidateHistory) {
-            let recentStart = this.recentLimit;
-            let newHistory: IWordCount[] = [];
-            let size = this.collector.plugin.settings.statisticSettings.historySegmentSize * 3600000;
-            let currentWords: IWordCount;
-            for (let i = 0; i < this.history.length; i++) {
-                let historyItem = this.history[i];
-                if (historyItem.endTime < recentStart) {
-                    if (currentWords === undefined) {
-                        currentWords = Object.assign({}, historyItem);
-                    } else {
-                        if (currentWords.length + historyItem.length > size) {
-                            newHistory.push(currentWords);
-                            currentWords = Object.assign({}, historyItem);
-                        } else {
-                            currentWords.endTime = historyItem.endTime;
-                            currentWords.length += historyItem.length;
-                            currentWords.endWords = historyItem.endWords;
-                            currentWords.wordsAdded += historyItem.wordsAdded;
-                            currentWords.wordsDeleted += historyItem.wordsDeleted;
-                            currentWords.lastWordAt = historyItem.lastWordAt;
-                            currentWords.writingTime += historyItem.writingTime;
-                        }
-                    }
-                } else {
-                    if (currentWords === undefined) {
-                        newHistory.push(currentWords);
-                        currentWords = undefined;
-                    }
-                    newHistory.push(historyItem);
-                }
-            }
-            this.history = newHistory;
-        }
-    }
+    // consolidate() {
+    //     if (this.collector.plugin.settings.statisticSettings.consolidateHistory) {
+    //         let recentStart = this.recentLimit;
+    //         let newHistory: IWordCount[] = [];
+    //         let size = this.collector.plugin.settings.statisticSettings.historySegmentSize * 3600000;
+    //         let currentWords: IWordCount;
+    //         for (let i = 0; i < this.history.length; i++) {
+    //             let historyItem = this.history[i];
+    //             if (historyItem.endTime < recentStart) {
+    //                 if (currentWords === undefined) {
+    //                     currentWords = Object.assign({}, historyItem);
+    //                 } else {
+    //                     if (currentWords.length + historyItem.length > size) {
+    //                         newHistory.push(currentWords);
+    //                         currentWords = Object.assign({}, historyItem);
+    //                     } else {
+    //                         currentWords.endTime = historyItem.endTime;
+    //                         currentWords.length += historyItem.length;
+    //                         currentWords.endWords = historyItem.endWords;
+    //                         currentWords.wordsAdded += historyItem.wordsAdded;
+    //                         currentWords.wordsDeleted += historyItem.wordsDeleted;
+    //                         currentWords.lastWordAt = historyItem.lastWordAt;
+    //                         currentWords.writingTime += historyItem.writingTime;
+    //                     }
+    //                 }
+    //             } else {
+    //                 if (currentWords === undefined) {
+    //                     newHistory.push(currentWords);
+    //                     currentWords = undefined;
+    //                 }
+    //                 newHistory.push(historyItem);
+    //             }
+    //         }
+    //         this.history = newHistory;
+    //     }
+    // }
 
     getStartTime(updateTime: number) {
-        let air = GetAir(updateTime);
+        let boundary = Settings.Statistics.PERIOD_LENGTH;
+        let air = updateTime % boundary;
         let startTime = updateTime - air;
         return [air, startTime];
     }
@@ -169,63 +152,59 @@ export class WSCountHistory {
         return writingTime;
     }
 
-    initializeCounter(updateTime: number, startWords: number, endWords: number, previous?: IWordCount) {
+    initializeCounter(updateTime: number, oldCount: number, newCount: number, previous?: IWordCount) {
         let current = NewWordCount();
         let air: number;
         let startTime: number;
-        let duration = this.collector.plugin.settings.statisticSettings.recentSegmentSize * 60000;
-        if (previous) {
-            [air, startTime, duration] = GetPeriodInfo(updateTime, previous.startTime, previous.endTime, previous.length, duration)
-        } else {
-            [air, startTime] = this.getStartTime(updateTime);
-        }
+        [air, startTime] = this.getStartTime(updateTime);
         current.air = air;
         current.startTime = startTime;
         current.endTime = updateTime;
-        current.length = this.collector.plugin.settings.statisticSettings.recentSegmentSize * 60000;
         current.lastWordAt = updateTime;
-        current.startWords = startWords;
-        current.endWords = endWords;
+        current.startWords = newCount;
+        current.endWords = newCount;
         current.wordsAdded = 0;
         current.wordsDeleted = 0;
+        current.wordsImported = Math.max(newCount - oldCount, 0);
+        current.wordsExported = Math.max(oldCount - newCount, 0);
         current.writingTime = 0;
         this.history.push(current);
         return current;
     }
 
-    update(updateTime: number, count: number) {
+    update(updateTime: number, oldCount: number, newCount: number) {
         let writingTimeout = this.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
         let current = this.current;
         if (current === undefined) {
-            current = this.initializeCounter(updateTime, count, count);
-        } else if (updateTime > current.startTime + current.length) {
+            current = this.initializeCounter(updateTime, oldCount, newCount);
+            return;
+        } else if (updateTime > current.startTime + Settings.Statistics.PERIOD_LENGTH) {
             // if the maximum end point of our existing counter is prior to updateTime,
             // create a new counter for this count update
-            this.initializeCounter(updateTime, current.endWords, count, current);
-        } else {
-            // our update occurs within the prior counter, so now just need to make adjustments
-            // first calculcate adjustment to writing time
-            let writingGap = updateTime - current.lastWordAt;
-            if (writingGap < writingTimeout) {
-                current.writingTime += writingGap;
-            }
-            // should we add writingTimeout to writing time if we have exceeded the writing timeout?
-            // we could then just go:
-            // current.writingTime += Math.min(updateTime - current.lastWordAt, writingTimeout)
-            current.lastWordAt = updateTime;
-            let wordsAdded = Math.max(count - current.endWords, 0);
-            let wordsDeleted = Math.max(current.endWords - count, 0);
-            current.endWords = count;
-            current.wordsAdded += wordsAdded;
-            current.wordsDeleted += wordsDeleted;
-            current.endTime = updateTime;
+            current = this.initializeCounter(updateTime, current.endWords, oldCount, current);
         }
+        // Now just need to make adjustments
+        // first calculcate adjustment to writing time
+        let writingGap = updateTime - current.lastWordAt;
+        if (writingGap < writingTimeout) {
+            current.writingTime += writingGap;
+        }
+        // should we add writingTimeout to writing time if we have exceeded the writing timeout?
+        // we could then just go:
+        // current.writingTime += Math.min(updateTime - current.lastWordAt, writingTimeout)
+        current.lastWordAt = updateTime;
+        let wordsAdded = Math.max(newCount - current.endWords, 0);
+        let wordsDeleted = Math.max(current.endWords - newCount, 0);
+        current.endWords = newCount;
+        current.wordsAdded += wordsAdded;
+        current.wordsDeleted += wordsDeleted;
+        current.endTime = updateTime;
     }
 }
 
 export class WSStatisticManager {
     private locked = true;
-    private queue: [file: WSFile, count: number, updateTime: number][] = [];
+    private queue: [file: WSFile, oldCount: number, newCount: number, updateTime: number][] = [];
 
     constructor(
         public collector: WSDataCollector,
@@ -234,9 +213,9 @@ export class WSStatisticManager {
 
     unlock() {
         while (this.queue.length > 0) {
-            let [file, count, updateTime] = this.queue.shift();
+            let [file, oldCount, newCount, updateTime] = this.queue.shift();
             let counter = this.getHistoryItem(file);
-            counter.update(updateTime, count);
+            counter.update(updateTime, oldCount, newCount);
         }
         this.locked = false;
     }
@@ -250,13 +229,13 @@ export class WSStatisticManager {
         return counter;
     }
 
-    onWordCountUpdate(file: WSFile, count: number) {
+    onWordCountUpdate(file: WSFile, oldCount: number, newCount: number, load: boolean = false) {
         let updateTime = Date.now();
         if (!this.locked) {
             let counter = this.getHistoryItem(file);
-            counter.update(updateTime, count);
+            counter.update(updateTime, oldCount, newCount);
         } else {
-            this.queue.push([file, count, updateTime]);
+            this.queue.push([file, oldCount, newCount, updateTime]);
         }
     }
 
@@ -281,8 +260,8 @@ export class WSStatisticManager {
             let duration = counter.endTime - (counter.startTime + counter.air);
             let wpm = counter.wordsAdded / (duration / 60000);
             let wpma = counter.wordsAdded / (counter.writingTime / 60000);
-            let nwpm = (counter.endWords - counter.startWords) / (duration / 60000);
-            let nwpma = (counter.endWords - counter.startWords) / (counter.writingTime / 60000);
+            let nwpm = (counter.wordsAdded - counter.wordsDeleted) / (duration / 60000);
+            let nwpma = (counter.wordsAdded - counter.wordsDeleted) / (counter.writingTime / 60000);
             return [wpm, wpma, nwpm, nwpma];
         }
         return undefined;
@@ -296,7 +275,7 @@ export class WSStatisticManager {
         history.forEach((counter) => {
             totalWordsAdded += counter.wordsAdded;
             totalDuration += (counter.endTime - (counter.startTime + counter.air));
-            totalNetWords += (counter.endWords - counter.startWords);
+            totalNetWords += (counter.wordsAdded - counter.wordsDeleted);
             totalWritingTime += counter.writingTime;
         });
         let wpm = totalWordsAdded / (totalDuration / 60000);
@@ -346,7 +325,7 @@ export class WSStatisticManager {
         return history.sort((a, b) => (a.startTime > b.startTime) ? 1 : (b.startTime > a.startTime) ? -1 : 0);
     }
 
-    flattenHistory(history: Map<WSFile,IWordCount[]>) {
+    flattenHistory(history: Map<WSFile, IWordCount[]>) {
         let flattened: IWordCount[] = [];
 
         for (let [file, counters] of history) {

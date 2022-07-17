@@ -1,8 +1,7 @@
 import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView } from 'obsidian';
 import { WSDataCollector } from './model/collector';
-import WordStatsSettingTab, { DEFAULT_PLUGIN_SETTINGS } from './settings';
+import WordStatsSettingTab, { Settings } from './settings';
 import ProjectTableModal, { BuildProjectTable } from './tables';
-import type { WSPluginSettings } from './settings';
 import { WordCountForText } from './words';
 import { WSFile } from './model/file';
 import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent } from './model/event';
@@ -34,7 +33,7 @@ declare module "obsidian" {
 }
 
 export default class WordStatisticsPlugin extends Plugin {
-	settings: WSPluginSettings;
+	settings: Settings.Plugin.Structure;
 	events: Dispatcher;
 	debounceRunCount: Debouncer<[file: TFile, data: string]>;
 	wordsPerMS: number[] = [];
@@ -162,7 +161,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_PLUGIN_SETTINGS, await this.loadData());
+		this.settings = Object.assign({}, Settings.Plugin.DEFAULT, await this.loadData());
 		console.log("Obsidian Word Statistics settings loaded.");
 	}
 

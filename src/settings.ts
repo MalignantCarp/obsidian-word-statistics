@@ -1,92 +1,100 @@
 import { App, PluginSettingTab, Setting, ValueComponent } from "obsidian";
 import type WordStatisticsPlugin from "./main";
 
-export enum RECORD_STATS {
-	ALL = "Everything",
-	PROJECTS = "Projects Only",
-	MONITORED = "Monitored Projects Only"
-}
+export namespace Settings {
+	export namespace Statistics {
+		export const DAY_LENGTH = 86400000;
+		export const PERIOD_LENGTH = 900000;
+		export const MINUTE_LENGTH = 60000;
 
-export const DEFAULT_TABLE_SETTINGS: WSTableSettings = {
-	showNumericIndex: true,
-	alphaSortForced: false,
-	alphaSortDisplayName: false,
-	showFileGoalProgress: true,
-	showProjectGoalProgress: true,
-	showPathGoalProgress: true,
-	showFileShare: true
-};
+		export enum MONITOR {
+			ALL = "All Files",
+			PROJECTS = "Project Files Only",
+			MONITORED = "Monitored Project Files Only"
+		}
 
-export const DEFAULT_VIEW_SETTINGS: WSViewSettings = {
-	treeView: true,
-};
+		export interface Structure {
+			record: MONITOR,
+			writingTimeout: number,
+		}
 
-export const DEFAULT_DATABASE_SETTINGS: WSDatabaseSettings = {
-	fileMinify: true,
-	projectMinify: false,
-	pathMinify: false,
-	statisticsMinify: true,
-};
+		export const DEFAULT: Structure = {
+			record: MONITOR.PROJECTS,
+			writingTimeout: 120,
+		};
+	}
 
-export const DEFAULT_STAT_SETTINGS: WStatSettings = {
-	writingTimeout: 200,
-	recentDays: 365,
-	recentSegmentSize: 15,
-	historySegmentSize: 4,
-	record: RECORD_STATS.PROJECTS,
-	consolidateHistory: false,
-};
+	export namespace View {
+		export interface Structure {
+			treeView: boolean;
+		}
 
-export const DEFAULT_PLUGIN_SETTINGS: WSPluginSettings = {
-	useDisplayText: true,
-	clearEmptyPaths: true,
-	showWordCountSpeedDebug: true,
-	showWordCountsInFileExplorer: true,
-	tableSettings: DEFAULT_TABLE_SETTINGS,
-	viewSettings: DEFAULT_VIEW_SETTINGS,
-	databaseSettings: DEFAULT_DATABASE_SETTINGS,
-	statisticSettings: DEFAULT_STAT_SETTINGS,
-};
+		export const DEFAULT: Structure = {
+			treeView: true,
+		};
+	}
 
-export interface WSPluginSettings {
-	useDisplayText: boolean,
-	clearEmptyPaths: boolean,
-	showWordCountSpeedDebug: boolean,
-	showWordCountsInFileExplorer: boolean,
-	tableSettings: WSTableSettings,
-	viewSettings: WSViewSettings,
-	databaseSettings: WSDatabaseSettings,
-	statisticSettings: WStatSettings;
-};
+	export namespace Table {
+		export interface Structure {
+			showNumericIndex: boolean,
+			alphaSortForced: boolean,
+			alphaSortDisplayName: boolean,
+			showFileGoalProgress: boolean,
+			showProjectGoalProgress: boolean,
+			showPathGoalProgress: boolean,
+			showFileShare: boolean;
+		};
 
-export interface WSTableSettings {
-	showNumericIndex: boolean,
-	alphaSortForced: boolean,
-	alphaSortDisplayName: boolean,
-	showFileGoalProgress: boolean,
-	showProjectGoalProgress: boolean,
-	showPathGoalProgress: boolean,
-	showFileShare: boolean;
-};
+		export const DEFAULT: Structure = {
+			showNumericIndex: true,
+			alphaSortForced: false,
+			alphaSortDisplayName: false,
+			showFileGoalProgress: true,
+			showProjectGoalProgress: true,
+			showPathGoalProgress: true,
+			showFileShare: true
+		};
+	}
 
-export interface WSDatabaseSettings {
-	fileMinify: boolean,
-	projectMinify: boolean,
-	pathMinify: boolean,
-	statisticsMinify: boolean,
-}
+	export namespace Database {
+		export interface Structure {
+			fileMinify: boolean,
+			projectMinify: boolean,
+			pathMinify: boolean,
+			statisticsMinify: boolean,
+		}
 
-export interface WSViewSettings {
-	treeView: boolean;
-}
+		export const DEFAULT: Structure = {
+			fileMinify: true,
+			projectMinify: false,
+			pathMinify: false,
+			statisticsMinify: true,
+		};
+	}
 
-export interface WStatSettings {
-	writingTimeout: number,
-	recentDays: number,
-	recentSegmentSize: number,
-	historySegmentSize: number,
-	record: RECORD_STATS,
-	consolidateHistory: boolean;
+	export namespace Plugin {
+		export interface Structure {
+			useDisplayText: boolean,
+			clearEmptyPaths: boolean,
+			showWordCountSpeedDebug: boolean,
+			showWordCountsInFileExplorer: boolean,
+			tableSettings: Settings.Table.Structure,
+			viewSettings: Settings.View.Structure,
+			databaseSettings: Settings.Database.Structure,
+			statisticSettings: Settings.Statistics.Structure;
+		};
+
+		export const DEFAULT: Structure = {
+			useDisplayText: true,
+			clearEmptyPaths: true,
+			showWordCountSpeedDebug: true,
+			showWordCountsInFileExplorer: true,
+			tableSettings: Settings.Table.DEFAULT,
+			viewSettings: Settings.View.DEFAULT,
+			databaseSettings: Settings.Database.DEFAULT,
+			statisticSettings: Settings.Statistics.DEFAULT,
+		};
+	}
 }
 
 export default class WordStatsSettingTab extends PluginSettingTab {
@@ -100,17 +108,17 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 	addStatisticSettings(containerEl: HTMLElement) {
 		containerEl.createEl('h3', { text: "Statistics History Settings" });
 		new Setting(containerEl)
-			.setName("Record Statistics")
-			.setDesc("Choose between recording statistics for all files, only files in projects, or only files in monitored projects (choose in project settings)")
+			.setName("Monitor")
+			.setDesc(`Choose between monitoring word count changes for all files, only files in projects, or only files in projects with "Monitor Word Count" enabled.`)
 			.addDropdown(drop => drop
-				.addOption(RECORD_STATS.ALL, RECORD_STATS.ALL)
-				.addOption(RECORD_STATS.PROJECTS, RECORD_STATS.PROJECTS)
-				.addOption(RECORD_STATS.MONITORED, RECORD_STATS.MONITORED)
+				.addOption(Settings.Statistics.MONITOR.ALL, Settings.Statistics.MONITOR.ALL)
+				.addOption(Settings.Statistics.MONITOR.PROJECTS, Settings.Statistics.MONITOR.PROJECTS)
+				.addOption(Settings.Statistics.MONITOR.MONITORED, Settings.Statistics.MONITOR.MONITORED)
 				.setValue(this.plugin.settings.statisticSettings.record)
 				.onChange(async (value) => {
-					if (RECORD_STATS.ALL == value) { this.plugin.settings.statisticSettings.record = value; }
-					else if (RECORD_STATS.PROJECTS == value) { this.plugin.settings.statisticSettings.record = value; }
-					else if (RECORD_STATS.MONITORED == value) { this.plugin.settings.statisticSettings.record = value; }
+					if (Settings.Statistics.MONITOR.ALL == value) { this.plugin.settings.statisticSettings.record = value; }
+					else if (Settings.Statistics.MONITOR.PROJECTS == value) { this.plugin.settings.statisticSettings.record = value; }
+					else if (Settings.Statistics.MONITOR.MONITORED == value) { this.plugin.settings.statisticSettings.record = value; }
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -119,48 +127,9 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 			.addSlider(slider => slider
 				.setValue(this.plugin.settings.statisticSettings.writingTimeout)
 				.setLimits(0, 600, 15)
+				.setDynamicTooltip()
 				.onChange(async (value) => {
 					this.plugin.settings.statisticSettings.writingTimeout = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName("Segment Size (Recent)")
-			.setDesc("Word count and writing information is stored in segments of this size (in minutes). The lower the number, the more segments are recorded, though only segments during which there is active writing will be recorded. Use higher numbers to conserve space, or adjust the history consolidation settings.")
-			.addSlider(slider => slider
-				.setValue(this.plugin.settings.statisticSettings.recentSegmentSize)
-				.setLimits(5, 120, 5)
-				.onChange(async (value) => {
-					this.plugin.settings.statisticSettings.recentSegmentSize = value;
-					await this.plugin.saveSettings();
-				}));
-		containerEl.createEl('h4', { text: "History Consolidation" });
-		new Setting(containerEl)
-			.setName("History Consolidation")
-			.setDesc("If enabled, records exceeding RECENT DAYS will be consolidated based on the historical segment size specified.")
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.statisticSettings.consolidateHistory)
-				.onChange(async (value) => {
-					this.plugin.settings.statisticSettings.consolidateHistory = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName("Recent Days")
-			.setDesc("The number of days old statistics records can be to be considered recent.")
-			.addSlider(slider => slider
-				.setValue(this.plugin.settings.statisticSettings.recentDays)
-				.setLimits(1, 365, 1)
-				.onChange(async (value) => {
-					this.plugin.settings.statisticSettings.recentDays = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName("Segment Size (Historical)")
-			.setDesc("Word count and writing information is stored in segments of this size (in hours) for historical records if CONSOLIDATE HISTORY is enabled.")
-			.addSlider(slider => slider
-				.setValue(this.plugin.settings.statisticSettings.historySegmentSize)
-				.setLimits(2, 24, 2)
-				.onChange(async (value) => {
-					this.plugin.settings.statisticSettings.historySegmentSize = value;
 					await this.plugin.saveSettings();
 				}));
 	}

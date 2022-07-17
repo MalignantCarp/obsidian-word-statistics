@@ -146,14 +146,14 @@ export class WSDataCollector {
         }
     }
 
-    logWords(path: string, newCount: number) {
+    logWords(path: string, newCount: number, load: boolean = false) {
         if (this.fileMap.has(path)) {
             let file = this.fileMap.get(path);
             let oldCount = file.words;
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
                 file.words = newCount;
-                this.stats.onWordCountUpdate(file, newCount);
+                this.stats.onWordCountUpdate(file, oldCount, newCount, load);
                 this.update();
                 this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
             }
@@ -354,7 +354,8 @@ export class WSDataCollector {
             // console.log(fi.getLinks());
             // console.log(fi.getBacklinks());
             let words = WordCountForText(await this.vault.cachedRead(file));
-            this.logWords(fi.path, words);
+            fi.setStartWords(words);
+            this.logWords(fi.path, words, true);
 
             //console.log(frontMatter.wordStatsProject);
             this.update();

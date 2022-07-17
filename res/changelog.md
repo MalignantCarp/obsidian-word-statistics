@@ -1,8 +1,18 @@
 ## Bugs
- - BUG: Settings sliders don't show their value, which makes it hard to apply settings. Considered svelte for the settings dialog to simplify things, or use dropdowns with a few different options.
  - BUG: Default Obsidian theme doesn't show status bar progress bars.
+ - BUG: Obsidian themes don't have a style for disabled buttons, so it is not possible to tell when the buttons are disabled. Will need to add style.
+ - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
 
 ## Changelog
+### 2022-07-17
+ - BUGFIX: Settings sliders don't show their value, which makes it hard to apply settings. Didn't realize the need to use setDynamicTooltip().
+ - Implemented Imported and Exported words for word statistics. These values will take care of issues where word counts have changed outside of Obsidian. It can also later be used to perhaps plug into clipboard events to not include pasted text as words added, as that can wildly break WPM stats. Made WSDataCollector.logWords() pass the old word count along with the new word count to ensure all changes are handled properly. The update routine will now initialize a new IWordCount and then run the update to ensure any changes are accommodated.
+ - Revamped Settings code with namespaces.
+ - Updated statistics settings.
+ - Changed default writingTimeout to 120 seconds.
+ - Removed history consolidation for now. Need to find a way to work in time zone issues. For now all time periods are 15 minutes long, so at most 4 entries per hour for each file.
+ - Added next/prev buttons to the basic stats history view.
+
 ### 2022-07-16
  - Added methods to retrieve stats history based on project and time periods
  - Completed WPM stats code
