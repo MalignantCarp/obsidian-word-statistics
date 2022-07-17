@@ -58,15 +58,28 @@ One caveat to note is that the word counts stored for a particular document will
     - [ ] Legacy editor? (Maybe; since the legacy editor will eventually be removed, not sure there is a huge userbase for whom this would be a useful feature.)
 
 ## Word Count Statistics
-Word counts for all Markdown files are recorded in files.json. Further historical records are collected in segments that include duration, writing time, words added, and words deleted during that segment. So a complete record (segment) might show a duration of 15 minutes, which included 12 minutes of writing, 500 words added, 47 words deleted.
+### Overview
+Word Count Statistics can track words added and words deleted over time for all files, just project files, or just specific project files (tracked on the project level). It also tracks writing time (time spent writing) as configured under settings.
 
-Segments are mainted based on UTC so as to avoid any daylight saving time shenanigans. To aid in later retrieval and filtering, they are stored in discrete blocks so that a particular segment will always begin at 00:00:00 rather than 00:04:23, for example.
+### Tracked Statistics
+ - Words Added: Any time the word count goes up, it counts as words added.
+ - Words Deleted: Any time the word count goes down, it counts as words deleted.
+ - Writing time: Any time during which you are adding or deleting words is considered writing time. If you stop typing, the time period will end. If you resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing.
 
-There are two methods for reducing space consumed by the database. The first is to only maintain these records for files that are part of projects.
+### Time Periods
+Time periods can be between 5 minutes and 60 minutes. If you choose to change the length of time period, the change will take effect for the next time period.
 
-The second method used to reduce database storage is the segment size itself, which can further be moderated by history consolidation and recent days (i.e., how many days in the past are considered "recent"), as well as the segment size used for "history". For example, you can set it so that one year (365 days) is considered "recent" and so anything recent should have a segment size of 20 minutes, but anything over that should be consolidated into segment sizes of 6 hours.
+Because of 30-minute and 45-minute time zones, time periods will never extend over a :15, :30, or :45 mark, so if you change time period length, the next time period's length will be adjusted to the nearest 15-minute interval.
 
-NOTE: Segment length for recent files will not change for any live files (i.e., files with open segments), but will come into effect for the following segment.
+### Air
+When a time period is created, it is always created in discrete 5 minute periods. So if you begin typing at 9:02:47, the first period will start at 9:00:00 and you will have 167 seconds of "air."
+
+### WPM
+There are 4 WPM statistics:
+ - WPM: Words per minute, which is equal to the number of words added divided by the duration of the period, minus air.
+ - WPMA: Words per minute (adjusted), which is equal to the number of words added divided by writing time (this is pretty close to typing speed unless you make a lot of 10-30 second stops during writing)
+ - NWPM: Net words per minute, which is equal to the net words (ending words - starting words) divided by the duration of the period, minus air.
+ - NWPMA: Net words per minute (adjusted), which is equal to the net words divided by writing time.
 
 ### Limitation
 If the first change that is made to a file to be recorded in history is deletion, the initial word count that will show for that file for statistical purposes is 0.
