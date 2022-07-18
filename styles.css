@@ -558,3 +558,8 @@ td.total-head {
 	display: grid;
 	grid-template-columns: auto auto;
 }
+
+.ws-sv-stats button:disabled {
+	opacity: 50%;
+	pointer-events:none;
+}

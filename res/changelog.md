@@ -1,9 +1,20 @@
 ## Bugs
- - BUG: Default Obsidian theme doesn't show status bar progress bars.
- - BUG: Obsidian themes don't have a style for disabled buttons, so it is not possible to tell when the buttons are disabled. Will need to add style.
  - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
 
+## To-Do for first release
+ - StatisticsView: Today Mode - this will show today's current words added, words deleted, net words, and WPM stats, as well as total writing time. Filters will be available to show across all projects/projects within the current path/this project only/this file only. This should also have a calendar widget to change the date to review past statistics.
+ - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
+ - ProgressView - This will essentially replicate the progress bars that are currently in the status bars, plus additional information (Project/Path Titles) and percentages. Both will be available as options, though will need to look into getting progress bars working in default theme. It seems there is not enough room.
+ - Cleanup any outstanding bugs.
+
 ## Changelog
+### 2022-07-18
+ - BUGFIX: Buttons have no disabled styling.
+ - BUGFIX: Next button in Stats view not disabled when it should be.
+ - BUGFIX: onWordCountChange was not updating the stat view index.
+ - Added setting for the stats panel view mode, which will be stored to open the panel to the appropriate view mode. Right now the default is the debug view mode, which shows most of the internal structure of each stat object.
+ - Added some to-do notes.
+
 ### 2022-07-17
  - BUGFIX: Settings sliders don't show their value, which makes it hard to apply settings. Didn't realize the need to use setDynamicTooltip().
  - Implemented Imported and Exported words for word statistics. These values will take care of issues where word counts have changed outside of Obsidian. It can also later be used to perhaps plug into clipboard events to not include pasted text as words added, as that can wildly break WPM stats. Made WSDataCollector.logWords() pass the old word count along with the new word count to ensure all changes are handled properly. The update routine will now initialize a new IWordCount and then run the update to ensure any changes are accommodated.

@@ -68,7 +68,7 @@
 	}
 
 	function nextStat(evt: MouseEvent) {
-		if ((statIndex + 1) < statObj.history.length) {
+		if (statIndex + 1 < statObj.history.length) {
 			statIndex += 1;
 			currentStat = statObj.history[statIndex];
 		}
@@ -93,11 +93,12 @@
 		if (registered) {
 			statObj = collector.stats.getHistoryItem(focus);
 			currentStat = statObj.current;
+			statIndex = statObj.history.length - 1;
 		}
 	}
 
-	$: disabledNext = (!statObj || statObj.history.length === 0 || (statIndex + 1) > statObj.history.length);
-	$: disabledPrev = (statIndex === 0 || statObj && statObj.history.length === 0);
+	$: disabledNext = !statObj || statObj.history.length === 0 || statIndex + 1 >= statObj.history.length;
+	$: disabledPrev = statIndex === 0 || (statObj && statObj.history.length === 0);
 
 	function onFileFocus(evt: WSFocusEvent) {
 		UnregisterWCEvents();
@@ -138,6 +139,9 @@
 						<div>{new Date(currentStat.lastWordAt).toLocaleString()}</div>
 						<div>Writing Time:</div>
 						<div>{SecondsToHMS(currentStat.writingTime / 1000)}</div>
+					</div>
+					<hr />
+					<div class="ws-sv-stats">
 						<div><button on:click={prevStat} disabled={disabledPrev}>Previous</button></div>
 						<div><button on:click={nextStat} disabled={disabledNext}>Next</button></div>
 					</div>

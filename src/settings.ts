@@ -25,13 +25,29 @@ export namespace Settings {
 	}
 
 	export namespace View {
+		export namespace StatisticsPanel {
+			export enum VIEW_MODE {
+				DEBUG = "Debug",
+
+			}
+
+			export interface Structure {
+				viewMode: VIEW_MODE;
+			}
+
+			export const DEFAULT: Structure = {
+				viewMode: VIEW_MODE.DEBUG
+			};
+		}
+
 		export interface Structure {
-			treeView: boolean;
+			statistics: StatisticsPanel.Structure;
 		}
 
 		export const DEFAULT: Structure = {
-			treeView: true,
+			statistics: StatisticsPanel.DEFAULT
 		};
+
 	}
 
 	export namespace Table {
