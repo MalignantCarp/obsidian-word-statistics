@@ -1,160 +1,49 @@
 <script lang="ts">
+import { setIcon } from 'obsidian';
+
 	import type { WSDataCollector } from "src/model/collector";
 	import { WSEvents, WSFileEvent, WSFocusEvent } from "src/model/event";
-	import { WSFile } from "src/model/file";
-	import type { WSProject } from "src/model/project";
-	import { WSCountHistory, type IWordCount } from "src/model/statistics";
+	import type { WSFile } from "src/model/file";
 	import { Settings } from "src/settings";
-	import { FormatNumber, FormatWords, RightWordForNumber, SecondsToHMS } from "src/util";
 	import { onDestroy, onMount } from "svelte";
+	import StatObj from "./StatObj.svelte";
 
 	export let collector: WSDataCollector;
 	let focus: WSFile;
-	let statObj: WSCountHistory;
-	let registered: boolean = false;
-	let currentStat: IWordCount;
-	let statIndex: number;
-	let project: WSProject;
+	let debugView: StatObj;
+
+	let debugButton: HTMLElement;
+
+	let viewMode: Settings.View.StatisticsPanel.VIEW_MODE;
 
 	onMount(() => {
 		collector.plugin.events.on(WSEvents.Focus.File, onFileFocus, { filter: null });
-		RegisterWCEvents();
-		initialize();
+		setIcon(debugButton, "wrench-screwdriver-glyph", 16);
+		viewMode = collector.plugin.settings.viewSettings.statistics.viewMode;
 	});
 
 	onDestroy(() => {
-		if (registered) {
-			collector.plugin.events.off(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
-		}
 		collector.plugin.events.off(WSEvents.Focus.File, onFileFocus, { filter: null });
 	});
 
-	function RegisterWCEvents() {
-		if (focus instanceof WSFile) {
-			collector.plugin.events.on(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
-			registered = true;
-		}
-	}
-
-	function UnregisterWCEvents() {
-		if (focus instanceof WSFile) {
-			collector.plugin.events.off(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
-			registered = false;
-		}
-	}
-
-	function getProject() {
-		if (focus instanceof WSFile) {
-			let projects = collector.manager.getProjectsByFile(focus);
-			if (projects.length === 1) {
-				project = projects[0];
-				return;
-			}
-		}
-		project = null;
-	}
-
-	function initialize() {
-		if (focus instanceof WSFile) {
-			statObj = collector.stats.getHistoryItem(focus);
-			statIndex = statObj.history.length - 1;
-			if (statIndex < 0) {
-				currentStat = null;
-			} else {
-				currentStat = statObj.history[statIndex];
-			}
-		}
-		getProject();
-	}
-
-	function nextStat(evt: MouseEvent) {
-		if (statIndex + 1 < statObj.history.length) {
-			statIndex += 1;
-			currentStat = statObj.history[statIndex];
-		}
-	}
-
-	function prevStat(evt: MouseEvent) {
-		if (statIndex > 0) {
-			statIndex -= 1;
-			currentStat = statObj.history[statIndex];
-		}
-	}
-
-	function hasNext() {
-		return statObj && statObj.history.length > statIndex + 1;
-	}
-
-	function hasPrev() {
-		return statIndex > 0 && statObj && statObj.history.length > 0;
-	}
-
-	function onWordCountChange(evt: WSFileEvent) {
-		if (registered) {
-			statObj = collector.stats.getHistoryItem(focus);
-			currentStat = statObj.current;
-			statIndex = statObj.history.length - 1;
-		}
-	}
-
-	$: disabledNext = !statObj || statObj.history.length === 0 || statIndex + 1 >= statObj.history.length;
-	$: disabledPrev = statIndex === 0 || (statObj && statObj.history.length === 0);
-
 	function onFileFocus(evt: WSFocusEvent) {
-		UnregisterWCEvents();
 		focus = evt.info.file;
-		RegisterWCEvents();
-		initialize();
+		debugView.update(focus);
+	}
+
+	function onDebugClick(evt: MouseEvent) {
+		viewMode = Settings.View.StatisticsPanel.VIEW_MODE.DEBUG;
+		collector.plugin.settings.viewSettings.statistics.viewMode = viewMode;
+		collector.plugin.saveSettings();
 	}
 </script>
 
 <div class="ws-stat-view">
 	<p class="ws-heading">Word Statistics</p>
-	<p>
-		{#if focus instanceof WSFile}
-			<div class="ws-sv-stat-obj">
-				<p class="ws-title">{collector.manager.getTitleForFile(focus, project)}</p>
-				<p class="ws-path">{focus.path}</p>
-				{#if statObj instanceof WSCountHistory && currentStat !== null}
-					<div class="ws-sv-stats">
-						<div>Air:</div>
-						<div>{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>
-						<div>Start Time:</div>
-						<div>{new Date(currentStat.startTime).toLocaleString()}</div>
-						<div>Start Time: (air)</div>
-						<div>{new Date(currentStat.startTime + currentStat.air).toLocaleString()}</div>
-						<div>End Time:</div>
-						<div>{new Date(currentStat.endTime).toLocaleString()}</div>
-						<div>Closing Time:</div>
-						<div>{new Date(currentStat.startTime + Settings.Statistics.PERIOD_LENGTH).toLocaleString()}</div>
-						<div>Start Words:</div>
-						<div>{FormatWords(currentStat.startWords)}</div>
-						<div>End Words:</div>
-						<div>{FormatWords(currentStat.endWords)}</div>
-						<div>Words Added:</div>
-						<div>{FormatWords(currentStat.wordsAdded)}</div>
-						<div>Words Deleted:</div>
-						<div>{FormatWords(currentStat.wordsDeleted)}</div>
-						<div>Last Word At:</div>
-						<div>{new Date(currentStat.lastWordAt).toLocaleString()}</div>
-						<div>Writing Time:</div>
-						<div>{SecondsToHMS(currentStat.writingTime / 1000)}</div>
-					</div>
-					<hr />
-					<div class="ws-sv-stats">
-						<div><button on:click={prevStat} disabled={disabledPrev}>Previous</button></div>
-						<div><button on:click={nextStat} disabled={disabledNext}>Next</button></div>
-					</div>
-				{:else}
-					<div class="ws-sv-no-history">
-						<p>No history.</p>
-					</div>
-				{/if}
-			</div>
-		{:else}
-			<div>
-				<p>No file focused.</p>
-			</div>
-		{/if}
-	</p>
+	<div class="nav-header">
+		<div class="nav-buttons-container">
+			<div class="nav-action-button" class:is-active={viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DEBUG} aria-label="Debug View" bind:this={debugButton} on:click={onDebugClick} />
+		</div>
+	</div>
+	<svelte:component this={StatObj} bind:this={debugView} {focus} {collector} />
 </div>

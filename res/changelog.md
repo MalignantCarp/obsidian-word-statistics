@@ -8,6 +8,9 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-07-19
+ - Pulled current stats view into a new Svelte file specificaly for showing the IWordStat objects. This will become the debug viewer. Added debug view button to the main StatisticsPane.
+
 ### 2022-07-18
  - BUGFIX: Buttons have no disabled styling.
  - BUGFIX: Next button in Stats view not disabled when it should be.
