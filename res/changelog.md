@@ -8,6 +8,9 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-07-20
+ - Started work on Today Mode for Statistics View.
+
 ### 2022-07-19
  - Pulled current stats view into a new Svelte file specificaly for showing the IWordStat objects. This will become the debug viewer. Added debug view button to the main StatisticsPane.
 

@@ -69,7 +69,7 @@ export class WSCountHistory {
 
     getHistoryForPeriod(startDate: Date, endDate?: Date): IWordCount[] {
         let startTime = startDate.getTime();
-        let endTime = startTime + 86400000;
+        let endTime = startTime + Settings.Statistics.DAY_LENGTH;
         if (endDate) {
             endTime = endDate.getTime();
         }

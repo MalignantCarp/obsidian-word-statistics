@@ -28,7 +28,7 @@ export namespace Settings {
 		export namespace StatisticsPanel {
 			export enum VIEW_MODE {
 				DEBUG = "Debug",
-
+				DAY = "Day"
 			}
 
 			export interface Structure {
