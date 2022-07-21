@@ -128,12 +128,12 @@ export class WSCountHistory {
 
     getPercentTimeSpentWriting(counter: IWordCount) {
         let writingTime = counter.writingTime;
-        let duration = counter.endTime - counter.startTime - counter.air;
+        let duration = counter.endTime - (counter.startTime + counter.air);
         return (writingTime / duration);
     }
 
     getDuration(counter: IWordCount) {
-        return counter.endTime - counter.startTime - counter.air;
+        return counter.endTime - (counter.startTime + counter.air);
     }
 
     getTotalDuration() {
@@ -152,7 +152,7 @@ export class WSCountHistory {
         return writingTime;
     }
 
-    initializeCounter(updateTime: number, oldCount: number, newCount: number, previous?: IWordCount) {
+    nextCounter(updateTime: number, oldCount: number, newCount: number) {
         let current = NewWordCount();
         let air: number;
         let startTime: number;
@@ -161,12 +161,39 @@ export class WSCountHistory {
         current.startTime = startTime;
         current.endTime = updateTime;
         current.lastWordAt = updateTime;
-        current.startWords = newCount;
-        current.endWords = newCount;
+        current.startWords = oldCount; // previous word count
+        current.endWords = newCount; // new word count
         current.wordsAdded = 0;
         current.wordsDeleted = 0;
+        // any difference between the existing counter and the next one
+        // occurred outside of Obsidian, so any change is imported or exported
+        // words
         current.wordsImported = Math.max(newCount - oldCount, 0);
         current.wordsExported = Math.max(oldCount - newCount, 0);
+        current.writingTime = 0;
+        this.history.push(current);
+        return current;
+    }
+
+
+    firstCounter(updateTime: number, oldCount: number, newCount: number) {
+        let current = NewWordCount();
+        let air: number;
+        let startTime: number;
+        [air, startTime] = this.getStartTime(updateTime);
+        current.air = air;
+        current.startTime = startTime;
+        current.endTime = updateTime;
+        current.lastWordAt = updateTime;
+        current.startWords = oldCount; // previous word count
+        current.endWords = newCount; // new word count
+        // if we are a new counter with no history, any existing words were imported
+        current.wordsImported = current.startWords;
+        current.wordsExported = 0;
+        // if there is a difference between the original count and the current count,
+        // words were added or deleted
+        current.wordsAdded = Math.max(newCount - oldCount, 0);
+        current.wordsDeleted = Math.max(oldCount - newCount, 0);
         current.writingTime = 0;
         this.history.push(current);
         return current;
@@ -176,12 +203,12 @@ export class WSCountHistory {
         let writingTimeout = this.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
         let current = this.current;
         if (current === undefined) {
-            current = this.initializeCounter(updateTime, oldCount, newCount);
+            current = this.firstCounter(updateTime, oldCount, newCount);
             return;
         } else if (updateTime > current.startTime + Settings.Statistics.PERIOD_LENGTH) {
             // if the maximum end point of our existing counter is prior to updateTime,
             // create a new counter for this count update
-            current = this.initializeCounter(updateTime, current.endWords, oldCount, current);
+            current = this.nextCounter(updateTime, current.endWords, oldCount);
         }
         // Now just need to make adjustments
         // first calculcate adjustment to writing time
@@ -288,7 +315,7 @@ export class WSStatisticManager {
     getTotalWPMForFile(file: WSFile): [number, number, number, number] {
         if (file instanceof WSFile && this.fileMap.has(file)) {
             let history = this.fileMap.get(file);
-            return this.getTotalWPMForHistory(history.history)
+            return this.getTotalWPMForHistory(history.history);
         }
         return undefined;
 
@@ -305,7 +332,7 @@ export class WSStatisticManager {
             if (counters.length > 0) {
                 history.set(countHistory.file, counters);
             }
-        })
+        });
         return history;
     }
 
@@ -320,7 +347,7 @@ export class WSStatisticManager {
             if (counters.length > 0) {
                 history.concat(counters);
             }
-        })
+        });
 
         return history.sort((a, b) => (a.startTime > b.startTime) ? 1 : (b.startTime > a.startTime) ? -1 : 0);
     }
@@ -342,7 +369,7 @@ export class WSStatisticManager {
             if (this.fileMap.has(file)) {
                 history.set(file, this.fileMap.get(file).history);
             }
-        })
+        });
         return history;
     }
 

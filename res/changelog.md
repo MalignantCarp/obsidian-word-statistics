@@ -1,5 +1,6 @@
 ## Bugs
  - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
+  - BUG: DayStats does not load intially until an update.
 
 ## To-Do for first release
  - StatisticsView: Today Mode - this will show today's current words added, words deleted, net words, and WPM stats, as well as total writing time. Filters will be available to show across all projects/projects within the current path/this project only/this file only. This should also have a calendar widget to change the date to review past statistics.
@@ -8,6 +9,13 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-07-21
+ - Added words imported/exported to StatObj.svelte
+ - WSCountHistory.update() now has separate functions for creating the first counter object for a history and the next ones so they the added/deleted/imported/exported words are set correctly
+ - BUGFIX: Duration was being reported as endTime - startTime - air instead of endTime - (startTime + air) in getPercentTimeSpentWriting and getDuration
+ - DayStats now shows today's stats.
+ - BUG: DayStats does not load initially until first update.
+
 ### 2022-07-20
  - Started work on Today Mode for Statistics View.
 

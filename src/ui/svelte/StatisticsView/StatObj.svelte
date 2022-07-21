@@ -130,6 +130,10 @@
 				<div>{FormatWords(currentStat.wordsAdded)}</div>
 				<div>Words Deleted:</div>
 				<div>{FormatWords(currentStat.wordsDeleted)}</div>
+				<div>Words Imported:</div>
+				<div>{FormatWords(currentStat.wordsImported)}</div>
+				<div>Words Exported:</div>
+				<div>{FormatWords(currentStat.wordsExported)}</div>
 				<div>Last Word At:</div>
 				<div>{new Date(currentStat.lastWordAt).toLocaleString()}</div>
 				<div>Writing Time:</div>
