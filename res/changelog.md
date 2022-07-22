@@ -1,6 +1,6 @@
 ## Bugs
  - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
-  - BUG: DayStats does not load intially until an update.
+ - BUG: (potential need for consideration) If a file's word count changes outside of Obsidian but no change is made within Obsidian that triggers an update, the new word count is recorded in the files.js file but there is no corresponding update to the word stats database. It may be good to have a check for when those change and then just log an entry with 0 duration with the update at the local midnight of the day the word count change occurs. That way it would only cause timing issues if the person were to do an update within the first 15 minutes of the day.
 
 ## To-Do for first release
  - StatisticsView: Today Mode - this will show today's current words added, words deleted, net words, and WPM stats, as well as total writing time. Filters will be available to show across all projects/projects within the current path/this project only/this file only. This should also have a calendar widget to change the date to review past statistics.
@@ -9,6 +9,11 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-07-22
+  - BUGFIX: DayStats does not load intially until an update.
+  - BUGFIX: & writing time can yield NaN if a word is added as the first typing entry. Made the minimum writing time/duration as 1 for the calculation
+  - BUGFIX: Not tracking time properly as only when a keystroke yields a word count change does the stats system receive an update. Added a WordsUpdated event (first WordsChanged) to trigger updates for these and a silent update method for the stats manager from WSDataColector.logWords(). There is still the possibility of missing some updates as a result of using debounce for updates, but this will only affect words added/deleted counts if doing rapid and repeated cut/paste operations. Final count should stil be picked up.
+
 ### 2022-07-21
  - Added words imported/exported to StatObj.svelte
  - WSCountHistory.update() now has separate functions for creating the first counter object for a history and the next ones so they the added/deleted/imported/exported words are set correctly
@@ -297,8 +302,7 @@
  - BUGFIX: WordCountForProject statusbar widget wasn't updating properly.
  - BUGFIX: ProjectEditList and ProjectEditListItem were not handling deletion properly, so the list of projects was not updating correctly.
  - BUGFIX: SuggestBox and ValidatedInput had certain display issues that have been fixed.
- - [-] BUG: SuggestBox key navigation doesn't work, nor does selecting an option
-
+ - BUG: SuggestBox key navigation doesn't work, nor does selecting an option
 
 ### 2022-05-02
  - Updated to some dev dependencies

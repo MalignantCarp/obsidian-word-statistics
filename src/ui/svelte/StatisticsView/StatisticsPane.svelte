@@ -34,6 +34,8 @@
 		focus = evt.info.file;
 		if (viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DEBUG) {
 			debugView.update(focus);
+		} else if (viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DAY) {
+			dayView.update();
 		}
 	}
 

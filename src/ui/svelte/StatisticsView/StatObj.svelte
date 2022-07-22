@@ -26,6 +26,7 @@
 	onDestroy(() => {
 		if (registered) {
 			collector.plugin.events.off(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
+			collector.plugin.events.off(WSEvents.File.WordsUpdated, onWordCountChange, { filter: focus });
 		}
         collector.plugin.events.off(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, {filter: null});
 	});
@@ -33,6 +34,7 @@
 	function RegisterWCEvents() {
 		if (focus instanceof WSFile) {
 			collector.plugin.events.on(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
+			collector.plugin.events.on(WSEvents.File.WordsUpdated, onWordCountChange, { filter: focus });
 			registered = true;
 		}
 	}
@@ -40,6 +42,7 @@
 	function UnregisterWCEvents() {
 		if (focus instanceof WSFile) {
 			collector.plugin.events.off(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
+			collector.plugin.events.off(WSEvents.File.WordsUpdated, onWordCountChange, { filter: focus });
 			registered = false;
 		}
 	}

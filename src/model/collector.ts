@@ -153,9 +153,12 @@ export class WSDataCollector {
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
                 file.words = newCount;
-                this.stats.onWordCountUpdate(file, oldCount, newCount, load);
+                this.stats.onWordCountUpdate(file, oldCount, newCount);
                 this.update();
                 this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
+            } else {
+                this.stats.onSilentUpdate(file);
+                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsUpdated, file }, { filter: file }));
             }
             return;
         }

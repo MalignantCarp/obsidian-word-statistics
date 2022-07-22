@@ -199,6 +199,25 @@ export class WSCountHistory {
         return current;
     }
 
+    silentUpdate(updateTime: number) {
+        let writingTimeout = this.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
+        let current = this.current;
+        // if we don't have an object or would otherwise change this object,
+        // we don't need to do anything
+        if (current === undefined || updateTime > current.startTime + Settings.Statistics.PERIOD_LENGTH) {
+            return;
+        }
+        // Now just need to make adjustments to writing time and lastWordAt
+        // first calculcate adjustment to writing time
+        let writingGap = updateTime - current.lastWordAt;
+        if (writingGap < writingTimeout) {
+            current.writingTime += writingGap;
+        }
+
+        current.lastWordAt = updateTime;
+        current.endTime = updateTime;
+    }
+
     update(updateTime: number, oldCount: number, newCount: number) {
         let writingTimeout = this.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
         let current = this.current;
@@ -242,7 +261,11 @@ export class WSStatisticManager {
         while (this.queue.length > 0) {
             let [file, oldCount, newCount, updateTime] = this.queue.shift();
             let counter = this.getHistoryItem(file);
-            counter.update(updateTime, oldCount, newCount);
+            if (oldCount === undefined) {
+                counter.silentUpdate(updateTime);
+            } else {
+                counter.update(updateTime, oldCount, newCount);
+            }
         }
         this.locked = false;
     }
@@ -256,7 +279,17 @@ export class WSStatisticManager {
         return counter;
     }
 
-    onWordCountUpdate(file: WSFile, oldCount: number, newCount: number, load: boolean = false) {
+    onSilentUpdate(file: WSFile) {
+        let updateTime = Date.now();
+        if (!this.locked) {
+            let counter = this.getHistoryItem(file);
+            counter.silentUpdate(updateTime);
+        } else {
+            this.queue.push([file, undefined, undefined, undefined]);
+        }
+    }
+
+    onWordCountUpdate(file: WSFile, oldCount: number, newCount: number) {
         let updateTime = Date.now();
         if (!this.locked) {
             let counter = this.getHistoryItem(file);

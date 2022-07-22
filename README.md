@@ -44,7 +44,7 @@ One caveat to note is that the word counts stored for a particular document will
     - [ ] Compatibility with Longform project index
 - [x] Word count statistics (see below for more information)
 - [x] Project manager view
-- [ ] Statistics view
+- [x] Statistics view
 - [ ] Per-project statistics tables via code blocks
 - [x] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
 - [x] Per-project word goals
@@ -73,6 +73,10 @@ Recent history (or all history if )
  - Words Added: Any time the word count goes up, it counts as words added.
  - Words Deleted: Any time the word count goes down, it counts as words deleted.
  - Writing time: Any time during which you are adding or deleting words is considered writing time.
+ - Words Imported: Any time the word count goes up outside of Obsidian, it is considered imported.
+ - Words Exported: Any time the word count goes down outside of Obsidian, it is considered exported.
+
+Note that if Obsidian when a file is changed in an external editor and a change is made within Obsidian to that file within the 15 minute time period, it will show up as words added/deleted instead of imported/exported.
 
 ### Time Periods
 Time periods are 15 minutes long and are calculcated to begin at exactly the :00, :15, :30, and :45 minute park of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC. The difference between when you actually start typing and the start of these periods is referred to as "air". This way you can still get proper WPM statistics.
