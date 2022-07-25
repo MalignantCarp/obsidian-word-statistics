@@ -1,4 +1,6 @@
 <script lang="ts">
+import { setIcon } from 'obsidian';
+
 	import type { WSDataCollector } from "src/model/collector";
 	import { WSEvents, WSFileEvent } from "src/model/event";
 	import type { WSFile } from "src/model/file";
@@ -25,10 +27,22 @@
 	let startWords: number = 0;
 	let endWords: number = 0;
 
+	let navPrevious: HTMLElement;
+	let navNext: HTMLElement;
+	let navYesterday: HTMLElement;
+	let navTomorrow: HTMLElement;
+	let navToday: HTMLElement;
+
 	onMount(() => {
+		setIcon(navPrevious, "left-chevron-glyph", 20);
+		setIcon(navYesterday, "yesterday-glyph", 20);
+		setIcon(navToday, "calendar-glyph", 20);
+		setIcon(navTomorrow, "tomorrow-glyph", 20);
+		setIcon(navNext, "right-chevron-glyph", 20);
+
 		viewDate = GetDateStart(new Date());
 		collector.plugin.events.on(WSEvents.File.WordsChanged, onWordsChanged, { filter: null });
-        collector.plugin.events.on(WSEvents.File.WordsUpdated, onWordsChanged, { filter: null });
+		collector.plugin.events.on(WSEvents.File.WordsUpdated, onWordsChanged, { filter: null });
 		todayStart = viewDate.getTime();
 		dayEnd = todayStart + Settings.Statistics.DAY_LENGTH;
 		reloadStats();
@@ -36,12 +50,12 @@
 
 	onDestroy(() => {
 		collector.plugin.events.off(WSEvents.File.WordsChanged, onWordsChanged, { filter: null });
-        collector.plugin.events.off(WSEvents.File.WordsUpdated, onWordsChanged, { filter: null });
+		collector.plugin.events.off(WSEvents.File.WordsUpdated, onWordsChanged, { filter: null });
 	});
 
-    export function update() {
-        reloadStats();
-    }
+	export function update() {
+		reloadStats();
+	}
 
 	function reloadStats() {
 		stats = collector.stats.getHistoryForTimePeriod(viewDate);
@@ -74,13 +88,14 @@
 			totalDuration === 0 &&
 			totalWritingTime === 0
 		);
-        if (dayHasHistory) { // fix for NaN when one keystroke results in a word count change
-            totalDuration = Math.max(totalDuration, 1);
-            totalWritingTime = Math.max(totalWritingTime, 1);
-        }
+		if (dayHasHistory) {
+			// fix for NaN when one keystroke results in a word count change
+			totalDuration = Math.max(totalDuration, 1);
+			totalWritingTime = Math.max(totalWritingTime, 1);
+		}
 	}
 
-	function onWordsChanged(evt: WSFileEvent) {
+	function RolloverCheck(): number {
 		let start = new Date();
 		let timeCheck = start.getTime();
 		start = GetDateStart(start);
@@ -90,6 +105,14 @@
 			todayStart = start.getTime();
 			dayEnd = todayStart + Settings.Statistics.DAY_LENGTH;
 			reloadStats();
+			return -1;
+		}
+		return timeCheck;
+	}
+
+	function onWordsChanged(evt: WSFileEvent) {
+		let timeCheck = RolloverCheck();
+		if (timeCheck === -1) {
 			return;
 		}
 		// if we are adding or removing words in the day we are examining
@@ -98,30 +121,68 @@
 			reloadStats();
 		}
 	}
+
+	function prevDay() {
+		viewDate = GetDateStart(new Date(viewDate.getTime() - Settings.Statistics.DAY_LENGTH));
+		reloadStats();
+	}
+
+	function nextDay() {
+		viewDate = GetDateStart(new Date(viewDate.getTime() + Settings.Statistics.DAY_LENGTH));
+		reloadStats();
+	}
+
+	function today() {
+		RolloverCheck();
+		viewDate = GetDateStart(new Date(todayStart));
+		reloadStats();
+	}
+
+	function yesterday() {
+		RolloverCheck();
+		viewDate = GetDateStart(new Date(todayStart - Settings.Statistics.DAY_LENGTH));
+		reloadStats();
+	}
+
+	function tomorrow() {
+		RolloverCheck();
+		viewDate = GetDateStart(new Date(todayStart + Settings.Statistics.DAY_LENGTH));
+		reloadStats();
+	}
 </script>
 
 <div class="ws-sv-date">
+	<div class="nav-header">
+		<div class="nav-buttons-container">
+			<div class="nav-action-button" aria-label="Previous Day" bind:this={navPrevious} on:click={prevDay} />
+			<div class="nav-action-button" aria-label="Yesterday" bind:this={navYesterday} on:click={yesterday} />
+			<div class="nav-action-button" aria-label="Today" bind:this={navToday} on:click={today} />
+			<div class="nav-action-button" aria-label="Tomorrow" bind:this={navTomorrow} on:click={tomorrow} />
+			<div class="nav-action-button" aria-label="Next Day" bind:this={navNext} on:click={nextDay} />
+		</div>
+	</div>
+
 	<p class="ws-title">{viewDate instanceof Date ? viewDate.toLocaleDateString() : ""}</p>
 	{#if dayHasHistory}
 		<div class="ws-sv-stats">
 			<div>Start Words:</div>
-			<div>{FormatWords(startWords)}</div>
+			<div class="ws-sv-value">{FormatWords(startWords)}</div>
 			<div>End Words:</div>
-			<div>{FormatWords(endWords)}</div>
+			<div class="ws-sv-value">{FormatWords(endWords)}</div>
 			<div>Words Added:</div>
-			<div>{FormatWords(totalWordsAdded)}</div>
+			<div class="ws-sv-value">{FormatWords(totalWordsAdded)}</div>
 			<div>Words Deleted:</div>
-			<div>{FormatWords(totalWordsDeleted)}</div>
+			<div class="ws-sv-value">{FormatWords(totalWordsDeleted)}</div>
 			<div>Words Imported:</div>
-			<div>{FormatWords(totalWordsImported)}</div>
+			<div class="ws-sv-value">{FormatWords(totalWordsImported)}</div>
 			<div>Words Exported:</div>
-			<div>{FormatWords(totalWordsExported)}</div>
+			<div class="ws-sv-value">{FormatWords(totalWordsExported)}</div>
 			<div>Writing Time:</div>
-			<div>{SecondsToHMS(totalWritingTime / 1000)}</div>
+			<div class="ws-sv-value">{SecondsToHMS(totalWritingTime / 1000)}</div>
 			<div>Logged Time:</div>
-			<div>{SecondsToHMS(totalDuration / 1000)}</div>
+			<div class="ws-sv-value">{SecondsToHMS(totalDuration / 1000)}</div>
 			<div>Time Writing (%)</div>
-			<div>{((totalWritingTime / totalDuration) * 100).toFixed(2) + "%"}</div>
+			<div class="ws-sv-value">{((totalWritingTime / totalDuration) * 100).toFixed(2) + "%"}</div>
 		</div>
 	{:else}
 		<div class="ws-sv-no-history">

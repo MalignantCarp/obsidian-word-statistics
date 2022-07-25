@@ -116,31 +116,31 @@
 		{#if statObj instanceof WSCountHistory && currentStat !== null}
 			<div class="ws-sv-stats">
 				<div>Air:</div>
-				<div>{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>
+				<div class="ws-sv-value">{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>
 				<div>Start Time:</div>
-				<div>{new Date(currentStat.startTime).toLocaleString()}</div>
+				<div class="ws-sv-value">{new Date(currentStat.startTime).toLocaleString()}</div>
 				<div>Start Time: (air)</div>
-				<div>{new Date(currentStat.startTime + currentStat.air).toLocaleString()}</div>
+				<div class="ws-sv-value">{new Date(currentStat.startTime + currentStat.air).toLocaleString()}</div>
 				<div>End Time:</div>
-				<div>{new Date(currentStat.endTime).toLocaleString()}</div>
+				<div class="ws-sv-value">{new Date(currentStat.endTime).toLocaleString()}</div>
 				<div>Closing Time:</div>
-				<div>{new Date(currentStat.startTime + Settings.Statistics.PERIOD_LENGTH).toLocaleString()}</div>
+				<div class="ws-sv-value">{new Date(currentStat.startTime + Settings.Statistics.PERIOD_LENGTH).toLocaleString()}</div>
 				<div>Start Words:</div>
-				<div>{FormatWords(currentStat.startWords)}</div>
+				<div class="ws-sv-value">{FormatWords(currentStat.startWords)}</div>
 				<div>End Words:</div>
-				<div>{FormatWords(currentStat.endWords)}</div>
+				<div class="ws-sv-value">{FormatWords(currentStat.endWords)}</div>
 				<div>Words Added:</div>
-				<div>{FormatWords(currentStat.wordsAdded)}</div>
+				<div class="ws-sv-value">{FormatWords(currentStat.wordsAdded)}</div>
 				<div>Words Deleted:</div>
-				<div>{FormatWords(currentStat.wordsDeleted)}</div>
+				<div class="ws-sv-value">{FormatWords(currentStat.wordsDeleted)}</div>
 				<div>Words Imported:</div>
-				<div>{FormatWords(currentStat.wordsImported)}</div>
+				<div class="ws-sv-value">{FormatWords(currentStat.wordsImported)}</div>
 				<div>Words Exported:</div>
-				<div>{FormatWords(currentStat.wordsExported)}</div>
+				<div class="ws-sv-value">{FormatWords(currentStat.wordsExported)}</div>
 				<div>Last Word At:</div>
-				<div>{new Date(currentStat.lastWordAt).toLocaleString()}</div>
+				<div class="ws-sv-value">{new Date(currentStat.lastWordAt).toLocaleString()}</div>
 				<div>Writing Time:</div>
-				<div>{SecondsToHMS(currentStat.writingTime / 1000)}</div>
+				<div class="ws-sv-value">{SecondsToHMS(currentStat.writingTime / 1000)}</div>
 			</div>
 			<hr />
 			<div class="ws-sv-stats">

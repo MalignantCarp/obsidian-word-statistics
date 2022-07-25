@@ -9,6 +9,10 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-07-25
+ - Additional CSS
+ - Now have Previous Day, Yesterday, Today, Tomorrow, Next Day buttons for DayStats.svelte.
+
 ### 2022-07-22
   - BUGFIX: DayStats does not load intially until an update.
   - BUGFIX: & writing time can yield NaN if a word is added as the first typing entry. Made the minimum writing time/duration as 1 for the calculation

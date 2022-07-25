@@ -547,8 +547,10 @@ td.total-head {
 .ws-sv-stat-obj {}
 
 .ws-title {
-	font-size: 1.1rem;
+	font-size: 1.2rem;
 	text-align: center;
+	color: var(--interactive-accent);
+	font-weight: bold;
 }
 
 .ws-path {
@@ -560,7 +562,11 @@ td.total-head {
 	grid-template-columns: auto auto;
 }
 
+.ws-sv-value {
+	text-align: right;
+}
+
 .ws-sv-stats button:disabled {
 	opacity: 50%;
-	pointer-events:none;
+	pointer-events: none;
 }
