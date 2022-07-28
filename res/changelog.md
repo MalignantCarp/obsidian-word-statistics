@@ -1,14 +1,17 @@
 ## Bugs
  - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
- - BUG: (potential need for consideration) If a file's word count changes outside of Obsidian but no change is made within Obsidian that triggers an update, the new word count is recorded in the files.js file but there is no corresponding update to the word stats database. It may be good to have a check for when those change and then just log an entry with 0 duration with the update at the local midnight of the day the word count change occurs. That way it would only cause timing issues if the person were to do an update within the first 15 minutes of the day.
+ - BUG: (potential need for consideration) If a file's word count changes outside of Obsidian but no change is made within Obsidian that triggers an update, the new word count is recorded in the files.json file but there is no corresponding update to the word stats database. It may be good to have a check for when those change and then just log an entry with 0 duration with the update at the local midnight of the day the word count change occurs. That way it would only cause timing issues if the person were to do an update within the first 15 minutes of the day.
 
 ## To-Do for first release
- - StatisticsView: Today Mode - this will show today's current words added, words deleted, net words, and WPM stats, as well as total writing time. Filters will be available to show across all projects/projects within the current path/this project only/this file only. This should also have a calendar widget to change the date to review past statistics.
  - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
  - ProgressView - This will essentially replicate the progress bars that are currently in the status bars, plus additional information (Project/Path Titles) and percentages. Both will be available as options, though will need to look into getting progress bars working in default theme. It seems there is not enough room.
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-07-28
+ - BUGFIX: Queued silent updates resulted in undefined lastWordAt and endTime values as it was passing undefined to the queue in place of the updateTime.
+ - BUGFIX: StatObj.svelte threw an exception when currentStat was undefined (i.e., first time a stab object is created).
+
 ### 2022-07-25
  - Additional CSS
  - Now have Previous Day, Yesterday, Today, Tomorrow, Next Day buttons for DayStats.svelte.

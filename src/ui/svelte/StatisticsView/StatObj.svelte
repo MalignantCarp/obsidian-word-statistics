@@ -11,7 +11,7 @@
 	export let focus: WSFile;
 	export let collector: WSDataCollector;
 
-    let project: WSProject;
+	let project: WSProject;
 	let statObj: WSCountHistory;
 	let registered: boolean = false;
 	let currentStat: IWordCount;
@@ -19,7 +19,7 @@
 
 	onMount(() => {
 		RegisterWCEvents();
-        collector.plugin.events.on(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, {filter: null});
+		collector.plugin.events.on(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, { filter: null });
 		initialize();
 	});
 
@@ -28,7 +28,7 @@
 			collector.plugin.events.off(WSEvents.File.WordsChanged, onWordCountChange, { filter: focus });
 			collector.plugin.events.off(WSEvents.File.WordsUpdated, onWordCountChange, { filter: focus });
 		}
-        collector.plugin.events.off(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, {filter: null});
+		collector.plugin.events.off(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, { filter: null });
 	});
 
 	function RegisterWCEvents() {
@@ -47,9 +47,8 @@
 		}
 	}
 
-
 	function onProjectFilesUpdate(evt: WSProjectEvent) {
-        getProject();
+		getProject();
 	}
 
 	function getProject() {
@@ -72,22 +71,24 @@
 			} else {
 				currentStat = statObj.history[statIndex];
 			}
+			// console.log(currentStat)
 		}
 		getProject();
 	}
 
-    export function update(file: WSFile) {
-        UnregisterWCEvents();
-        focus = file;
-        RegisterWCEvents()
-        initialize();
-    }
+	export function update(file: WSFile) {
+		UnregisterWCEvents();
+		focus = file;
+		RegisterWCEvents();
+		initialize();
+	}
 
 	function nextStat(evt: MouseEvent) {
 		if (statIndex + 1 < statObj.history.length) {
 			statIndex += 1;
 			currentStat = statObj.history[statIndex];
 		}
+		// console.log(statObj);
 	}
 
 	function prevStat(evt: MouseEvent) {
@@ -95,6 +96,7 @@
 			statIndex -= 1;
 			currentStat = statObj.history[statIndex];
 		}
+		// console.log(statObj);
 	}
 
 	function onWordCountChange(evt: WSFileEvent) {
@@ -113,7 +115,7 @@
 	<div class="ws-sv-stat-obj">
 		<p class="ws-title">{collector.manager.getTitleForFile(focus, project)}</p>
 		<p class="ws-path">{focus.path}</p>
-		{#if statObj instanceof WSCountHistory && currentStat !== null}
+		{#if statObj instanceof WSCountHistory && currentStat !== null && currentStat !== undefined}
 			<div class="ws-sv-stats">
 				<div>Air:</div>
 				<div class="ws-sv-value">{FormatNumber(currentStat.air / 1000) + RightWordForNumber(currentStat.air, "second", "seconds")}</div>

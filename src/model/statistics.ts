@@ -285,7 +285,7 @@ export class WSStatisticManager {
             let counter = this.getHistoryItem(file);
             counter.silentUpdate(updateTime);
         } else {
-            this.queue.push([file, undefined, undefined, undefined]);
+            this.queue.push([file, undefined, undefined, updateTime]);
         }
     }
 

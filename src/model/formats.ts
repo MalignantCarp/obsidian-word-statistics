@@ -45,7 +45,7 @@ export namespace WSFormat {
             table = JSON.parse(data) as IFile[];
             files = DeserializeFiles(table);
         } catch (error) {
-            console.log(`Error attempting to parse file data [${data}]: `, error)
+            console.log(`Error attempting to parse file data [${data}]: `, error);
         }
         // console.log("File data loaded.");
         return files;
@@ -133,7 +133,7 @@ export namespace WSFormat {
             table = JSON.parse(data) as IProject[];
             projects = DeserializeProjects(collector, table);
         } catch (error) {
-            console.log(`Error attempting to parse project data [${data}]: `, error)
+            console.log(`Error attempting to parse project data [${data}]: `, error);
         }
         // console.log("Project data loaded.");
         return projects;
@@ -188,11 +188,11 @@ export namespace WSFormat {
             table = JSON.parse(data) as IPath[];
             paths = DeserializePaths(table);
         } catch (error) {
-            console.log(`Error attempting to parse path data [${data}]: `, error)
+            console.log(`Error attempting to parse path data [${data}]: `, error);
         }
         // console.log("Path data loaded.");
         return paths;
-   }
+    }
 
     export function SavePathData(plugin: WordStatisticsPlugin, paths: WSPath[]): string {
         let table = SerializePaths(paths);
@@ -213,19 +213,19 @@ export namespace WSFormat {
     function SerializeStatisticalData(stats: WSCountHistory[]) {
         let table: ICountHistory[] = [];
         stats.forEach((wcHistory) => {
-            table.push({path: wcHistory.file.path, history: wcHistory.history});
-        })
+            table.push({ path: wcHistory.file.path, history: wcHistory.history });
+        });
         return table;
     }
 
     function DeserializeStatisticalData(collector: WSDataCollector, table: ICountHistory[]): WSCountHistory[] {
         let stats: WSCountHistory[] = [];
         table.forEach((row) => {
-            let {path, history} = row;
+            let { path, history } = row;
             let file = collector.getFile(path);
             let counter = new WSCountHistory(collector, file, history);
             stats.push(counter);
-        })
+        });
         return stats;
     }
 
@@ -236,9 +236,8 @@ export namespace WSFormat {
             table = JSON.parse(data) as ICountHistory[];
             stats = DeserializeStatisticalData(collector, table);
         } catch (error) {
-            console.log(`Error attempting to parse statistics data [${data}]: `, error)
+            console.log(`Error attempting to parse statistics data [${data}]: `, error);
         }
-
         return stats;
     }
 
