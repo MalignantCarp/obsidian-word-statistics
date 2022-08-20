@@ -1,7 +1,17 @@
 import { Settings } from 'src/settings';
 import type { WSDataCollector } from './collector';
-import { WSFile } from "./file";
+import { WSEvents, WSStatEvent } from './event';
+import type { WSFile } from "./file";
+import type { WSProjectManager } from './manager';
 import type { WSProject } from './project';
+
+export namespace Statistics {
+    export function RecordStatsFor(file: WSFile, manager: WSProjectManager) {
+        return manager.collector.pluginSettings.statisticSettings.record == Settings.Statistics.MONITOR.ALL ||
+            (manager.collector.pluginSettings.statisticSettings.record == Settings.Statistics.MONITOR.PROJECTS && manager.getProjectsByFile(file).length > 0) ||
+            (manager.collector.pluginSettings.statisticSettings.record == Settings.Statistics.MONITOR.MONITORED && manager.getProjectsByFile(file).filter(project => project.monitorCounts).length > 0);
+    };
+}
 
 export interface IWordCount {
     air: number,
@@ -248,183 +258,360 @@ export class WSCountHistory {
     }
 }
 
-export class WSStatisticManager {
+export interface IFileStat {
+    timeStart: number,
+    timeEnd: number,
+    wordsStart: number,
+    wordsEnd: number,
+    wordsAdded: number,
+    wordsDeleted: number,
+    wordsImported: number,
+    wordsExported: number,
+    wordsUpdatedAt: number,
+    writingTime: number;
+}
+
+export interface IFileWrapper {
+    file: WSFile,
+    stats: IFileStat;
+}
+
+export class WSTimePeriod {
+    constructor(
+        public manager: WSStatisticsManager,
+        public timeStart: number,
+        public timeEnd: number = 0,
+        public expiry: number = 0,
+        public files: IFileWrapper[] = [],
+        public base: number = 0,
+        public wordsStart: number = 0,
+        public wordsEnd: number = 0,
+        public wordsAdded: number = 0,
+        public wordsDeleted: number = 0,
+        public wordsImported: number = 0,
+        public wordsExported: number = 0,
+        public wordsUpdatedAt: number = 0,
+        public writingTime: number = 0,
+    ) {
+        if (this.base === 0) {
+            this.base = this.timeStart - (this.timeStart % Settings.Statistics.PERIOD_LENGTH);
+        }
+        if (this.expiry === 0) {
+            this.expiry = this.base + Settings.Statistics.PERIOD_LENGTH;
+        }
+        if (this.timeEnd === 0) {
+            this.timeEnd = this.timeStart;
+        }
+    }
+
+    get current(): IFileWrapper {
+        return this.files.length > 0 ? this.files.slice(-1).first() : undefined;
+    }
+
+    silentUpdate(file: WSFile, updateTime: number, oldCount: number, newCount: number): any {
+        // we know in this case oldCount and newCount should be identical, so no making any word count changes
+        if (updateTime > this.expiry) return undefined; // do not update if we're expired
+
+        this.wordsUpdatedAt = updateTime;
+        let last = this.current;
+        /* We don't want to do anything where we'd be creating a new statistics object. */
+        if (last === undefined || last.file != file) return undefined;
+
+        let writingTimeout = this.manager.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
+        let writingGap = updateTime - last.stats.wordsUpdatedAt;
+        if (writingGap < writingTimeout) {
+            last.stats.writingTime += writingGap;
+            this.writingTime += writingGap;
+        }
+        last.stats.wordsUpdatedAt = updateTime;
+        last.stats.timeEnd = updateTime;
+        this.timeEnd = updateTime;
+    }
+
+    update(file: WSFile, updateTime: number, oldCount: number, newCount: number) {
+        if (updateTime > this.expiry) return undefined; // do not update if we're expired
+        this.wordsUpdatedAt = updateTime;
+        let last = this.current;
+        if (last === undefined || last.file != file) {
+            // if there is no current file wrapper or it is for a different file
+            last = this.manager.fileHistory.get(file)?.last(); // get the last history object for that file
+            let newFile: IFileWrapper;
+            if (last === undefined) {
+                // if last is still undefined, we've never done anything with this file before, so create a fully new one
+                newFile = {
+                    file, stats: {
+                        timeStart: updateTime,
+                        timeEnd: updateTime,
+                        wordsStart: oldCount,
+                        wordsEnd: newCount,
+                        wordsAdded: Math.max(0, newCount - oldCount),
+                        wordsDeleted: Math.max(0, oldCount - newCount),
+                        wordsImported: oldCount,
+                        wordsExported: 0,
+                        wordsUpdatedAt: updateTime,
+                        writingTime: 0
+                    }
+                };
+                this.wordsStart += oldCount;
+                this.wordsEnd += newCount;
+                this.wordsImported += oldCount;
+                this.wordsAdded += newFile.stats.wordsAdded;
+                this.wordsDeleted += newFile.stats.wordsDeleted;
+            } else {
+                newFile = {
+                    file, stats: {
+                        timeStart: updateTime,
+                        timeEnd: updateTime,
+                        wordsStart: last.stats.wordsEnd,
+                        wordsEnd: newCount,
+                        wordsAdded: Math.max(0, newCount - oldCount),
+                        wordsDeleted: Math.max(0, oldCount - newCount),
+                        wordsImported: Math.max(0, oldCount - last.stats.wordsEnd),
+                        wordsExported: Math.max(0, last.stats.wordsEnd - oldCount),
+                        wordsUpdatedAt: updateTime,
+                        writingTime: 0
+                    }
+                };
+                this.wordsAdded += newFile.stats.wordsAdded;
+                this.wordsDeleted += newFile.stats.wordsDeleted;
+                this.wordsImported += newFile.stats.wordsImported;
+                this.wordsExported += newFile.stats.wordsExported;
+                this.wordsEnd += newFile.stats.wordsAdded - newFile.stats.wordsDeleted + newFile.stats.wordsImported - newFile.stats.wordsExported;
+            }
+            this.files.push(newFile);
+            return newFile;
+        } else {
+            let wordsAdded = Math.max(0, newCount - oldCount);
+            let wordsDeleted = Math.max(0, oldCount - newCount);
+            let wordsImported = Math.max(0, oldCount - last.stats.wordsEnd);
+            let wordsExported = Math.max(0, last.stats.wordsEnd - oldCount);
+
+            last.stats.wordsEnd = newCount;
+            last.stats.wordsAdded += wordsAdded;
+            last.stats.wordsDeleted += wordsDeleted;
+            last.stats.wordsImported += wordsImported;
+            last.stats.wordsExported += wordsExported;
+
+            let writingTimeout = this.manager.collector.plugin.settings.statisticSettings.writingTimeout * 1000;
+            let writingGap = updateTime - last.stats.wordsUpdatedAt;
+            if (writingGap < writingTimeout) {
+                last.stats.writingTime += writingGap;
+                this.writingTime += writingGap;
+            }
+
+            this.wordsAdded += wordsAdded;
+            this.wordsDeleted += wordsDeleted;
+            this.wordsImported += wordsImported;
+            this.wordsExported += wordsExported;
+            this.wordsEnd += wordsAdded - wordsDeleted + wordsImported - wordsExported;
+
+            last.stats.wordsUpdatedAt = updateTime;
+            last.stats.timeEnd = updateTime;
+            this.timeEnd = updateTime;
+        }
+    }
+}
+
+export class WSStatisticsManager {
     private locked = true;
-    private queue: [file: WSFile, oldCount: number, newCount: number, updateTime: number][] = [];
+    private queue: [file: WSFile, oldCount: number, newCount: number, updateTime: number, silent: boolean][] = [];
 
     constructor(
         public collector: WSDataCollector,
-        public fileMap: Map<WSFile, WSCountHistory> = new Map<WSFile, WSCountHistory>()
+        public fileHistory: Map<WSFile, IFileWrapper[]> = new Map<WSFile, IFileWrapper[]>(),
+        public periods: WSTimePeriod[] = [],
     ) { }
 
     unlock() {
         while (this.queue.length > 0) {
-            let [file, oldCount, newCount, updateTime] = this.queue.shift();
-            let counter = this.getHistoryItem(file);
-            if (oldCount === undefined) {
-                counter.silentUpdate(updateTime);
+            let [file, updateTime, oldCount, newCount, silent] = this.queue.shift();
+            this.updatePeriods(updateTime);
+            if (silent) {
+                this.processSilentUpdate(file, updateTime, oldCount, newCount);
             } else {
-                counter.update(updateTime, oldCount, newCount);
+                this.processUpdate(file, updateTime, oldCount, newCount);
             }
         }
         this.locked = false;
     }
 
-    getHistoryItem(file: WSFile): WSCountHistory {
-        let counter = this.fileMap.get(file);
-        if (!(counter instanceof WSCountHistory)) {
-            counter = new WSCountHistory(this.collector, file);
-            this.fileMap.set(file, counter);
-        }
-        return counter;
-    }
-
-    onSilentUpdate(file: WSFile) {
-        let updateTime = Date.now();
-        if (!this.locked) {
-            let counter = this.getHistoryItem(file);
-            counter.silentUpdate(updateTime);
+    processUpdate(file: WSFile, updateTime: number, oldCount: number, newCount: number) {
+        let newFile = this.currentPeriod?.update(file, updateTime, oldCount, newCount);
+        if (newFile === undefined) return;
+        if (this.fileHistory.has(file)) {
+            this.fileHistory.get(file).push(newFile);
         } else {
-            this.queue.push([file, undefined, undefined, updateTime]);
+            this.collector.plugin.events.trigger(new WSStatEvent({ type: WSEvents.Stats.FileTouch, period: this.currentPeriod, file: newFile }, { filter: null }));
+            this.fileHistory.set(file, [newFile]);
         }
     }
 
-    onWordCountUpdate(file: WSFile, oldCount: number, newCount: number) {
-        let updateTime = Date.now();
+    processSilentUpdate(file: WSFile, updateTime: number, oldCount: number, newCount: number) {
+        this.currentPeriod?.silentUpdate(file, updateTime, oldCount, newCount);
+    }
+
+    onSilentUpdate(updateTime: number, file: WSFile, oldCount: number, newCount: number) {
         if (!this.locked) {
-            let counter = this.getHistoryItem(file);
-            counter.update(updateTime, oldCount, newCount);
+            this.updatePeriods(updateTime);
+            this.processSilentUpdate(file, updateTime, oldCount, newCount);
         } else {
-            this.queue.push([file, oldCount, newCount, updateTime]);
+            this.queue.push([file, updateTime, oldCount, newCount, true]);
         }
     }
 
-    getExistingHistory() {
-        return Array.from(this.fileMap.values()).sort((a, b) =>
-            a.file.path.localeCompare(b.file.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true })
-        );
+    onWordCountUpdate(updateTime: number, file: WSFile, oldCount: number, newCount: number) {
+        // console.log(this.locked, updateTime, file.path, oldCount, newCount);
+        if (!this.locked) {
+            this.updatePeriods(updateTime);
+            this.processUpdate(file, updateTime, oldCount, newCount);
+        } else {
+            this.queue.push([file, updateTime, oldCount, newCount, false]);
+        }
     }
 
-    loadStats(stats: WSCountHistory[]) {
+    get currentPeriod(): WSTimePeriod {
+        return this.periods.length > 0 ? this.periods.last() : undefined;
+    }
+
+    updatePeriods(updateTime: number) {
+        let current = this.currentPeriod;
+        if (current === undefined || current.expiry < updateTime) {
+            let newPeriod = new WSTimePeriod(this, updateTime);
+            this.periods.push(newPeriod);
+        }
+    }
+
+    loadStats(stats: WSTimePeriod[]) {
         // console.log("Loading stats...")
+        this.periods = stats;
         stats.forEach((stat) => {
-            // console.log("for ", stat.file.path, stat);
-            this.fileMap.set(stat.file, stat);
+            stat.files.forEach((fileWrap) => {
+                if (!this.fileHistory.has(fileWrap.file)) {
+                    this.fileHistory.set(fileWrap.file, [fileWrap]);
+                    this.collector.plugin.events.trigger(new WSStatEvent({ type: WSEvents.Stats.FileTouch, period: this.currentPeriod, file: fileWrap }, { filter: null }));
+                } else {
+                    this.fileHistory.get(fileWrap.file).push(fileWrap);
+                }
+            });
         });
     }
 
-    getWPMforPeriod(file: WSFile, index: number = -1): [number, number, number, number] {
-        if (file instanceof WSFile && this.fileMap.has(file)) {
-            let history = this.fileMap.get(file);
-            let counter = history.history.slice(index)[0];
-            let duration = counter.endTime - (counter.startTime + counter.air);
-            let wpm = counter.wordsAdded / (duration / 60000);
-            let wpma = counter.wordsAdded / (counter.writingTime / 60000);
-            let nwpm = (counter.wordsAdded - counter.wordsDeleted) / (duration / 60000);
-            let nwpma = (counter.wordsAdded - counter.wordsDeleted) / (counter.writingTime / 60000);
-            return [wpm, wpma, nwpm, nwpma];
-        }
-        return undefined;
-    }
-
-    getTotalWPMForHistory(history: IWordCount[]): [number, number, number, number] {
-        let totalWordsAdded = 0;
-        let totalDuration = 0;
-        let totalNetWords = 0;
-        let totalWritingTime = 0;
-        history.forEach((counter) => {
-            totalWordsAdded += counter.wordsAdded;
-            totalDuration += (counter.endTime - (counter.startTime + counter.air));
-            totalNetWords += (counter.wordsAdded - counter.wordsDeleted);
-            totalWritingTime += counter.writingTime;
+    getWPMFromStats(stats: IFileStat[]): [number, number, number, number] {
+        let duration = 0;
+        let wordsAdded = 0;
+        let wordsDeleted = 0;
+        let writingTime = 0;
+        stats.forEach(stat => {
+            duration += stat.timeEnd - stat.timeStart;
+            wordsAdded += stat.wordsAdded;
+            wordsDeleted += stat.wordsDeleted;
+            writingTime += stat.writingTime;
         });
-        let wpm = totalWordsAdded / (totalDuration / 60000);
-        let wpma = totalWordsAdded / (totalWritingTime / 60000);
-        let nwpm = totalNetWords / (totalDuration / 60000);
-        let nwpma = totalNetWords / (totalWritingTime / 60000);
+        duration = Math.round(duration / 1000) / 60;
+        writingTime = Math.round(writingTime / 1000) / 60;
+        let netWords = wordsAdded - wordsDeleted;
+        let wpm = wordsAdded / duration;
+        let wpma = wordsAdded / writingTime;
+        let nwpm = netWords / duration;
+        let nwpma = netWords / writingTime;
         return [wpm, wpma, nwpm, nwpma];
     }
 
-    getTotalWPMForFile(file: WSFile): [number, number, number, number] {
-        if (file instanceof WSFile && this.fileMap.has(file)) {
-            let history = this.fileMap.get(file);
-            return this.getTotalWPMForHistory(history.history);
+    getWPMFromWrappers(wrappers: IFileWrapper[], filter: WSFile[] = []): [number, number, number, number] {
+        let duration = 0;
+        let wordsAdded = 0;
+        let wordsDeleted = 0;
+        let writingTime = 0;
+        wrappers.forEach(wrapper => {
+            if (filter.length === 0 || filter.contains(wrapper.file)) {
+                duration += wrapper.stats.timeEnd - wrapper.stats.timeStart;
+                wordsAdded += wrapper.stats.wordsAdded;
+                wordsDeleted += wrapper.stats.wordsDeleted;
+                writingTime += wrapper.stats.writingTime;
+            }
+        });
+        duration = Math.round(duration / 1000) / 60;
+        writingTime = Math.round(writingTime / 1000) / 60;
+        let netWords = wordsAdded - wordsDeleted;
+        let wpm = wordsAdded / duration;
+        let wpma = wordsAdded / writingTime;
+        let nwpm = netWords / duration;
+        let nwpma = netWords / writingTime;
+        return [wpm, wpma, nwpm, nwpma];
+    }
+
+    getWPMFromPeriod(period: WSTimePeriod, filter: WSFile[] = []): [number, number, number, number] {
+        if (filter) {
+            let stats = period.files.filter(wrapper => filter.contains(wrapper.file));
+            let statArray = stats.map(stat => stat.stats);
+            return this.getWPMFromStats(statArray);
+        } else {
+            let duration = period.timeEnd - period.timeStart;
+            let wpm = period.wordsAdded / (duration / 60000);
+            let wpma = period.wordsAdded / (period.writingTime / 60000);
+            let nwpm = (period.wordsAdded - period.wordsDeleted) / (duration / 60000);
+            let nwpma = (period.wordsAdded - period.wordsDeleted) / (period.writingTime / 60000);
+            return [wpm, wpma, nwpm, nwpma];
+        }
+    }
+
+    getWPMFromFile(file: WSFile): [number, number, number, number] {
+        let wrappers: IFileWrapper[] = this.fileHistory.get(file);
+        if (wrappers) {
+            return this.getWPMFromWrappers(wrappers);
         }
         return undefined;
-
     }
 
-    getHistoryForTimePeriod(start: Date, end?: Date, filter?: WSFile[]) {
-        let history = new Map<WSFile, IWordCount[]>();
-
-        this.fileMap.forEach((countHistory) => {
-            if (filter && !filter.contains(countHistory.file)) {
-                return;
-            }
-            let counters = countHistory.getHistoryForPeriod(start, end);
-            if (counters.length > 0) {
-                history.set(countHistory.file, counters);
+    getStatsFromWrappers(wrappers: IFileWrapper[], filter: WSFile[] = []) {
+        let stats: IFileStat[] = [];
+        wrappers.forEach(wrapper => {
+            if (filter.length === 0 || filter.contains(wrapper.file)) {
+                stats.concat(wrapper.stats);
             }
         });
-        return history;
+        return stats;
     }
 
-    getHistoryForTimePeriodFlat(start: Date, end?: Date, filter?: WSFile[]) {
-        let history: IWordCount[] = [];
-
-        this.fileMap.forEach((countHistory) => {
-            if (filter && !filter.contains(countHistory.file)) {
-                return;
-            }
-            let counters = countHistory.getHistoryForPeriod(start, end);
-            if (counters.length > 0) {
-                history.concat(counters);
-            }
+    getWrappersFromPeriods(periods: WSTimePeriod[]) {
+        let wrappers: IFileWrapper[] = [];
+        periods.forEach(period => {
+            wrappers.concat(period.files);
         });
-
-        return history.sort((a, b) => (a.startTime > b.startTime) ? 1 : (b.startTime > a.startTime) ? -1 : 0);
+        return wrappers;
     }
 
-    flattenHistory(history: Map<WSFile, IWordCount[]>) {
-        let flattened: IWordCount[] = [];
-
-        for (let [file, counters] of history) {
-            flattened.concat(counters);
-        }
-
-        return flattened.sort((a, b) => (a.startTime > b.startTime) ? 1 : (b.startTime > a.startTime) ? -1 : 0);
+    getPeriodsFromDates(start: Date, end?: Date) {
+        let periods = this.periods.filter((period) => {
+            return period.timeStart >= start.getTime() && period.timeEnd <= (end?.getTime() || start.getTime() + Settings.Statistics.DAY_LENGTH);
+        });
+        return periods;
     }
 
-    getHistoryForProject(project: WSProject) {
-        let history = new Map<WSFile, IWordCount[]>();
+    getWrappersForProject(project: WSProject) {
+        let history = new Map<WSFile, IFileWrapper[]>();
 
         project.files.forEach(file => {
-            if (this.fileMap.has(file)) {
-                history.set(file, this.fileMap.get(file).history);
+            if (this.fileHistory.has(file)) {
+                history.set(file, this.fileHistory.get(file));
             }
         });
         return history;
     }
 
-    getHistoryForProjectForPeriod(project: WSProject, start: Date, end?: Date) {
-        let pFiles = project.files;
-        let history = this.getHistoryForTimePeriod(start, end, pFiles);
-        return history;
-    }
+    getPeriodsForProject(project: WSProject) {
+        let times: Set<number> = new Set<number>;
+        let wrappers: IFileWrapper[] = [];
 
-    getTotalWPMForTimePeriod(start: Date, end?: Date): [number, number, number, number] {
-        let history = this.getHistoryForTimePeriodFlat(start, end);
-
-        return this.getTotalWPMForHistory(history);
-    }
-
-    getTotalWPMForProject(project: WSProject) {
-        let history = this.flattenHistory(this.getHistoryForProject(project));
-        return this.getTotalWPMForHistory(history);
-    }
-
-    getTotalWPMForProjectForTimePeriod(project: WSProject, start: Date, end?: Date) {
-        let history = this.flattenHistory(this.getHistoryForProjectForPeriod(project, start, end));
-        return this.getTotalWPMForHistory(history);
+        project.files.forEach(file => {
+            if (this.fileHistory.has(file)) {
+                wrappers.concat(this.fileHistory.get(file));
+            }
+        });
+        // we know that all time periods begin on a 15-minute mark and are at most 15 minutes in duration, so only need the start times
+        wrappers.forEach(wrapper => {
+            times.add(wrapper.stats.timeStart - (wrapper.stats.timeStart % Settings.Statistics.PERIOD_LENGTH));
+        });
+        return this.periods.filter(period => times.has(period.base));
     }
 }

@@ -7,11 +7,11 @@
 	import { Settings } from "src/settings";
 	import { onDestroy, onMount } from "svelte";
 	import DayStats from "./DayStats.svelte";
-	import StatObj from "./StatObj.svelte";
+	import TimePeriod from "./TimePeriod.svelte";
 
 	export let collector: WSDataCollector;
 	let focus: WSFile;
-	let debugView: StatObj;
+	let debugView: TimePeriod;
 	let dayView: DayStats;
 
 	let debugButton: HTMLElement;
@@ -33,7 +33,7 @@
 	function onFileFocus(evt: WSFocusEvent) {
 		focus = evt.info.file;
 		if (viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DEBUG) {
-			debugView.update(focus);
+			//debugView.update(focus);
 		} else if (viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DAY) {
 			dayView.update();
 		}
@@ -73,7 +73,7 @@
 		</div>
 	</div>
 	{#if viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DEBUG}
-		<svelte:component this={StatObj} bind:this={debugView} {focus} {collector} />
+		<svelte:component this={TimePeriod} bind:this={debugView} {collector} />
 	{:else if viewMode === Settings.View.StatisticsPanel.VIEW_MODE.DAY}
 		<svelte:component this={DayStats} bind:this={dayView} {collector} />
 	{/if}

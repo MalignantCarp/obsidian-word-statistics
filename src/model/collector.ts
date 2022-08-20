@@ -3,9 +3,9 @@ import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
 import { WSProjectManager } from './manager';
 import { WordCountForText } from '../words';
-import { WSDataEvent, WSEvents, WSFileEvent } from './event';
+import { WSEvents, WSFileEvent } from './event';
 import type { WSFileProject } from './project';
-import { WSStatisticManager } from './statistics';
+import { Statistics, WSStatisticsManager } from './statistics';
 
 export class WSDataCollector {
     plugin: WordStatisticsPlugin;
@@ -13,7 +13,7 @@ export class WSDataCollector {
     mdCache: MetadataCache;
     private fileMap: Map<string, WSFile>;
     private files: WSFile[];
-    stats: WSStatisticManager;
+    stats: WSStatisticsManager;
     manager: WSProjectManager;
     lastUpdate: number = 0;
     //queue: [Function, unknown[]][] = [];
@@ -27,7 +27,7 @@ export class WSDataCollector {
         this.files = [];
         this.lastUpdate = 0;
         this.manager = new WSProjectManager(plugin, this);
-        this.stats = new WSStatisticManager(this);
+        this.stats = new WSStatisticsManager(this);
     }
 
     cleanup() {
@@ -150,15 +150,19 @@ export class WSDataCollector {
         if (this.fileMap.has(path)) {
             let file = this.fileMap.get(path);
             let oldCount = file.words;
+            this.update();
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
                 file.words = newCount;
-                this.stats.onWordCountUpdate(file, oldCount, newCount);
-                this.update();
-                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
+                if (Statistics.RecordStatsFor(file, this.manager)) {
+                    this.stats.onWordCountUpdate(this.lastUpdate, file, oldCount, newCount);
+                    this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
+                }
             } else {
-                this.stats.onSilentUpdate(file);
-                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsUpdated, file }, { filter: file }));
+                if (Statistics.RecordStatsFor(file, this.manager)) {
+                    this.stats.onSilentUpdate(this.lastUpdate, file, oldCount, newCount);
+                    this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsUpdated, file }, { filter: file }));
+                }
             }
             return;
         }

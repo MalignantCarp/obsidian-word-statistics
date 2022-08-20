@@ -1,6 +1,7 @@
 import type { WSFile } from "./file";
 import type { WSProject } from "./project";
 import type { WSPath } from "./path";
+import type { IFileWrapper, WSTimePeriod } from "./statistics";
 
 export namespace WSEvents {
     export namespace Data {
@@ -48,18 +49,29 @@ export namespace WSEvents {
         export const Set = "ws-event-path-set";
         export const GoalsSet = "ws-eventpath-goals-set";
     }
+
+    export namespace Stats {
+        export const FileTouch = "ws-event-file-added";
+    }
 }
 
-type WSEventType = WSDataEventType | WSFocusEventType | WSFileEventType | WSProjectEventType | WSPathEventType;
+type WSEventType = WSDataEventType | WSFocusEventType | WSFileEventType | WSProjectEventType | WSPathEventType | WSStatEventType;
 export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.Project | typeof WSEvents.Data.Path | typeof WSEvents.Data.Stats;
 export type WSFocusEventType = typeof WSEvents.Focus.File | typeof WSEvents.Focus.Project | typeof WSEvents.Focus.FileItem;
 export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.Updated | typeof WSEvents.File.WordsChanged | typeof WSEvents.File.GoalsSet | typeof WSEvents.File.WordsUpdated;
 export type WSProjectEventType = typeof WSEvents.Project.Renamed | typeof WSEvents.Project.Deleted | typeof WSEvents.Project.Created | typeof WSEvents.Project.FilesUpdated | typeof WSEvents.Project.Updated | typeof WSEvents.Project.PathSet | typeof WSEvents.Project.GoalsSet | typeof WSEvents.Project.IndexSet | typeof WSEvents.Project.CategorySet | typeof WSEvents.Project.TitleSet;
 export type WSPathEventType = typeof WSEvents.Path.Titled | typeof WSEvents.Path.Set | typeof WSEvents.Path.Cleared | typeof WSEvents.Path.Updated | typeof WSEvents.Path.Created | typeof WSEvents.Path.Deleted | typeof WSEvents.Path.GoalsSet;
+export type WSStatEventType = typeof WSEvents.Stats.FileTouch;
 
 interface WSEventInfo {
     type: WSEventType;
     data?: any[];
+}
+
+export interface WSStatEventInfo extends WSEventInfo {
+    type: WSStatEventType;
+    period: WSTimePeriod;
+    file?: IFileWrapper;
 }
 
 export interface WSDataEventInfo extends WSEventInfo {
@@ -91,7 +103,7 @@ export interface WSPathEventInfo extends WSEventInfo {
 }
 
 export interface WSEventFilter {
-    filter: WSFile | WSProject | WSPath;
+    filter: WSFile | WSProject | WSPath | WSTimePeriod;
     msg?: string;
 }
 
@@ -105,6 +117,12 @@ export abstract class WSEvent {
 
     get stopped() {
         return this.stop;
+    }
+}
+
+export class WSStatEvent extends WSEvent {
+    constructor(public info: WSStatEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     }
 }
 

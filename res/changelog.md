@@ -1,20 +1,37 @@
 ## Bugs
  - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
  - BUG: (potential need for consideration) If a file's word count changes outside of Obsidian but no change is made within Obsidian that triggers an update, the new word count is recorded in the files.json file but there is no corresponding update to the word stats database. It may be good to have a check for when those change and then just log an entry with 0 duration with the update at the local midnight of the day the word count change occurs. That way it would only cause timing issues if the person were to do an update within the first 15 minutes of the day.
+ - BUG: In TimePeriod.svelte, sometimes the Files list is not properly updated or the display is not updated. The displayed files list was empty, but it should not have been. (not yet reproduced)
 
 ## To-Do for first release
  - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
  - ProgressView - This will essentially replicate the progress bars that are currently in the status bars, plus additional information (Project/Path Titles) and percentages. Both will be available as options, though will need to look into getting progress bars working in default theme. It seems there is not enough room.
+ - CSV export of time stats for backup purposes
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-08-20
+ - Moved next and previous buttons to top of the stats debug view.
+ - BUGFIX: Next and previous buttons were not updating properly
+ - BUGFIX: (Could not replicate) Certain statistic properties are null in successive time periods
+
+### 2022-08-17
+ - BUGFIX: Setting for which files to log stats for was ignored.
+ - BUGFIX: TimePeriod (previously StatObj) next and previous buttons were not centered.
+ - Completed new stats model. Further cleanup.
+ - Cleanup and rebuild of StatObj.svelte into TimePeriod.svelte, which is now not file-sensitive. Because TimePeriod.svelte is basically the debug view of the internal object, it does encompass all files held within it, so it does receive updates and will change as appropriate. To accommodate this, events are fired when new files are touched in the stats manager.
+
+### 2022-08-13
+ - Cleaned up some old serialization code.
+ - Designing new stats model based on WSTimePeriod. Under the existing design, quickly going back and forth between two files could result in one 15 minute period showing up as 30 minutes of writing.
+
 ### 2022-07-28
  - BUGFIX: Queued silent updates resulted in undefined lastWordAt and endTime values as it was passing undefined to the queue in place of the updateTime.
  - BUGFIX: StatObj.svelte threw an exception when currentStat was undefined (i.e., first time a stab object is created).
 
 ### 2022-07-25
  - Additional CSS
- - Now have Previous Day, Yesterday, Today, Tomorrow, Next Day buttons for DayStats.svelte.
+ - Now have Previous Day, Yesterday, Today, Next Day buttons for DayStats.svelte.
 
 ### 2022-07-22
   - BUGFIX: DayStats does not load intially until an update.

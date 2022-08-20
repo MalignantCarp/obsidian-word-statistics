@@ -1,30 +1,7 @@
 import type { WSProjectManager } from "./manager";
 
-export interface IPathV0 {
-    path: string,
-    title: string,
-    wordGoalForPath: number,
-    wordGoalForProjects: number,
-    wordGoalForFiles: number,
-    iconID: string;
-}
-
 export function SortPathList(paths: WSPath[]) {
     return paths.sort((a, b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true, ignorePunctuation: true }));
-}
-
-function LoadPathV0FromSerial(folderInfo: IPathV0): WSPath {
-    let folder: WSPath;
-    folder = new WSPath(folderInfo.path, folderInfo.title, folderInfo.wordGoalForPath, folderInfo.wordGoalForProjects, folderInfo.wordGoalForFiles, folderInfo.iconID);
-    return folder;
-}
-
-export function LoadPathFromSerial(folderInfo: IPathV0): WSPath {
-    let folder = LoadPathV0FromSerial(folderInfo as IPathV0);
-    if (folder === null) {
-        console.log("Failed to load project folder:", folderInfo);
-    }
-    return folder;
 }
 
 export class WSPath {
@@ -37,21 +14,6 @@ export class WSPath {
         public iconID: string = "",
         private children: WSPath[] = []
     ) { }
-
-    private toObject(): IPathV0 {
-        return {
-            path: this.path,
-            title: this._title,
-            wordGoalForPath: this.wordGoalForPath,
-            wordGoalForProjects: this.wordGoalForProjects,
-            wordGoalForFiles: this.wordGoalForFiles,
-            iconID: ""
-        };
-    }
-
-    serialize() {
-        return this.toObject();
-    }
 
     samePathAs(path: WSPath) {
         return path.path === this.path;

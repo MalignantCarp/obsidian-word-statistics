@@ -544,8 +544,6 @@ td.total-head {
 	font-size: 1.05rem;
 }
 
-.ws-sv-stat-obj {}
-
 .ws-title {
 	font-size: 1.2rem;
 	text-align: center;
@@ -569,4 +567,20 @@ td.total-head {
 .ws-sv-stats button:disabled {
 	opacity: 50%;
 	pointer-events: none;
+}
+
+.ws-sv-stat-button {
+	margin: auto;
+}
+
+.ws-sv-debug-files-head {
+	text-align: center;
+}
+
+.ws-sv-wrapper-file {
+	display: flex;
+}
+
+.ws-sv-file-stat {
+	margin-bottom: 1em;
 }

@@ -79,7 +79,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		this.registerView(STATISTICS_VIEW.type, (leaf) => {
 			return new StatisticsView(leaf, this);
-		})
+		});
 
 		this.addCommand({
 			id: 'attach-project-manager',
@@ -103,7 +103,7 @@ export default class WordStatisticsPlugin extends Plugin {
 					this.initializeStatisticsLeaf();
 				}
 			}
-		})
+		});
 
 		this.addCommand({
 			id: 'insert-project-table-modal',
@@ -161,7 +161,20 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, Settings.Plugin.DEFAULT, await this.loadData());
+		// console.log("Loading user settings. Default settings:");
+		// console.log(Settings.Plugin.DEFAULT);
+
+		let userSettings: any;
+		try {
+			userSettings = await this.loadData();
+		} catch (error) {
+			userSettings = {};
+		}
+		// console.log("Currently saved user settings:");
+		// console.log(userSettings);
+		this.settings = Object.assign({}, Settings.Plugin.DEFAULT, userSettings);
+		// console.log("Finalized user settings loaded:");
+		// console.log(this.settings);
 		console.log("Obsidian Word Statistics settings loaded.");
 	}
 
@@ -205,7 +218,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 
 		if (this.wordsPerMS.length > 0 && this.settings.showWordCountSpeedDebug) {
-			let sum = this.wordsPerMS.reduce((accumulator, a) => accumulator + a, 0)
+			let sum = this.wordsPerMS.reduce((accumulator, a) => accumulator + a, 0);
 			let avg = sum / this.wordsPerMS.length;
 			console.log(`Running average words counted per millisecond: ${avg}`);
 			// console.log(this.wordsPerMS);
@@ -230,7 +243,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			let statsData = await this.loadSerialData(STATS_PATH);
 			// console.log("Read stats.json: ", statsData? statsData.length : undefined)
 			if (statsData) {
-				let stats = WSFormat.LoadStatisticalData(this.collector, statsData);
+				let stats = WSFormat.LoadStatisticalData(this.collector, this.collector.stats, statsData);
 				// console.log(stats);
 				if (stats.length > 0) {
 					this.collector.stats.loadStats(stats);
@@ -433,7 +446,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	saveStatistics(event: WSDataEvent) {
-		let data = WSFormat.SaveStatsticalData(this, this.collector.stats.getExistingHistory());
+		let data = WSFormat.SaveStatisticalData(this, this.collector.stats.periods);
 		// console.log(data);
 		this.saveSerialData(STATS_PATH, data);
 	}

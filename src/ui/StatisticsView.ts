@@ -1,7 +1,7 @@
 import { App, ItemView, WorkspaceLeaf } from 'obsidian';
 import type WordStatisticsPlugin from 'src/main';
 import type { WSDataCollector } from 'src/model/collector';
-import type { WSStatisticManager } from 'src/model/statistics';
+import type { WSStatisticsManager } from 'src/model/statistics';
 import StatisticsPane from './svelte/StatisticsView/StatisticsPane.svelte';
 
 export const STATISTICS_VIEW = {
@@ -14,7 +14,7 @@ export class StatisticsView extends ItemView {
     app: App;
     plugin: WordStatisticsPlugin;
     collector: WSDataCollector;
-    stats: WSStatisticManager;
+    stats: WSStatisticsManager;
     parent: HTMLElement;
     container: HTMLDivElement;
     pane: StatisticsPane;

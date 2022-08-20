@@ -3,8 +3,7 @@ import { setIcon } from 'obsidian';
 
 	import type { WSDataCollector } from "src/model/collector";
 	import { WSEvents, WSFileEvent } from "src/model/event";
-	import type { WSFile } from "src/model/file";
-	import type { IWordCount } from "src/model/statistics";
+	import type { WSTimePeriod } from "src/model/statistics";
 	import { Settings } from "src/settings";
 	import { FormatWords, GetDateStart, SecondsToHMS } from "src/util";
 	import { onDestroy, onMount } from "svelte";
@@ -17,7 +16,7 @@ import { setIcon } from 'obsidian';
 
 	let dayHasHistory: boolean = false;
 
-	let stats: Map<WSFile, IWordCount[]>;
+	let stats: WSTimePeriod[];
 	let totalDuration: number = 0;
 	let totalWordsAdded: number = 0;
 	let totalWordsDeleted: number = 0;
@@ -30,14 +29,12 @@ import { setIcon } from 'obsidian';
 	let navPrevious: HTMLElement;
 	let navNext: HTMLElement;
 	let navYesterday: HTMLElement;
-	let navTomorrow: HTMLElement;
 	let navToday: HTMLElement;
 
 	onMount(() => {
 		setIcon(navPrevious, "left-chevron-glyph", 20);
 		setIcon(navYesterday, "yesterday-glyph", 20);
 		setIcon(navToday, "calendar-glyph", 20);
-		setIcon(navTomorrow, "tomorrow-glyph", 20);
 		setIcon(navNext, "right-chevron-glyph", 20);
 
 		viewDate = GetDateStart(new Date());
@@ -58,7 +55,7 @@ import { setIcon } from 'obsidian';
 	}
 
 	function reloadStats() {
-		stats = collector.stats.getHistoryForTimePeriod(viewDate);
+		stats = collector.stats.getPeriodsFromDates(viewDate);
 		totalDuration = 0;
 		totalWordsAdded = 0;
 		totalWordsDeleted = 0;
@@ -67,19 +64,13 @@ import { setIcon } from 'obsidian';
 		totalWritingTime = 0;
 		startWords = 0;
 		endWords = 0;
-		stats.forEach((counters, file) => {
-			if (counters) {
-				startWords += counters.first().startWords;
-				endWords += counters.last().endWords;
-			}
-			counters.forEach(count => {
-				totalDuration += count.endTime - (count.startTime + count.air);
-				totalWordsAdded += count.wordsAdded;
-				totalWordsDeleted += count.wordsDeleted;
-				totalWordsImported += count.wordsImported;
-				totalWordsExported += count.wordsExported;
-				totalWritingTime += count.writingTime;
-			});
+		stats.forEach(period => {
+				totalDuration += period.timeEnd - period.timeStart
+				totalWordsAdded += period.wordsAdded;
+				totalWordsDeleted += period.wordsDeleted;
+				totalWordsImported += period.wordsImported;
+				totalWordsExported += period.wordsExported;
+				totalWritingTime += period.writingTime;
 		});
 		// console.log(viewDate);
 		dayHasHistory = !(
@@ -143,12 +134,6 @@ import { setIcon } from 'obsidian';
 		viewDate = GetDateStart(new Date(todayStart - Settings.Statistics.DAY_LENGTH));
 		reloadStats();
 	}
-
-	function tomorrow() {
-		RolloverCheck();
-		viewDate = GetDateStart(new Date(todayStart + Settings.Statistics.DAY_LENGTH));
-		reloadStats();
-	}
 </script>
 
 <div class="ws-sv-date">
@@ -157,7 +142,6 @@ import { setIcon } from 'obsidian';
 			<div class="nav-action-button" aria-label="Previous Day" bind:this={navPrevious} on:click={prevDay} />
 			<div class="nav-action-button" aria-label="Yesterday" bind:this={navYesterday} on:click={yesterday} />
 			<div class="nav-action-button" aria-label="Today" bind:this={navToday} on:click={today} />
-			<div class="nav-action-button" aria-label="Tomorrow" bind:this={navTomorrow} on:click={tomorrow} />
 			<div class="nav-action-button" aria-label="Next Day" bind:this={navNext} on:click={nextDay} />
 		</div>
 	</div>

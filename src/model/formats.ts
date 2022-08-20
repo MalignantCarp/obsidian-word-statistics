@@ -3,7 +3,7 @@ import type { WSDataCollector } from "./collector";
 import { WSFile } from "./file";
 import { WSPath } from "./path";
 import { WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "./project";
-import { WSCountHistory, type IWordCount } from "./statistics";
+import { WSCountHistory, WSStatisticsManager, WSTimePeriod, type IFileStat, type IFileWrapper, type IWordCount } from "./statistics";
 
 export namespace WSFormat {
 
@@ -205,43 +205,92 @@ export namespace WSFormat {
         return data;
     }
 
-    interface ICountHistory {
-        path: string;
-        history: IWordCount[];
+    interface IFileWrapperExport {
+        file: string,
+        stats: IFileStat;
     }
 
-    function SerializeStatisticalData(stats: WSCountHistory[]) {
-        let table: ICountHistory[] = [];
-        stats.forEach((wcHistory) => {
-            table.push({ path: wcHistory.file.path, history: wcHistory.history });
+    interface ITimePeriod {
+        timeStart: number,
+        timeEnd: number,
+        expiry: number,
+        files: IFileWrapperExport[],
+        base: number,
+        wordsStart: number,
+        wordsEnd: number,
+        wordsAdded: number,
+        wordsDeleted: number,
+        wordsImported: number,
+        wordsExported: number,
+        wordsUpdatedAt: number,
+        writingTime: number,
+    }
+
+    function ExportFileWrapper(incoming: IFileWrapper): IFileWrapperExport {
+        return { file: incoming.file.path, stats: incoming.stats };
+    }
+
+    function ImportFileWrapper(collector: WSDataCollector, incoming: IFileWrapperExport): IFileWrapper {
+        let file = collector.getFileSafer(incoming.file);
+
+        if (file != null) {
+            return { file, stats: incoming.stats };
+        }
+        console.log(`Attempted to load statistics from invalid data. File not found for '${incoming.file}':`, incoming);
+    }
+
+    function SerializeStatisticalData(stats: WSTimePeriod[]) {
+        let table: ITimePeriod[] = [];
+        stats.forEach((period) => {
+            let newFiles: IFileWrapperExport[] = [];
+            period.files.forEach((wrapper) => {
+                newFiles.push(ExportFileWrapper(wrapper));
+            });
+            table.push({
+                timeStart: period.timeStart,
+                timeEnd: period.timeEnd,
+                expiry: period.expiry,
+                files: newFiles,
+                base: period.base,
+                wordsStart: period.wordsStart,
+                wordsEnd: period.wordsEnd,
+                wordsAdded: period.wordsAdded,
+                wordsDeleted: period.wordsDeleted,
+                wordsImported: period.wordsImported,
+                wordsExported: period.wordsExported,
+                wordsUpdatedAt: period.wordsUpdatedAt,
+                writingTime: period.writingTime
+            });
         });
         return table;
     }
 
-    function DeserializeStatisticalData(collector: WSDataCollector, table: ICountHistory[]): WSCountHistory[] {
-        let stats: WSCountHistory[] = [];
+    function DeserializeStatisticalData(collector: WSDataCollector, manager: WSStatisticsManager, table: ITimePeriod[]): WSTimePeriod[] {
+        let stats: WSTimePeriod[] = [];
         table.forEach((row) => {
-            let { path, history } = row;
-            let file = collector.getFile(path);
-            let counter = new WSCountHistory(collector, file, history);
-            stats.push(counter);
+            let { timeStart, timeEnd, expiry, files, base, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, wordsUpdatedAt, writingTime } = row;
+            let newFiles: IFileWrapper[] = [];
+            files.forEach(eWrapper => {
+                newFiles.push(ImportFileWrapper(collector, eWrapper));
+            });
+            stats.push(new WSTimePeriod(manager, timeStart, timeEnd, expiry, newFiles, base, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, wordsUpdatedAt, writingTime));
         });
         return stats;
     }
 
-    export function LoadStatisticalData(collector: WSDataCollector, data: string): WSCountHistory[] {
-        let table: ICountHistory[] = [];
-        let stats: WSCountHistory[] = [];
+    export function LoadStatisticalData(collector: WSDataCollector, manager: WSStatisticsManager, data: string): WSTimePeriod[] {
+        let table: ITimePeriod[] = [];
+        let stats: WSTimePeriod[] = [];
         try {
-            table = JSON.parse(data) as ICountHistory[];
-            stats = DeserializeStatisticalData(collector, table);
+            table = JSON.parse(data) as ITimePeriod[];
+            stats = DeserializeStatisticalData(collector, manager, table);
         } catch (error) {
             console.log(`Error attempting to parse statistics data [${data}]: `, error);
         }
         return stats;
     }
 
-    export function SaveStatsticalData(plugin: WordStatisticsPlugin, stats: WSCountHistory[]): string {
+    export function SaveStatisticalData(plugin: WordStatisticsPlugin, stats: WSTimePeriod[]): string {
         let table = SerializeStatisticalData(stats);
         let data: string;
         if (plugin.settings.databaseSettings.statisticsMinify) {
