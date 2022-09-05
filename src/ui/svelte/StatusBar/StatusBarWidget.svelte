@@ -31,12 +31,10 @@
 	}
 </script>
 
-<div class="ws-status-bar">
-	{#if file instanceof WSFile}
-		<WordCountForFile manager={projectManager} {file} events={eventDispatcher} />
-		{#if projectManager.getProjectsByFile(file).length > 0}
-			<WordCountForProject events={eventDispatcher} manager={projectManager} focus={file}/>
-		{/if}
+{#if file instanceof WSFile}
+	<WordCountForFile manager={projectManager} {file} events={eventDispatcher} />
+	{#if projectManager.getProjectsByFile(file).length > 0}
+		<WordCountForProject events={eventDispatcher} manager={projectManager} focus={file} />
 	{/if}
-	<WordCountForVault events={eventDispatcher} collector={dataCollector} />
-</div>
+{/if}
+<WordCountForVault events={eventDispatcher} collector={dataCollector} />

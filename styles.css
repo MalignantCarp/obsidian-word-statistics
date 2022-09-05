@@ -34,10 +34,10 @@
 	--ws-icon-okay: #33DD33;
 }
 
-.ws-status-bar {
+.status-bar-item.plugin-obsidian-word-statistics {
 	display: flex;
 	justify-content: space-evenly;
-	column-gap: 1.5em;
+	column-gap: 1em;
 	align-items: flex-start;
 }
 
@@ -46,6 +46,8 @@
 	display: flex;
 	align-items: center;
 	align-self: center;
+	justify-self: center;
+	grid-area: sbc-icon;
 }
 
 .ws-sb-icon.error {
@@ -63,17 +65,32 @@
 .ws-sb-counter-file,
 .ws-sb-counter-project,
 .ws-sb-counter-vault {
-	display: flex;
-	justify-content: flex-start;
-	align-items: center;
+	margin: auto;
+	display: grid;
 	column-gap: 0.25em;
-	flex-wrap: wrap;
+	row-gap: 0;
+	grid-template-columns: 18px 1fr;
+	grid-template-rows: 1fr 2px;
+	grid-template-areas:
+	"sbc-icon sbc-title"
+	". sbc-progress";
+}
+
+.ws-sb-count-file,
+.ws-sb-count-project,
+.ws-sb-count-vault {
+	grid-area: sbc-title;
+	line-height: 1;
+}
+
+.ws-sb-counter-file .ws-word-progress,
+.ws-sb-counter-project .ws-word-progress {
+	grid-area: sbc-progress;
 }
 
 .ws-sb-tooltip-list {
 	margin-block-start: 0em;
 	margin-block-end: 0em;
-
 }
 
 .ws-sb-tooltip>p {
@@ -583,4 +600,8 @@ td.total-head {
 
 .ws-sv-file-stat {
 	margin-bottom: 1em;
+}
+
+.ws-sv-file-title {
+	padding-left: 0.125em;
 }

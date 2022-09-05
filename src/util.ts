@@ -1,5 +1,7 @@
-export const GetDateStart = (day: Date): Date => {
-    return new Date(day.setHours(0,0,0,0));
+import type { DateTime } from "luxon";
+
+export const GetDateStart = (day: DateTime): DateTime => {
+    return day.set({hour: 0, minute: 0, second: 0, millisecond: 0})
 }
 
 export const FormatWords = (words: number): string => {

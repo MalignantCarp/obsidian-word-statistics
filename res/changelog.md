@@ -5,11 +5,19 @@
 
 ## To-Do for first release
  - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
- - ProgressView - This will essentially replicate the progress bars that are currently in the status bars, plus additional information (Project/Path Titles) and percentages. Both will be available as options, though will need to look into getting progress bars working in default theme. It seems there is not enough room.
- - CSV export of time stats for backup purposes
+ - ProgressView - This will essentially replicate the progress bars that are currently in the status bars, plus additional information (Project/Path Titles) and percentages. Both will be available as options.
  - Cleanup any outstanding bugs.
+ - Add settings for display of date and time formats
 
 ## Changelog
+### 2022-09-04
+ - BUGFIX: Progress bars in the status bar are invisible with the default theme.
+ - Added command to export stats to CSV for backup purposes.
+ - Updated README.md.
+ - Updates for Obsidian 0.16.0 API changes to Debouncer and debounce().
+ - Updated statistics.ts and respective views to use Luxon's DateTime. This will allow custom date and time formats.
+ - Removed old WSCountHistory and respective interfaces.
+
 ### 2022-08-20
  - Moved next and previous buttons to top of the stats debug view.
  - BUGFIX: Next and previous buttons were not updating properly

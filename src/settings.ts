@@ -152,7 +152,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 
 	addDatabaseSettings(containerEl: HTMLElement) {
 		containerEl.createEl('h3', { text: 'Database Settings' });
-		containerEl.createEl('p', { text: "These options will help to compact the JSON files used to store the file, project, and path databases. If enabled, no whitespace will be added to leave the JSON file more human readable." });
+		containerEl.createEl('p', { text: "These options will help to compact the JSON files used to store the file, project, path, and statistics databases. If enabled, no whitespace will be added to the JSON file. If disabled, whitespace will be added to the JSON file, making it more readable." });
 		new Setting(containerEl)
 			.setName('Minify File Database')
 			.addToggle(toggle => toggle
@@ -178,7 +178,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName('Minify Word Count History Database')
+			.setName('Minify Statistics Database')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.databaseSettings.statisticsMinify)
 				.onChange(async (value) => {

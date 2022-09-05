@@ -1,5 +1,5 @@
 <script lang="ts">
-import { setIcon } from 'obsidian';
+	import { setIcon } from "obsidian";
 
 	import type { WSDataCollector } from "src/model/collector";
 	import { WSEvents, WSFileEvent } from "src/model/event";
@@ -7,10 +7,11 @@ import { setIcon } from 'obsidian';
 	import { Settings } from "src/settings";
 	import { FormatWords, GetDateStart, SecondsToHMS } from "src/util";
 	import { onDestroy, onMount } from "svelte";
+	import { DateTime } from "luxon";
 
 	export let collector: WSDataCollector;
 
-	let viewDate: Date;
+	let viewDate: DateTime;
 	let todayStart: number;
 	let dayEnd: number;
 
@@ -37,10 +38,10 @@ import { setIcon } from 'obsidian';
 		setIcon(navToday, "calendar-glyph", 20);
 		setIcon(navNext, "right-chevron-glyph", 20);
 
-		viewDate = GetDateStart(new Date());
+		viewDate = GetDateStart(DateTime.now());
 		collector.plugin.events.on(WSEvents.File.WordsChanged, onWordsChanged, { filter: null });
 		collector.plugin.events.on(WSEvents.File.WordsUpdated, onWordsChanged, { filter: null });
-		todayStart = viewDate.getTime();
+		todayStart = viewDate.toMillis();
 		dayEnd = todayStart + Settings.Statistics.DAY_LENGTH;
 		reloadStats();
 	});
@@ -65,12 +66,12 @@ import { setIcon } from 'obsidian';
 		startWords = 0;
 		endWords = 0;
 		stats.forEach(period => {
-				totalDuration += period.timeEnd - period.timeStart
-				totalWordsAdded += period.wordsAdded;
-				totalWordsDeleted += period.wordsDeleted;
-				totalWordsImported += period.wordsImported;
-				totalWordsExported += period.wordsExported;
-				totalWritingTime += period.writingTime;
+			totalDuration += period.timeEnd - period.timeStart;
+			totalWordsAdded += period.wordsAdded;
+			totalWordsDeleted += period.wordsDeleted;
+			totalWordsImported += period.wordsImported;
+			totalWordsExported += period.wordsExported;
+			totalWritingTime += period.writingTime;
 		});
 		// console.log(viewDate);
 		dayHasHistory = !(
@@ -87,13 +88,13 @@ import { setIcon } from 'obsidian';
 	}
 
 	function RolloverCheck(): number {
-		let start = new Date();
-		let timeCheck = start.getTime();
+		let start = DateTime.now();
+		let timeCheck = start.toMillis();
 		start = GetDateStart(start);
 		// if the current view date is today and our new time is over the end of that date
-		if (viewDate.getTime() === todayStart && timeCheck >= dayEnd) {
+		if (viewDate.toMillis() === todayStart && timeCheck >= dayEnd) {
 			viewDate = start;
-			todayStart = start.getTime();
+			todayStart = start.toMillis();
 			dayEnd = todayStart + Settings.Statistics.DAY_LENGTH;
 			reloadStats();
 			return -1;
@@ -107,31 +108,31 @@ import { setIcon } from 'obsidian';
 			return;
 		}
 		// if we are adding or removing words in the day we are examining
-		if (timeCheck >= viewDate.getTime() && timeCheck <= dayEnd) {
+		if (timeCheck >= viewDate.toMillis() && timeCheck <= dayEnd) {
 			// update the stats
 			reloadStats();
 		}
 	}
 
 	function prevDay() {
-		viewDate = GetDateStart(new Date(viewDate.getTime() - Settings.Statistics.DAY_LENGTH));
+		viewDate = GetDateStart(DateTime.fromMillis(viewDate.toMillis() - Settings.Statistics.DAY_LENGTH));
 		reloadStats();
 	}
 
 	function nextDay() {
-		viewDate = GetDateStart(new Date(viewDate.getTime() + Settings.Statistics.DAY_LENGTH));
+		viewDate = GetDateStart(DateTime.fromMillis(viewDate.toMillis() + Settings.Statistics.DAY_LENGTH));
 		reloadStats();
 	}
 
 	function today() {
 		RolloverCheck();
-		viewDate = GetDateStart(new Date(todayStart));
+		viewDate = GetDateStart(DateTime.fromMillis(todayStart));
 		reloadStats();
 	}
 
 	function yesterday() {
 		RolloverCheck();
-		viewDate = GetDateStart(new Date(todayStart - Settings.Statistics.DAY_LENGTH));
+		viewDate = GetDateStart(DateTime.fromMillis(todayStart - Settings.Statistics.DAY_LENGTH));
 		reloadStats();
 	}
 </script>
@@ -146,7 +147,7 @@ import { setIcon } from 'obsidian';
 		</div>
 	</div>
 
-	<p class="ws-title">{viewDate instanceof Date ? viewDate.toLocaleDateString() : ""}</p>
+	<p class="ws-title">{viewDate instanceof DateTime ? viewDate.toLocaleString() : ""}</p>
 	{#if dayHasHistory}
 		<div class="ws-sv-stats">
 			<div>Start Words:</div>

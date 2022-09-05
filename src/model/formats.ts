@@ -1,9 +1,10 @@
+import { DateTime, Duration } from "luxon";
 import type WordStatisticsPlugin from "src/main";
 import type { WSDataCollector } from "./collector";
 import { WSFile } from "./file";
 import { WSPath } from "./path";
 import { WSFileProject, WSFolderProject, WSProject, WSPType, WSTagProject } from "./project";
-import { WSCountHistory, WSStatisticsManager, WSTimePeriod, type IFileStat, type IFileWrapper, type IWordCount } from "./statistics";
+import { WSStatisticsManager, WSTimePeriod, type IFileStat, type IFileWrapper } from "./statistics";
 
 export namespace WSFormat {
 
@@ -299,6 +300,45 @@ export namespace WSFormat {
             data = JSON.stringify(table, null, 2);
         }
         return data;
+    }
+
+    export function StatisticDataToCSV(plugin: WordStatisticsPlugin, stats: WSTimePeriod[]): string {
+        let csv: string[] = [];
+        let header = "Timestamp,LocalDate,LocalTime,Duration,EndDate,EndTime,UpdateTimestamp,Path,Project,File,WordsStart,WordsEnd,WordsAdded,WordsDeleted,WordsImported,WordsExported,WritingTime";
+        csv.push(header);
+        stats.forEach(period => {
+            period.files.forEach(wrapper => {
+                let info = wrapper.stats;
+                let timestamp = info.timeStart.toString();
+                let localTime = DateTime.fromMillis(info.timeStart);
+                let endTime = DateTime.fromMillis(info.timeEnd);
+                let localDateStr = localTime.toFormat('yyyy-LL-dd');
+                let localTimeStr = localTime.toFormat('HH:mm:ss');
+                let endDateStr = localTime.toFormat('yyyy-LL-dd');
+                let endTimeStr = localTime.toFormat('HH:mm:ss');
+                let duration = (info.timeEnd - info.timeStart).toString();
+                let updateTimestamp = info.wordsUpdatedAt.toString();
+                let file = wrapper.file.path;
+                let projects = plugin.collector.manager.getProjectsByFile(wrapper.file);
+                let wordsStart = info.wordsStart.toString();
+                let wordsEnd = info.wordsEnd.toString();
+                let wordsAdded = info.wordsAdded.toString();
+                let wordsDeleted = info.wordsDeleted.toString();
+                let wordsImported = info.wordsImported.toString();
+                let wordsExported = info.wordsExported.toString();
+                let writingTime = info.writingTime.toString();
+                if (projects.length > 0) {
+                    projects.forEach(project => {
+                        let row = [timestamp, localDateStr, localTimeStr, duration, endDateStr, endTimeStr, updateTimestamp, project.path, project.id, file, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, writingTime];
+                        csv.push(row.join(","));    
+                    })
+                } else {
+                    let row = [timestamp, localDateStr, localTimeStr, duration, endDateStr, endTimeStr, updateTimestamp, "", "", file, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, writingTime];
+                    csv.push(row.join(","));
+                }
+            })
+        })
+        return csv.join("\n");
     }
 
 }

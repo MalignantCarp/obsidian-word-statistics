@@ -5,6 +5,7 @@
 	import { FormatWords, SecondsToHMS } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import FileWrapper from "./FileWrapper.svelte";
+	import { DateTime } from "luxon";
 
 	export let collector: WSDataCollector;
 
@@ -91,13 +92,13 @@
 		<hr />
 		<div class="ws-sv-stats">
 			<div>Base Time:</div>
-			<div class="ws-sv-value">{new Date(focusPeriod.base).toLocaleString()}</div>
+			<div class="ws-sv-value">{DateTime.fromMillis(focusPeriod.base).toLocaleString(DateTime.DATETIME_SHORT)}</div>
 			<div>Start Time:</div>
-			<div class="ws-sv-value">{new Date(focusPeriod.timeStart).toLocaleString()}</div>
+			<div class="ws-sv-value">{DateTime.fromMillis(focusPeriod.timeStart).toLocaleString(DateTime.DATETIME_SHORT)}</div>
 			<div>End Time:</div>
-			<div class="ws-sv-value">{new Date(focusPeriod.timeEnd).toLocaleString()}</div>
+			<div class="ws-sv-value">{DateTime.fromMillis(focusPeriod.timeEnd).toLocaleString(DateTime.DATETIME_SHORT)}</div>
 			<div>Expiry:</div>
-			<div class="ws-sv-value">{new Date(focusPeriod.expiry).toLocaleString()}</div>
+			<div class="ws-sv-value">{DateTime.fromMillis(focusPeriod.expiry).toLocaleString(DateTime.DATETIME_SHORT)}</div>
 			<div>Start Words:</div>
 			<div class="ws-sv-value">{FormatWords(focusPeriod.wordsStart)}</div>
 			<div>End Words:</div>
@@ -111,7 +112,7 @@
 			<div>Words Exported:</div>
 			<div class="ws-sv-value">{FormatWords(focusPeriod.wordsExported)}</div>
 			<div>Last Word At:</div>
-			<div class="ws-sv-value">{new Date(focusPeriod.wordsUpdatedAt).toLocaleString()}</div>
+			<div class="ws-sv-value">{DateTime.fromMillis(focusPeriod.wordsUpdatedAt).toLocaleString(DateTime.DATETIME_SHORT)}</div>
 			<div>Writing Time:</div>
 			<div class="ws-sv-value">{SecondsToHMS(focusPeriod.writingTime / 1000)}</div>
 		</div>

@@ -35,7 +35,7 @@ declare module "obsidian" {
 export default class WordStatisticsPlugin extends Plugin {
 	settings: Settings.Plugin.Structure;
 	events: Dispatcher;
-	debounceRunCount: Debouncer<[file: TFile, data: string]>;
+	debounceRunCount: Debouncer<[file: TFile, data: string], any>;
 	wordsPerMS: number[] = [];
 	statusBar: HTMLElement;
 	sbWidget: StatusBarWidget;
@@ -80,6 +80,18 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerView(STATISTICS_VIEW.type, (leaf) => {
 			return new StatisticsView(leaf, this);
 		});
+
+		this.addCommand({
+			id: 'statistics-csv',
+			name: 'Backup statistics to CSV',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.collector.stats.periods.length > 0;
+				} else {
+					this.saveStatsCSV();
+				}
+			}
+		})
 
 		this.addCommand({
 			id: 'attach-project-manager',
@@ -449,6 +461,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		let data = WSFormat.SaveStatisticalData(this, this.collector.stats.periods);
 		// console.log(data);
 		this.saveSerialData(STATS_PATH, data);
+	}
+
+	saveStatsCSV() {
+		let csv = WSFormat.StatisticDataToCSV(this, this.collector.stats.periods);
+		let path = new Date().toISOString() + ".csv";
+		// console.log("Saving to ", path);
+		// console.log(csv);
+		this.saveSerialData(path, csv);
 	}
 
 	onFileWordCount(evt: WSFileEvent) {

@@ -36,7 +36,7 @@
 <div class="ws-sv-wrapper">
 	<div class="ws-sv-wrapper-file">
 		<div class="collapse-icon tree-item-icon" bind:this={collapseIcon} on:click={collapseToggle} />
-		<div>{wrapper.file.title}</div>
+		<div class="ws-sv-file-title">{wrapper.file.title}</div>
 	</div>
 	{#if open}
 		<div>{wrapper.file.path}</div>
