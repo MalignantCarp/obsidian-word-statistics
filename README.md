@@ -37,6 +37,9 @@ Short of determining an adequate means of pre-rendering the content, any YAML bl
 
 One caveat to note is that the word counts stored for a particular document will not include the embed. It will be for display purposes only, as the original file that is referenced will be the one storing its own word count.
 
+### Pasting over copy
+When content is pasted on top of other content, only the difference in word counts is noticed by the system. I'm not sure if there is a way to detect that content was replaced in a paste event, so I caution against the use of paste to add to a document. Also note this would ideally be considered imported text, but that support is not yet implemented.
+
 ## Features
 - [x] Project System (for grouping files together)
     - [x] Markdown-indexed projects
@@ -80,6 +83,8 @@ These settings can help to manage the size of the JSON files that make up the fi
 #### Word Statistics Settings
  - Monitor: Choose if word count statistics are monitored for All (Markdown) Files, just Project Files (those included as part of a project), or just Monitored Project Files (files included in projects that have been configured to record word statistics). Note that previously-recorded stats will not be removed if you change options.
  - Writing Timeout: This configures the window in which you will still be considered writing
+ - Paranoia Mode: This configures whether or not CSV files are output (per Paranoia Interval) every so many minutes. Note that this will only fire once if there are no new statistics to output.
+ - Paranoia Interval: This configures the interval of which CSV files of statistics are output (every 1 - 30 minutes).
 
 ### Tracked Statistics
  - Words Added: Any time the word count goes up, it counts as words added.

@@ -10,6 +10,9 @@
  - Add settings for display of date and time formats
 
 ## Changelog
+### 2022-09-17
+ - Added paranoia mode.
+
 ### 2022-09-04
  - BUGFIX: Progress bars in the status bar are invisible with the default theme.
  - Added command to export stats to CSV for backup purposes.

@@ -11,6 +11,7 @@ import { WSFormat } from './model/formats';
 import type { WSProject } from './model/project';
 import { FormatWords } from './util';
 import { StatisticsView, STATISTICS_VIEW } from './ui/StatisticsView';
+import { time } from 'console';
 
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
@@ -45,6 +46,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	focusFile: WSFile = null;
 	noFileData: boolean = true;
 	fileExplorer: FileExplorer;
+	paranoiaTest: number = 0;
 
 	async onload() {
 		await this.loadSettings();
@@ -91,7 +93,7 @@ export default class WordStatisticsPlugin extends Plugin {
 					this.saveStatsCSV();
 				}
 			}
-		})
+		});
 
 		this.addCommand({
 			id: 'attach-project-manager',
@@ -136,9 +138,25 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.app.workspace.onLayoutReady(this.onStartup.bind(this));
 			this.app.workspace.onLayoutReady(this.initializeProjectManagementLeaf.bind(this));
 			this.app.workspace.onLayoutReady(this.initializeStatisticsLeaf.bind(this));
+			this.app.workspace.onLayoutReady(this.initializeParanoiaMode.bind(this));
 		}
 
 		console.log("Obsidian Word Statistics loaded.");
+	}
+
+	paranoiaHandler() {
+		// console.log("Checking for paranoia...");
+		// console.log(this.settings.statisticSettings.paranoiaMode, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
+		if (this.settings.statisticSettings.paranoiaMode && Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval*60000 && this.collector.stats.currentPeriod.timeStart > this.paranoiaTest) {
+			// console.log("Paranoia interval exceeded. Saving stats.")
+			this.saveStatsCSV();
+			// console.log("Done. resetting interval");
+			this.paranoiaTest = Date.now();
+		}
+	}
+
+	initializeParanoiaMode() {
+		this.registerInterval(window.setInterval(this.paranoiaHandler.bind(this), 1000)); // run every 1 second
 	}
 
 	onunload() {

@@ -16,11 +16,15 @@ export namespace Settings {
 		export interface Structure {
 			record: MONITOR,
 			writingTimeout: number,
+			paranoiaMode: boolean,
+			paranoiaInterval: number,
 		}
 
 		export const DEFAULT: Structure = {
 			record: MONITOR.PROJECTS,
 			writingTimeout: 120,
+			paranoiaMode: false,
+			paranoiaInterval: 5,
 		};
 	}
 
@@ -146,6 +150,26 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.setDynamicTooltip()
 				.onChange(async (value) => {
 					this.plugin.settings.statisticSettings.writingTimeout = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Paranoia Mode')
+			.setDesc('When enabled, statistics will automatically be backed up to CSV every 1-30 minutes (as set by Paranoia Interval).')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.statisticSettings.paranoiaMode)
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.paranoiaMode = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName("Paranoia Interval")
+			.setDesc("When Paranoia Mode is enabled, this determines the number of minutes after which the statistics database will be offloaded to CSV.")
+			.addSlider(slider => slider
+				.setValue(this.plugin.settings.statisticSettings.paranoiaInterval)
+				.setLimits(1, 30, 1)
+				.setDynamicTooltip()
+				.onChange(async (value) => {
+					this.plugin.settings.statisticSettings.paranoiaInterval = value;
 					await this.plugin.saveSettings();
 				}));
 	}
