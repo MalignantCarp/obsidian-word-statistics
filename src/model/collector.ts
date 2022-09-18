@@ -154,14 +154,13 @@ export class WSDataCollector {
             if (oldCount != newCount) {
                 this.lastWords += newCount - oldCount;
                 file.words = newCount;
+                this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
                 if (Statistics.RecordStatsFor(file, this.manager)) {
                     this.stats.onWordCountUpdate(this.lastUpdate, file, oldCount, newCount);
-                    this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file }, { filter: file }));
                 }
             } else {
                 if (Statistics.RecordStatsFor(file, this.manager)) {
                     this.stats.onSilentUpdate(this.lastUpdate, file, oldCount, newCount);
-                    this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsUpdated, file }, { filter: file }));
                 }
             }
             return;
