@@ -12,6 +12,7 @@
 ## Changelog
 ### 2022-09-17
  - Added paranoia mode.
+ - BUGFIX: Paranoia mode sometimes fails if the main collection systems haven't loaded yet.
 
 ### 2022-09-04
  - BUGFIX: Progress bars in the status bar are invisible with the default theme.
