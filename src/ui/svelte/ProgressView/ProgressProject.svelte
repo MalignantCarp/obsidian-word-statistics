@@ -49,7 +49,6 @@
 		events.on(WSEvents.Path.Set, onPathUpdate, { filter: null });
 		events.on(WSEvents.Path.Titled, onPathUpdate, { filter: null });
 		events.on(WSEvents.Path.Updated, onPathUpdate, { filter: null });
-        UpdateGoal();
         UpdateCount();
 	});
 
@@ -101,7 +100,9 @@
 		onCountUpdate(evt);
 	}
 
-    function UpdateGoal() {
+    function UpdateCount() {
+		count = project.totalWords;
+
 		let g = manager.getWordGoalForProjectByContext(project);
 		if (g === undefined) {
 			goal = Math.ceil(count / 10) * 10;
@@ -110,10 +111,7 @@
 			goal = g;
 			goalText = FormatWords(goal);
 		}
-    }
 
-    function UpdateCount() {
-		count = project.totalWords;
 		countText = goal > 0 ? FormatNumber(count) : FormatWords(count);
 		label = goal > 0 ? countText + " / " + goalText : countText;
 		progress.SetProgress(goal > 0 ? (count / goal) * 100 : 0);
@@ -121,7 +119,6 @@
 
 	function onProjectUpdate(evt: WSProjectEvent) {
 		if (project !== evt.info.project) return;
-		UpdateGoal();
         UpdateCount();
 	}
 
@@ -132,11 +129,9 @@
 
 	function onPathUpdate(evt: WSPathEvent) {
 		if (!evt.info.path.path.startsWith(project.path)) return;
-		UpdateGoal();
         UpdateCount();
 	}
 </script>
-<ProgressPath {manager} {project}/>
 <div class="ws-progress-project">
 	<h3>{project.title}</h3>
 	<ProgressBar bind:this={progress} />

@@ -63,8 +63,8 @@
 		totalWordsImported = 0;
 		totalWordsExported = 0;
 		totalWritingTime = 0;
-		startWords = 0;
-		endWords = 0;
+		startWords = stats.first()?.wordsStart || 0;
+		endWords = stats.last()?.wordsEnd || 0;
 		stats.forEach(period => {
 			totalDuration += period.timeEnd - period.timeStart;
 			totalWordsAdded += period.wordsAdded;

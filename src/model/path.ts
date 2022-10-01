@@ -70,7 +70,7 @@ export class WSPath {
     getAncestors(path: WSPath): WSPath[] {
         let ancestors: WSPath[] = [];
         let descendent: WSPath;
-        console.log(path.path);
+        // console.log(path.path);
         if (path === this) {
             return ancestors;
         }
@@ -82,7 +82,7 @@ export class WSPath {
         while (descendent instanceof WSPath) {
             if (descendent.children.length === 0) break;
             for (let child of descendent.children) {
-                console.log(path.path, child.path);
+                // console.log(path.path, child.path);
                 if (path.path.startsWith(child.path)) {
                     ancestors.push(child);
                     descendent = child;

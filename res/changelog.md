@@ -9,6 +9,15 @@
  - Add settings for display of date and time formats
 
 ## Changelog
+### 2022-10-01
+ - Finished ProgressPath.svelte.
+ - Broke apart the various progress bars so the bars pertain specifically to whatever progress they're monitoring (File, Project, Path)
+ - ProgressFocus shows all paths first, then project, then the focused file. If there are more than one project for a file, it will display the file and then list the projects it is in so the user can clear that up. Eventually, the user will be able to view a particular project or path by request.
+ - BUGFIX: StartsWords and EndWords in day view is 0.
+ - BUG: Starting and Ending Words is incorrect. It is not showing the total words in the monitored files.
+ - BUG: WordsImported occasionally is triggered when it should not be.
+ - BUG: Changing project path is no longer successful. Throws an exception in getAncestors().
+
 ### 2022-09-30
  - Updated LICENSE to remove reference to plugins from which code was previously borrowed (Validator and Suggestion Box) but now replaced by Svelte.
  - Most of the new ProgressView is in place for the focused file. Eventually, there will be project/path specific ones where you can setup what projects you want to monitor in particular, but this will do for now.

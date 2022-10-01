@@ -7,12 +7,11 @@
 	} from "src/model/event";
 	import { WSFile } from "src/model/file";
 	import type { WSProjectManager } from "src/model/manager";
-	import type { WSPath } from "src/model/path";
+	import { WSPath } from "src/model/path";
 	import { WSProject } from "src/model/project";
 	import { FormatNumber, FormatWords } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import ProgressBar from "../util/ProgressBar.svelte";
-	import ProgressProject from "./ProgressProject.svelte";
 
 	export let manager: WSProjectManager;
 	export let events = manager.plugin.events;
@@ -151,7 +150,7 @@
 	}
 
 	function onPathUpdate(event: WSPathEvent) {
-		if (event.info.path! instanceof WSProject) return;
+		if (event.info.path! instanceof WSPath) return;
 		if (event.info.path === path) {
 			path = event.info.path;
 			return;
@@ -179,19 +178,8 @@
 	}
 </script>
 
-<div class="ws-progress-panel">
-	{#if projects.length === 1}
-		<ProgressProject {manager} {project} />
-	{/if}
+<div class="ws-progress-file">
 	<h4>{file.title}</h4>
 	<ProgressBar bind:this={progress} />
 	<div class="ws-progress-label">{label}</div>
-	{#if projects.length > 1}
-		<h4>Projects</h4>
-		<ul>
-			{#each projects as p}
-				<li>{p.title}</li>
-			{/each}
-		</ul>
-	{/if}
 </div>

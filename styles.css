@@ -659,8 +659,11 @@ td.total-head {
 .ws-progress-bar-label {
 	z-index: 2;
 	position: absolute;
-	width: 100%;
+	width: calc(100% - 8px);
+	height: calc(100% - 8px);
 	text-align: center;
+	line-height: 1.6;
+	font-size: small;
 	margin: auto;
 	color: white;
 	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
