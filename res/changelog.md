@@ -5,17 +5,33 @@
  
 ## To-Do for first release
  - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
- - ProgressView - This will essentially replicate the progress bars that are currently in the status bars, plus additional information (Project/Path Titles) and percentages. Both will be available as options.
  - Cleanup any outstanding bugs.
  - Add settings for display of date and time formats
 
 ## Changelog
+### 2022-09-30
+ - Updated LICENSE to remove reference to plugins from which code was previously borrowed (Validator and Suggestion Box) but now replaced by Svelte.
+ - Most of the new ProgressView is in place for the focused file. Eventually, there will be project/path specific ones where you can setup what projects you want to monitor in particular, but this will do for now.
+ - TODO: Finished ProgressPath to show the path progress bars.
+ - Right now, Progress Bars always assume a goal that is equal to the nearest 10% of the current word count when there is no current goal. This will eventually be an option.
+
+### 2022-09-24
+ - Added ProgressView
+ - Revised View icons
+ - BUGFIX: Files for the TimePeriod (debug) View were not being populated on load.
+ - BUGFIX?: Changing project path makes project disappear from project view. (Added event watcher for project path and project index set events)
+ - BUGFIX?: Updating the file index for a project does not appear to update the word count. (Added event watcher for project index set events)
+
+### 2022-09-18
+ - BUGFIX: CSV export naming is invalid on Windows (due to present of colons)
+ - STYLE FIX: "All Projects" adds unnecessary offset. Need to find a way to make it just offset as a heading rather than the root element of the tree.
+
 ### 2022-09-17
  - Added paranoia mode.
  - BUGFIX: Paranoia mode sometimes fails if the main collection systems haven't loaded yet.
  - BUGFIX: WordsChanged event was only firing when monitoring was on for the given file.
  - BUG: Changing project path makes project disappear from project view.
- - BUG: Updating the file index for a project does not appear to update the word count (could be an issue from 0.16.2 debounce?)
+ - BUG: Updating the file index for a project does not appear to update the word count
  - BUG: When workspace changes and removes the project and statistics views, the editorCheckCallback seems to report that the view exists so the option to attach it no longer exists.
  - STYLE ISSUE: "All Projects" adds unnecessary offset. Need to find a way to make it just offset as a heading rather than the root element of the tree.
  - STYLE ISSUE: Way too much whitespace between lines in the tree view for project listing.

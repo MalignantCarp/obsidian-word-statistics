@@ -12,6 +12,8 @@ import type { WSProject } from './model/project';
 import { FormatWords } from './util';
 import { StatisticsView, STATISTICS_VIEW } from './ui/StatisticsView';
 import { WSTimePeriod } from './model/statistics';
+import { DateTime } from 'luxon';
+import { ProgressView, PROGRESS_VIEW } from './ui/ProgressView';
 
 const PROJECT_PATH = "projects.json";
 const FILE_PATH = "files.json";
@@ -83,6 +85,10 @@ export default class WordStatisticsPlugin extends Plugin {
 			return new StatisticsView(leaf, this);
 		});
 
+		this.registerView(PROGRESS_VIEW.type, (leaf) => {
+			return new ProgressView(leaf, this);
+		});
+
 		this.addCommand({
 			id: 'statistics-csv',
 			name: 'Backup statistics to CSV',
@@ -120,6 +126,18 @@ export default class WordStatisticsPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: 'attach-progress-view',
+			name: 'Attach Progress View',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length === 0;
+				} else {
+					this.initializeProgressLeaf();
+				}
+			}
+		});
+
+		this.addCommand({
 			id: 'insert-project-table-modal',
 			name: 'Insert Project Table Modal',
 			editorCheckCallback: (checking: boolean) => {
@@ -134,6 +152,8 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (this.app.workspace.layoutReady) {
 			this.onStartup();
 			this.initializeProjectManagementLeaf();
+			this.initializeStatisticsLeaf();
+			this.initializeProgressLeaf();
 		} else {
 			this.app.workspace.onLayoutReady(this.onStartup.bind(this));
 		}
@@ -144,7 +164,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	paranoiaHandler() {
 		// console.log("Checking for paranoia...");
 		// console.log(this.settings.statisticSettings.paranoiaMode, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
-		if (this.settings.statisticSettings.paranoiaMode && this.collector.stats.currentPeriod instanceof WSTimePeriod && Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval*60000 && this.collector.stats.currentPeriod.timeStart > this.paranoiaTest) {
+		if (this.settings.statisticSettings.paranoiaMode && this.collector.stats.currentPeriod instanceof WSTimePeriod && Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval * 60000 && this.collector.stats.currentPeriod.timeStart > this.paranoiaTest) {
 			// console.log("Paranoia interval exceeded. Saving stats.")
 			this.saveStatsCSV();
 			// console.log("Done. resetting interval");
@@ -153,7 +173,9 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	onunload() {
-		this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
+		// this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
+		// this.app.workspace.detachLeavesOfType(STATISTICS_VIEW.type);
+		// this.app.workspace.detachLeavesOfType(PROGRESS_VIEW.type);
 		this.collector.manager.cleanup();
 		this.collector.cleanup();
 		console.log("Obsidian Word Statistics unloaded.");
@@ -180,6 +202,15 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		this.app.workspace.getRightLeaf(false).setViewState({
 			type: STATISTICS_VIEW.type
+		});
+	}
+
+	initializeProgressLeaf() {
+		if (this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length > 0) {
+			return;
+		}
+		this.app.workspace.getRightLeaf(false).setViewState({
+			type: PROGRESS_VIEW.type
 		});
 	}
 
@@ -478,7 +509,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	saveStatsCSV() {
 		let csv = WSFormat.StatisticDataToCSV(this, this.collector.stats.periods);
-		let path = new Date().toISOString() + ".csv";
+		let now = DateTime.utc();
+		let path = now.toFormat('yyyy-LL-dd') + "T" + now.toFormat('HH_mm_ss_SSS') + "Z.csv";
 		// console.log("Saving to ", path);
 		// console.log(csv);
 		this.saveSerialData(path, csv);

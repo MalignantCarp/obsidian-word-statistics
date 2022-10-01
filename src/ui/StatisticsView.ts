@@ -7,7 +7,7 @@ import StatisticsPane from './svelte/StatisticsView/StatisticsPane.svelte';
 export const STATISTICS_VIEW = {
     type: 'ws-view-statistics',
     name: 'Word Statistics',
-    icon: 'presentation'
+    icon: 'trending-up'
 };
 
 export class StatisticsView extends ItemView {

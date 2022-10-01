@@ -17,6 +17,7 @@
 	onMount(() => {
 		manager.plugin.events.on(WSEvents.File.WordsChanged, updateWords, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.PathSet, updateProjects, { filter: null });
+		manager.plugin.events.on(WSEvents.Project.IndexSet, updateProjects, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.Created, updateProjects, { filter: null });
 		manager.plugin.events.on(WSEvents.Path.GoalsSet, updateWords, { filter: null});
 		updateProjects();
@@ -26,6 +27,7 @@
 	onDestroy(() => {
 		manager.plugin.events.off(WSEvents.File.WordsChanged, updateWords, { filter: null });
 		manager.plugin.events.off(WSEvents.Project.PathSet, updateProjects, { filter: null });
+		manager.plugin.events.off(WSEvents.Project.IndexSet, updateProjects, { filter: null });
 		manager.plugin.events.off(WSEvents.Project.Created, updateProjects, { filter: null });
 		manager.plugin.events.off(WSEvents.Path.GoalsSet, updateWords, { filter: null});
 	});

@@ -12,7 +12,7 @@ export class WSPath {
         public wordGoalForProjects: number = 0,
         public wordGoalForFiles: number = 0,
         public iconID: string = "",
-        private children: WSPath[] = []
+        private children: WSPath[] = [],
     ) { }
 
     samePathAs(path: WSPath) {
@@ -60,11 +60,38 @@ export class WSPath {
         }
         for (let child of this.children) {
             let parent = child.findParentOfChild(path);
-            if  (parent instanceof WSPath) {
-                return (parent)
+            if (parent instanceof WSPath) {
+                return (parent);
             }
         }
         return null;
+    }
+
+    getAncestors(path: WSPath): WSPath[] {
+        let ancestors: WSPath[] = [];
+        let descendent: WSPath;
+        console.log(path.path);
+        if (path === this) {
+            return ancestors;
+        }
+        if (this.children.contains(path)) {
+            // console.log(this.path, " is parent.");
+            return [this];
+        }
+        descendent = this;
+        while (descendent instanceof WSPath) {
+            if (descendent.children.length === 0) break;
+            for (let child of descendent.children) {
+                console.log(path.path, child.path);
+                if (path.path.startsWith(child.path)) {
+                    ancestors.push(child);
+                    descendent = child;
+                    break;
+                }
+            }
+            if (ancestors.last() !== descendent) break;
+        }
+        return ancestors;
     }
 
     getAll(): WSPath[] {
@@ -81,7 +108,7 @@ export class WSPath {
             this.children.push(child);
         }
     }
- 
+
     removeChild(child: WSPath) {
         if (this.children.contains(child)) {
             this.children.remove(child);

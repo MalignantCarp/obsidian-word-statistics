@@ -1,21 +1,21 @@
 import { App, ItemView, WorkspaceLeaf } from "obsidian";
 import type WordStatisticsPlugin from "src/main";
 import type { WSProjectManager } from "src/model/manager";
-import ProjectManagement from "./svelte/ProjectManagementView/ProjectManagement.svelte";
+import ProgressMain from "./svelte/ProgressView/ProgressMain.svelte";
 
-export const PROJECT_MANAGEMENT_VIEW = {
-    type: 'ws-view-project-management',
-    name: 'Project Management',
-    icon: 'library'
+export const PROGRESS_VIEW = {
+    type: 'ws-view-progress',
+    name: 'ProgressView',
+    icon: 'bar-chart-horizontal'
 };
 
-export class ProjectManagementView extends ItemView {
+export class ProgressView extends ItemView {
     app: App;
     plugin: WordStatisticsPlugin;
     manager: WSProjectManager;
     parent: HTMLElement;
     container: HTMLDivElement;
-    pmv: ProjectManagement;
+    pv: ProgressMain;
 
     constructor(leaf: WorkspaceLeaf, plugin: WordStatisticsPlugin) {
         super(leaf);
@@ -25,29 +25,29 @@ export class ProjectManagementView extends ItemView {
     }
 
     getDisplayText(): string {
-        return PROJECT_MANAGEMENT_VIEW.name;
+        return PROGRESS_VIEW.name;
     }
 
     getViewType(): string {
-        return PROJECT_MANAGEMENT_VIEW.type;
+        return PROGRESS_VIEW.type;
     }
 
     getIcon(): string {
-        return PROJECT_MANAGEMENT_VIEW.icon;
+        return PROGRESS_VIEW.icon;
     }
 
     async onOpen(): Promise<void> {
-        this.pmv = new ProjectManagement({
+        this.pv = new ProgressMain({
             target: this.contentEl,
             props: {
                 manager: this.manager,
             }
-        })
+        });
     }
 
     onClose(): Promise<void> {
-        if (this.pmv) {
-            this.pmv.$destroy;
+        if (this.pv) {
+            this.pv.$destroy;
         }
         return Promise.resolve();
     }

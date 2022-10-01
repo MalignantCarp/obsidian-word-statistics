@@ -344,6 +344,10 @@ export class WSProjectManager {
         return this.pathRoot.findParentOfChild(path);
     }
 
+    getAncestors(path: WSPath) {
+        return this.pathRoot.getAncestors(path);
+    }
+
     buildPath(path: string) {
         // path.length of 0 === root
         // if this.pathRoot.getPath(path) resolves to something other than null, then the entire tree already exists

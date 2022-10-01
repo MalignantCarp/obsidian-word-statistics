@@ -24,6 +24,7 @@
 		livePeriod = collector.stats.currentPeriod;
 		focusPeriod = livePeriod;
 		periodIndex = periodIndex;
+		files = livePeriod?.files || [];
 	});
 
 	onDestroy(() => {

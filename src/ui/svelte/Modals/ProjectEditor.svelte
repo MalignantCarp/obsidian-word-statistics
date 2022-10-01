@@ -2,7 +2,7 @@
 	import type { WSProjectManager } from "src/model/manager";
 	import { PROJECT_CATEGORY_NAME, PROJECT_TYPE_DESCRIPTION, PROJECT_INDEX_TYPE, WSProject, WSPType } from "src/model/project";
 	import { onMount } from "svelte";
-import Checkbox from "../util/Checkbox.svelte";
+	import Checkbox from "../util/Checkbox.svelte";
 	import SettingItem from "../util/SettingItem.svelte";
 	import SuggestBox from "../util/SuggestBox.svelte";
 	import ValidatedInput from "../util/ValidatedInput.svelte";

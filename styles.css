@@ -72,8 +72,8 @@
 	grid-template-columns: 18px 1fr;
 	grid-template-rows: 1fr 2px;
 	grid-template-areas:
-	"sbc-icon sbc-title"
-	". sbc-progress";
+		"sbc-icon sbc-title"
+		". sbc-progress";
 }
 
 .ws-sb-count-file,
@@ -604,4 +604,108 @@ td.total-head {
 
 .ws-sv-file-title {
 	padding-left: 0.125em;
+}
+
+.ws-pm-project-tree>.tree-item>.tree-item-self {
+	border-bottom: solid 1px;
+}
+
+.ws-pm-project-tree>.tree-item>.tree-item-children {
+	margin-left: 0;
+	padding-left: 0;
+}
+
+.ws-project-item.tree-item .ws-project-item-self.tree-item-self,
+.ws-path-item.tree-item .ws-path-item-self.tree-item-self {
+	padding-right: var(--size-2-1);
+}
+
+.ws-project-tree .tree-item .ws-project-item-self.tree-item-self {
+	padding-left: var(--size-2-3);
+	padding-bottom: var(--size-2-1);
+	padding-top: var(--size-2-2);
+}
+
+.ws-path-item-children {
+	padding-left: var(--size-4-1);
+}
+
+.ws-progress {
+	height: 30px;
+	padding: 4px;
+	position: relative;
+	background: rgba(0, 0, 0, 0.25);
+	border-radius: 6px;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.ws-progress-bar {
+	--padding: 4px;
+	position: absolute;
+	border-radius: 4px;
+	background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
+	transition: 0.4s linear;
+	transition-property: width, background-color;
+	box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
+	height: calc(100% - 8px);
+}
+
+.ws-progress-label {
+	width: 100%;
+	text-align: center;
+	margin: auto;
+}
+
+.ws-progress-bar-label {
+	z-index: 2;
+	position: absolute;
+	width: 100%;
+	text-align: center;
+	margin: auto;
+	color: white;
+	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.ws-progress-bar[data-progress="0"] {
+	background-color: #611;
+}
+
+.ws-progress-bar[data-progress="1"] {
+	background-color: #711;
+}
+
+.ws-progress-bar[data-progress="2"] {
+	background-color: #911;
+}
+
+.ws-progress-bar[data-progress="3"] {
+	background-color: #941;
+}
+
+.ws-progress-bar[data-progress="4"] {
+	background-color: #a61;
+}
+
+.ws-progress-bar[data-progress="5"] {
+	background-color: #c83;
+}
+
+.ws-progress-bar[data-progress="6"] {
+	background-color: #ca3;
+}
+
+.ws-progress-bar[data-progress="7"] {
+	background-color: #aa5;
+}
+
+.ws-progress-bar[data-progress="8"] {
+	background-color: #9a6;
+}
+
+.ws-progress-bar[data-progress="9"] {
+	background-color: #8a6;
+}
+
+.ws-progress-bar[data-progress="10"] {
+	background-color: #6b6;
 }

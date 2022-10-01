@@ -36,6 +36,8 @@
 		manager.plugin.events.on(WSEvents.Path.Deleted, updateChildren, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.Created, updateProjects, { filter: null });
 		manager.plugin.events.on(WSEvents.Project.Deleted, updateProjects, { filter: null });
+		manager.plugin.events.on(WSEvents.Project.PathSet, updateProjects, { filter: null });
+		manager.plugin.events.on(WSEvents.Project.IndexSet, updateProjects, { filter: null });
 		childPaths = path.getChildren();
 		childProjects = manager.getProjectsByExactPath(path.path);
 		buttons.reset();
@@ -52,6 +54,8 @@
 		manager.plugin.events.off(WSEvents.Path.Deleted, updateChildren, { filter: null });
 		manager.plugin.events.off(WSEvents.Project.Created, updateProjects, { filter: null });
 		manager.plugin.events.off(WSEvents.Project.Deleted, updateProjects, { filter: null });
+		manager.plugin.events.off(WSEvents.Project.PathSet, updateProjects, { filter: null });
+		manager.plugin.events.off(WSEvents.Project.IndexSet, updateProjects, { filter: null });
 	});
 
 	function reset(event: WSPathEvent) {
