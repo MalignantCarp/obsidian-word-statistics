@@ -2,21 +2,34 @@
  - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
  - BUG: (potential need for consideration) If a file's word count changes outside of Obsidian but no change is made within Obsidian that triggers an update, the new word count is recorded in the files.json file but there is no corresponding update to the word stats database. It may be good to have a check for when those change and then just log an entry with 0 duration with the update at the local midnight of the day the word count change occurs. That way it would only cause timing issues if the person were to do an update within the first 15 minutes of the day.
  - BUG: In TimePeriod.svelte, sometimes the Files list is not properly updated or the display is not updated. The displayed files list was empty, but it should not have been. (not yet reproduced)
- 
+ - BUG: WordsImported and WordsExported are incorrectly triggered on occasion by the first change made to a new file.
+ - BUG: Ending words is not being set correctly for time period.
+ - BUG: Changing project path is no longer successful. Throws an exception in getAncestors().
+ - BUG: When workspace changes and removes the project and statistics views, the editorCheckCallback seems to report that the view exists so the option to attach it no longer exists.
+ - STYLE ISSUE: Way too much whitespace between lines in the tree view for project listing.
+ - STYLE ISSUE: Way too much whitespace in the status bar counters. Probably want to remove the progress bars and get the ProgressView complete so that the counters can balance with the other elements.
+
+### Maybe fixed
+ - BUG: Changing project path makes project disappear from project view.
+ - BUG: Updating the file index for a project does not appear to update the word count
+
 ## To-Do for first release
  - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
  - Cleanup any outstanding bugs.
  - Add settings for display of date and time formats
 
 ## Changelog
+### 2022-10-02
+ - BUGFIX: CSV stats using localTime instead of endTime for end date and end time.
+ - BUGFIX: Starting Words is incorrect for time period.
+ - CHANGE: Amended start and end words for a time period to be equal to the sum of start words and sum of ends words for all contained files modified during that time period. Previously, this was erroneously not set at all.
+ - Added NetWords to both stats views. This is the total added and imported words minus deleted and exported words.
+
 ### 2022-10-01
  - Finished ProgressPath.svelte.
  - Broke apart the various progress bars so the bars pertain specifically to whatever progress they're monitoring (File, Project, Path)
  - ProgressFocus shows all paths first, then project, then the focused file. If there are more than one project for a file, it will display the file and then list the projects it is in so the user can clear that up. Eventually, the user will be able to view a particular project or path by request.
- - BUGFIX: StartsWords and EndWords in day view is 0.
- - BUG: Starting and Ending Words is incorrect. It is not showing the total words in the monitored files.
- - BUG: WordsImported occasionally is triggered when it should not be.
- - BUG: Changing project path is no longer successful. Throws an exception in getAncestors().
+ - BUGFIX: StartWords and EndWords in day view is 0.
 
 ### 2022-09-30
  - Updated LICENSE to remove reference to plugins from which code was previously borrowed (Validator and Suggestion Box) but now replaced by Svelte.
@@ -39,12 +52,6 @@
  - Added paranoia mode.
  - BUGFIX: Paranoia mode sometimes fails if the main collection systems haven't loaded yet.
  - BUGFIX: WordsChanged event was only firing when monitoring was on for the given file.
- - BUG: Changing project path makes project disappear from project view.
- - BUG: Updating the file index for a project does not appear to update the word count
- - BUG: When workspace changes and removes the project and statistics views, the editorCheckCallback seems to report that the view exists so the option to attach it no longer exists.
- - STYLE ISSUE: "All Projects" adds unnecessary offset. Need to find a way to make it just offset as a heading rather than the root element of the tree.
- - STYLE ISSUE: Way too much whitespace between lines in the tree view for project listing.
- - STYLE ISSUE: Way too much whitespace in the status bar counters. Probably want to remove the progress bars and get the ProgressView complete so that the counters can balance with the other elements.
 
 ### 2022-09-04
  - BUGFIX: Progress bars in the status bar are invisible with the default theme.

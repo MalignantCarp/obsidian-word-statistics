@@ -314,8 +314,8 @@ export namespace WSFormat {
                 let endTime = DateTime.fromMillis(info.timeEnd);
                 let localDateStr = localTime.toFormat('yyyy-LL-dd');
                 let localTimeStr = localTime.toFormat('HH:mm:ss');
-                let endDateStr = localTime.toFormat('yyyy-LL-dd');
-                let endTimeStr = localTime.toFormat('HH:mm:ss');
+                let endDateStr = endTime.toFormat('yyyy-LL-dd');
+                let endTimeStr = endTime.toFormat('HH:mm:ss');
                 let duration = (info.timeEnd - info.timeStart).toString();
                 let updateTimestamp = info.wordsUpdatedAt.toString();
                 let file = wrapper.file.path;

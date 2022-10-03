@@ -24,6 +24,7 @@
 	let totalWordsImported: number = 0;
 	let totalWordsExported: number = 0;
 	let totalWritingTime: number = 0;
+	let totalNetWords: number = 0;
 	let startWords: number = 0;
 	let endWords: number = 0;
 
@@ -85,6 +86,8 @@
 			totalDuration = Math.max(totalDuration, 1);
 			totalWritingTime = Math.max(totalWritingTime, 1);
 		}
+
+		totalNetWords = totalWordsAdded + totalWordsImported - totalWordsDeleted - totalWordsExported;
 	}
 
 	function RolloverCheck(): number {
@@ -162,6 +165,8 @@
 			<div class="ws-sv-value">{FormatWords(totalWordsImported)}</div>
 			<div>Words Exported:</div>
 			<div class="ws-sv-value">{FormatWords(totalWordsExported)}</div>
+			<div>Net Words:</div>
+			<div class="ws-sv-value">{FormatWords(totalNetWords)}</div>
 			<div>Writing Time:</div>
 			<div class="ws-sv-value">{SecondsToHMS(totalWritingTime / 1000)}</div>
 			<div>Logged Time:</div>

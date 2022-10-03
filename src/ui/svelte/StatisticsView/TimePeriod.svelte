@@ -112,6 +112,8 @@
 			<div class="ws-sv-value">{FormatWords(focusPeriod.wordsImported)}</div>
 			<div>Words Exported:</div>
 			<div class="ws-sv-value">{FormatWords(focusPeriod.wordsExported)}</div>
+			<div>Net Words:</div>
+			<div class="ws-sv-value">{FormatWords(focusPeriod.wordsAdded + focusPeriod.wordsImported - focusPeriod.wordsDeleted - focusPeriod.wordsExported)}</div>
 			<div>Last Word At:</div>
 			<div class="ws-sv-value">{DateTime.fromMillis(focusPeriod.wordsUpdatedAt).toLocaleString(DateTime.DATETIME_SHORT)}</div>
 			<div>Writing Time:</div>

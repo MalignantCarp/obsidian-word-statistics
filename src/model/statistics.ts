@@ -48,6 +48,7 @@ export class WSTimePeriod {
         public wordsExported: number = 0,
         public wordsUpdatedAt: number = 0,
         public writingTime: number = 0,
+        private fileMap: WSFile[] = [],
     ) {
         if (this.base === 0) {
             this.base = this.timeStart - (this.timeStart % Settings.Statistics.PERIOD_LENGTH);
@@ -57,6 +58,39 @@ export class WSTimePeriod {
         }
         if (this.timeEnd === 0) {
             this.timeEnd = this.timeStart;
+        }
+        if (files.length > 0) {
+            let startingWords = 0;
+            let endingWords = 0;
+            for (let wrapper of files) {
+                if (fileMap.contains(wrapper.file)) continue;
+                fileMap.push(wrapper.file);
+                startingWords += wrapper.stats.wordsStart;
+            }
+            if (wordsStart != startingWords) {
+                console.log(`Starting words mismatch: ${wordsStart} (stored), ${startingWords} (calculated)`);
+                this.wordsStart = startingWords;
+            }
+            let filesToCheck = Array.from(fileMap);
+            let filesChecked: WSFile[] = [];
+            while (filesToCheck.length > 0) {
+                let ftc = filesToCheck.pop();
+                for (let i = files.length - 1; i >= 0; i--) {
+                    // console.log(`Checking for file #${i} (${ftc.path})... Scanning ${files[i].file.path}.`)
+                    if (files[i].file !== ftc) continue;
+                    // console.log("Found and logged.");
+                    endingWords += files[i].stats.wordsEnd;
+                    filesChecked.push(ftc);
+                    break;
+                }
+                if (!filesChecked.contains(ftc)) {
+                    console.log("Could not find wrapper for file: ", ftc.path);
+                }
+            }
+            if (wordsEnd != endingWords) {
+                console.log(`Ending words mismatch: ${wordsEnd} (stored), ${endingWords} (calculated)`);
+                this.wordsEnd = endingWords;
+            }
         }
     }
 
@@ -113,6 +147,7 @@ export class WSTimePeriod {
                 this.wordsImported += oldCount;
                 this.wordsAdded += newFile.stats.wordsAdded;
                 this.wordsDeleted += newFile.stats.wordsDeleted;
+                this.fileMap.push(file);
             } else {
                 newFile = {
                     file, stats: {
@@ -128,6 +163,9 @@ export class WSTimePeriod {
                         writingTime: 0
                     }
                 };
+                if (!this.fileMap.contains(file)) {
+                    this.wordsStart += newFile.stats.wordsStart;
+                }
                 this.wordsAdded += newFile.stats.wordsAdded;
                 this.wordsDeleted += newFile.stats.wordsDeleted;
                 this.wordsImported += newFile.stats.wordsImported;
