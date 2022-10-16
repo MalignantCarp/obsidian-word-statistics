@@ -1,164 +1,333 @@
+import type WordStatisticsPlugin from "src/main";
+import { WSEvents, WSFileEvent } from "src/model/events";
+import type { WSFolder } from "src/model/folder";
+import { Settings } from "src/settings";
+
+export class WSFileStat {
+    constructor(
+        public file: WSFile,
+        public startTime: number,
+        public startWords: number,
+        public endTime: number = 0,
+        public endWords: number = 0,
+        public wordsAdded: number = 0,
+        public wordsDeleted: number = 0,
+        public wordsImported: number = 0,
+        public wordsExported: number = 0,
+        public writingTime: number = 0
+    ) {
+        if (endTime === 0) this.endTime = this.startTime;
+        if (endWords === 0) this.endWords = this.startWords;
+    }
+
+    get duration() {
+        return this.endTime - this.startTime;
+    }
+
+    get netWords() {
+        return this.wordsAdded + this.wordsImported - this.wordsDeleted - this.wordsExported;
+    }
+
+    get WPM() {
+        return this.netWords / this.duration;
+    }
+
+    get WPMA() {
+        return this.netWords / this.writingTime;
+    }
+
+    updateStat(updateTime: number, oldCount: number, newCount: number, writingTime: number, first: boolean = false) {
+        this.writingTime += writingTime;
+        this.endTime = updateTime;
+        if (first) {
+            // if this is the first time this file has been counted, whatever the new count is will be imported text
+            // it wasn't written, it was pre-existing
+            this.wordsImported = newCount;
+            return;
+        }
+        // if the oldCount on the file object itself doesn't match the previous endWords, then it has changed
+        // outside of Obsidian, so any content added or deleted is imported or exported prior to whatever
+        // the new count will be adding/deleting.
+        if (oldCount !== this.endWords) {
+            console.log("Words have been imported/exported.", oldCount, this.endWords, Math.max(oldCount - this.endWords, 0), Math.max(this.endWords - oldCount, 0));
+            this.wordsImported += Math.max(oldCount - this.endWords, 0);
+            this.wordsExported += Math.max(this.endWords - oldCount, 0);
+        }
+        this.wordsAdded += Math.max(newCount - oldCount, 0);
+        this.wordsDeleted += Math.max(oldCount - newCount, 0);
+        this.endWords = newCount;
+    }
+}
+
 export class WSFile {
-	name: string;
-	path: string;
-	private currentWords: number;
-	private startWords: number;
-	lastUpdate: number;
-	private ftitle: string;
-	tags: string[];
-	links: Map<WSFile, string>;
-	backlinks: WSFile[];
-	wordGoal: number;
+    constructor(
+        public plugin: WordStatisticsPlugin,
+        public parent: WSFolder,
+        public path: string,
+        public name: string,
+        public title: string = "",
+        public wordCount: number = 0,
+        public wordGoal: number = 0,
+        public titleYAML: boolean = false,
+        public goalYAML: boolean = false,
+        public stats: WSFileStat[] = []
+    ) {
+        if (parent !== null) {
+            // console.log(`Adding WSFile(${path}) to parent: ${parent.path}`);
+            this.parent.addChild(this);
+        }
+    }
 
-	constructor(name: string, path: string, wordGoal?: number) {
-		this.name = name;
-		this.path = path;
-		this.startWords = 0;
-		this.currentWords = 0;
-		this.lastUpdate = Date.now();
-		this.ftitle = null;
-		this.tags = [];
-		this.links = new Map<WSFile, string>();
-		this.backlinks = [];
-		this.wordGoal = wordGoal || 0;
-		// console.log(`New File(${this.path}`);
-	}
+    clear() {
+        this.parent = null;
+        this.stats = [];
+    }
 
-	private toObject() {
-		return ({
-			name: this.name,
-			path: this.path,
-			words: this.currentWords,
-			lastUpdate: this.lastUpdate,
-			wordGoal: this.wordGoal
-		});
-	}
+    getTitle(): string {
+        if (this.title != "") return this.title;
+        return this.name;
+    }
 
-	serialize() {
-		return this.toObject();
-	}
+    getWordGoal() {
+        if (this.wordGoal > 0) return this.wordGoal;
+        let parent = this.parent;
+        while (this.parent !== null) {
+            if (parent.wordGoalForFiles > 0) return parent.wordGoalForFiles;
+            parent = parent.parent;
+        }
+        return 0;
+    }
 
-	clearTags() {
-		while (this.tags.length > 0) {
-			this.tags.pop();
-		}
-	}
+    propagateWordCountChange(oldCount: number, newCount: number) {
+        this.parent?.propagateWordCountChange(oldCount, newCount);
+    }
 
-	addTag(tag: string) {
-		if (!this.tags.contains(tag)) {
-			this.tags.push(tag);
-		}
-	}
+    triggerWordsChanged(oldCount: number, newCount: number, timestamp: number, chain: boolean = false) {
+        this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.WordsChanged, file: this, data: [timestamp, oldCount, newCount] }, { filter: this }));
+        if (chain) this.parent?.triggerWordsChanged(oldCount, newCount, timestamp, true);
+    }
 
-	setTags(tags: string[]) {
-		while (this.tags.length > 0) {
-			this.tags.pop();
-		}
-		this.tags = tags;
-	}
+    triggerTitleSet(title: string) {
+        this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.TitleSet, file: this, data: [title] }, { filter: this }));
+    }
 
-	hasTag(tag: string) {
-		return this.tags.contains(tag);
-	}
+    triggerGoalSet(goal: number) {
+        this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.GoalSet, file: this, data: [goal] }, { filter: this }));
+    }
 
-	clearLinks() {
-		this.links.forEach((name: string, file: WSFile) => {
-			file.removeBacklink(this);
-		});
-		this.links.clear();
-	}
+    triggerCreated() {
+        this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.Created, file: this }, { filter: this }));
+    }
 
-	setLink(file: WSFile, title: string) {
-		this.links.set(file, title);
-		file.setBacklink(this);
-	}
+    triggerDeleted() {
+        this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.Deleted, file: this }, { filter: this }));
+    }
 
-	setBacklink(file: WSFile) {
-		if (!this.backlinks.contains(file)) {
-			this.backlinks.push(this);
-		}
-	}
+    triggerRenamed(oldName: string, newName: string) {
+        this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.Renamed, file: this, data: [oldName, newName] }, { filter: this }));
+    }
 
-	hasBacklink(file: WSFile) {
-		return (this.backlinks.contains(file));
-	}
+/* #region Statistics */
 
-	removeBacklink(file: WSFile) {
-		if (this.backlinks.contains(file)) {
-			this.backlinks.remove(file);
-		}
-	}
+get startTime() {
+    return this.stats.reduce((start, stat) => { return Math.min(start, stat.startTime); }, Number.MAX_SAFE_INTEGER);
+}
 
-	hasLink(file: WSFile) {
-		return this.links.has(file);
-	}
+getStartTimeForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((start, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return Math.min(start, stat.startTime);
+        }
+        return start;
+    }, periodEnd);
+}
 
-	removeLink(file: WSFile) {
-		if (this.links.has(file)) {
-			this.links.delete(file);
-			file.removeBacklink(this);
-		} else {
-			console.log("Tried to remove link to '%s' from WSFileRef(%s), but it is not there.", file.path, this.path);
-		}
-	}
+get startWords() {
+    return this.stats.reduce((start, stat) => { return Math.min(start, stat.startWords); }, Number.MAX_SAFE_INTEGER);
+}
 
-	getLinkTitle(file: WSFile) {
-		return this.links.get(file);
-	}
+getStartWordsForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((start, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return Math.min(start, stat.startWords);
+        }
+        return start;
+    }, Number.MAX_SAFE_INTEGER);
+}
 
-	getLinkedRefs() {
-		return Array.from(this.links.keys());
-	}
+get endTime() {
+    return this.stats.reduce((endTime, stat) => { return Math.max(endTime, stat.endTime); }, 0);
+}
 
-	setTitle(newTitle: string) {
-		if (newTitle == "" || newTitle == undefined || newTitle == null) {
-			this.ftitle = null;
-		} else {
-			this.ftitle = newTitle;
-		}
-	}
+getEndTimeForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((endTime, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return Math.min(endTime, stat.endTime);
+        }
+        return endTime;
+    }, periodEnd);
+}
 
-	get title() {
-		if (this.ftitle == "" || this.ftitle == null) {
-			//let title = this.path.split("/").pop().replace(/\.md$/, "");
-			//return title;
-			return this.name;
-		}
-		return this.ftitle;
-	}
+get endWords() {
+    return this.stats.reduce((endWords, stat) => { return Math.max(endWords, stat.endWords); }, 0);
+}
 
-	hasTitle() {
-		return this.ftitle != null;
-	}
+getEndWordsForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((endWords, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return Math.min(endWords, stat.endWords);
+        }
+        return endWords;
+    }, Number.MAX_SAFE_INTEGER);
+}
 
-	setPath(newPath: string) {
-		this.path = newPath;
-		this.lastUpdate = Date.now();
-	}
+get wordsAdded() {
+    return this.stats.reduce((total, stat) => { return total + stat.wordsAdded; }, 0);
+}
 
-	set words(count: number) {
-		this.currentWords = count;
-		this.lastUpdate = Date.now();
-	}
+getWordsAddedForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.wordsAdded;
+        }
+        return total;
+    }, 0);
+}
 
-	addWords(count: number) {
-		this.currentWords += count;
-		this.lastUpdate = Date.now();
-	}
+get wordsDeleted() {
+    return this.stats.reduce((total, stat) => { return total + stat.wordsDeleted; }, 0);
+}
 
-	getStartWords() {
-		return this.startWords;
-	}
+getWordsDeletedForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.wordsDeleted;
+        }
+        return total;
+    }, 0);
+}
 
-	setStartWords(words: number) {
-		this.startWords = words;
-	}
+get wordsImported() {
+    return this.stats.reduce((total, stat) => { return total + stat.wordsImported; }, 0);
+}
 
-	get words() {
-		return this.currentWords;
-	}
+getWordsImportedForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.wordsImported;
+        }
+        return total;
+    }, 0);
+}
 
-	get totalWords() {
-		return this.currentWords;
-	}
+get wordsExported() {
+    return this.stats.reduce((total, stat) => { return total + stat.wordsExported; }, 0);
+}
+
+getWordsExportedForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.wordsExported;
+        }
+        return total;
+    }, 0);
+}
+
+get writingTime() {
+    return this.stats.reduce((total, stat) => { return total + stat.writingTime; }, 0);
+}
+
+getWritingTimeForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.writingTime;
+        }
+        return total;
+    }, 0);
+}
+
+get duration() {
+    return this.stats.reduce((total, stat) => { return total + stat.duration; }, 0);
+}
+
+getDurationForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.duration;
+        }
+        return total;
+    }, 0);
+}
+
+get netWords() {
+    return this.stats.reduce((total, stat) => { return total + stat.netWords; }, 0);
+}
+
+getNetWordsForPeriod(periodStart: number, periodEnd: number) {
+    return this.stats.reduce((total, stat) => {
+        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
+            return total + stat.netWords;
+        }
+        return total;
+    }, 0);
+}
+
+get WPM() {
+    return this.netWords / this.duration;
+}
+
+getWPMPeriod(periodStart: number, periodEnd: number) {
+    return this.getNetWordsForPeriod(periodStart, periodEnd) / this.getDurationForPeriod(periodStart, periodEnd);
+}
+
+get WPMA() {
+    return this.netWords / this.writingTime;
+}
+
+getWPMAPeriod(periodStart: number, periodEnd: number) {
+    return this.getNetWordsForPeriod(periodStart, periodEnd) / this.getWritingTimeForPeriod(periodStart, periodEnd);
+}
+
+get last() {
+    return this.stats.last();
+}
+
+get first() {
+    return this.stats.first();
+}
+
+newStat(startTime: number, startWords: number) {
+    let stat = new WSFileStat(this, startTime, startWords);
+    this.stats.push(stat);
+    return stat;
+}
+
+canUseLastStat(updateTime: number) {
+    if (this.stats.length === 0) return false;
+    if (updateTime > this.last.startTime + Settings.Statistics.PERIOD_LENGTH) return false;
+    if (updateTime - this.last.endTime > this.plugin.settings.statisticSettings.writingTimeout) return false;
+    return true;
+}
+
+updateStats(updateTime: number, oldCount: number, newCount: number) {
+    // console.log(`updateStat(${this.path} [${this.wordCount}], ${updateTime}, ${oldCount}, ${newCount})`);
+    if (!this.parent.isRecording) return;
+    // console.log("Okay to record stat.")
+    let writingTime = 0;
+    let first = false;
+    if (this.stats.length === 0) {
+        // console.log("This will be the first stat.")
+        // this will be the first WSFileStat for this file.
+        this.newStat(updateTime, 0);
+        first = true;
+    } else if (this.plugin.lastFile === this) {
+        // console.log("Updating writing time.")
+        writingTime = updateTime - this.last.endTime;
+    }
+    // console.log("Updating stat.")
+    this.last.updateStat(updateTime, oldCount, newCount, writingTime, first);
+}
+
+/* #endregion */
+
 }

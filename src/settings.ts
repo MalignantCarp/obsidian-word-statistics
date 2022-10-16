@@ -1,27 +1,26 @@
-import { App, PluginSettingTab, Setting, ValueComponent } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import type WordStatisticsPlugin from "./main";
 
 export namespace Settings {
 	export namespace Statistics {
-		export const DAY_LENGTH = 86400000;
-		export const PERIOD_LENGTH = 900000;
-		export const MINUTE_LENGTH = 60000;
+		export const DAY_LENGTH = 86400000; // 86,400 seconds / 24 hours
+		export const PERIOD_LENGTH = 900000; // 900 seconds / 15 minutes
+		export const MINUTE_LENGTH = 60000; // 60 seconds
 
-		export enum MONITOR {
+		export enum RECORD {
 			ALL = "All Files",
-			PROJECTS = "Project Files Only",
-			MONITORED = "Monitored Project Files Only"
+			MONITORED = "Monitored Folders Only"
 		}
 
 		export interface Structure {
-			record: MONITOR,
+			record: RECORD,
 			writingTimeout: number,
 			paranoiaMode: boolean,
 			paranoiaInterval: number,
 		}
 
 		export const DEFAULT: Structure = {
-			record: MONITOR.PROJECTS,
+			record: RECORD.MONITORED,
 			writingTimeout: 120,
 			paranoiaMode: false,
 			paranoiaInterval: 5,
@@ -79,23 +78,15 @@ export namespace Settings {
 	export namespace Database {
 		export interface Structure {
 			fileMinify: boolean,
-			projectMinify: boolean,
-			pathMinify: boolean,
-			statisticsMinify: boolean,
 		}
 
 		export const DEFAULT: Structure = {
 			fileMinify: true,
-			projectMinify: false,
-			pathMinify: false,
-			statisticsMinify: true,
 		};
 	}
 
 	export namespace Plugin {
 		export interface Structure {
-			useDisplayText: boolean,
-			clearEmptyPaths: boolean,
 			showWordCountSpeedDebug: boolean,
 			showWordCountsInFileExplorer: boolean,
 			tableSettings: Settings.Table.Structure,
@@ -105,8 +96,6 @@ export namespace Settings {
 		};
 
 		export const DEFAULT: Structure = {
-			useDisplayText: true,
-			clearEmptyPaths: true,
 			showWordCountSpeedDebug: true,
 			showWordCountsInFileExplorer: true,
 			tableSettings: Settings.Table.DEFAULT,
@@ -131,14 +120,12 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 			.setName("Monitor")
 			.setDesc(`Choose between monitoring word count changes for all files, only files in projects, or only files in projects with "Monitor Word Count" enabled.`)
 			.addDropdown(drop => drop
-				.addOption(Settings.Statistics.MONITOR.ALL, Settings.Statistics.MONITOR.ALL)
-				.addOption(Settings.Statistics.MONITOR.PROJECTS, Settings.Statistics.MONITOR.PROJECTS)
-				.addOption(Settings.Statistics.MONITOR.MONITORED, Settings.Statistics.MONITOR.MONITORED)
+				.addOption(Settings.Statistics.RECORD.ALL, Settings.Statistics.RECORD.ALL)
+				.addOption(Settings.Statistics.RECORD.MONITORED, Settings.Statistics.RECORD.MONITORED)
 				.setValue(this.plugin.settings.statisticSettings.record)
 				.onChange(async (value) => {
-					if (Settings.Statistics.MONITOR.ALL == value) { this.plugin.settings.statisticSettings.record = value; }
-					else if (Settings.Statistics.MONITOR.PROJECTS == value) { this.plugin.settings.statisticSettings.record = value; }
-					else if (Settings.Statistics.MONITOR.MONITORED == value) { this.plugin.settings.statisticSettings.record = value; }
+					if (Settings.Statistics.RECORD.ALL == value) { this.plugin.settings.statisticSettings.record = value; }
+					else if (Settings.Statistics.RECORD.MONITORED == value) { this.plugin.settings.statisticSettings.record = value; }
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -175,39 +162,15 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 	}
 
 	addDatabaseSettings(containerEl: HTMLElement) {
-		containerEl.createEl('h3', { text: 'Database Settings' });
-		containerEl.createEl('p', { text: "These options will help to compact the JSON files used to store the file, project, path, and statistics databases. If enabled, no whitespace will be added to the JSON file. If disabled, whitespace will be added to the JSON file, making it more readable." });
 		new Setting(containerEl)
-			.setName('Minify File Database')
+			.setName('Minify Database')
+			.setDesc("If set to true, no whitespace will be added to the database.json file. If set to false, JSON will be more human-readable.")
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.databaseSettings.fileMinify)
 				.onChange(async (value) => {
 					this.plugin.settings.databaseSettings.fileMinify = value;
 					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName('Minify Project Database')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.databaseSettings.projectMinify)
-				.onChange(async (value) => {
-					this.plugin.settings.databaseSettings.projectMinify = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName('Minify Path Database')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.databaseSettings.pathMinify)
-				.onChange(async (value) => {
-					this.plugin.settings.databaseSettings.pathMinify = value;
-					await this.plugin.saveSettings();
-				}));
-		new Setting(containerEl)
-			.setName('Minify Statistics Database')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.databaseSettings.statisticsMinify)
-				.onChange(async (value) => {
-					this.plugin.settings.databaseSettings.statisticsMinify = value;
-					await this.plugin.saveSettings();
+					this.plugin.debounceSave();
 				}));
 	}
 
@@ -218,26 +181,6 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 
 		containerEl.createEl('h2', { text: 'Word Statistics Plugin.' });
 		containerEl.createEl('h3', { text: 'Project Index Settings' });
-
-		new Setting(containerEl)
-			.setName('Use Display Text')
-			.setDesc('If an index file has display text for a link to a project file, use that display text instead of the filename (or title YAML attribute if present).')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useDisplayText)
-				.onChange(async (value) => {
-					this.plugin.settings.useDisplayText = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Clear Empty Paths')
-			.setDesc('If there are no projects using a project path, and that project path has been set with goals or other content, remove the path when the last project within is deleted.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.clearEmptyPaths)
-				.onChange(async (value) => {
-					this.plugin.settings.clearEmptyPaths = value;
-					await this.plugin.saveSettings();
-				}));
 
 		new Setting(containerEl)
 			.setName('Show Word Counts in File Explorer')

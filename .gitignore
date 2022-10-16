@@ -23,3 +23,5 @@ files.json
 paths.json
 stats.json
 *.csv
+folders.json
+database.json

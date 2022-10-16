@@ -70,18 +70,14 @@ All times saved are saved in UTC to avoid time zone issues but will be viewed in
 
 ### Configuration
 #### Index Settings
- - Use Display Text: If enabled, when you have display text (alternate text) for a link in a markdown-indexed project, file lists for that project will use the display text in place of the file's title.
- - Clear Empty Paths: If enabled, when you remove the last project within a path, the path and any empty parent paths will be deleted.
  - Show Word Counts In File Explorer: If enabled, word counts will be displayed for the vault and each folder and file in the file explorer.
  - Show Word Count Speed Messages: If enabled, the time taken to count words will be printed to the console (enable this if you experience slow-downs).
 #### Database Settings
-These settings can help to manage the size of the JSON files that make up the file, project, path, and statistics databases. If enabled, the JSON files will have all extraneous whitespace removed. If disabled, the JSON files will be easily readable.
+These settings can help to manage the size of the JSON files that make up the file, folder, unmatched databases. If enabled, the JSON files will have all extraneous whitespace removed. If disabled, the JSON files will be easily readable (this is also useful for version control to decrease the size of diffs).
  - Minify File Database
- - Minify Project Database
- - Minify Path Database
- - Minify Statistics Database
+ - Minify Folder Database
 #### Word Statistics Settings
- - Monitor: Choose if word count statistics are monitored for All (Markdown) Files, just Project Files (those included as part of a project), or just Monitored Project Files (files included in projects that have been configured to record word statistics). Note that previously-recorded stats will not be removed if you change options.
+ - Monitor: Choose if word count statistics are monitored for All (Markdown) Files just files in Monitored Folders. Note that previously-recorded stats will not be removed if you change options.
  - Writing Timeout: This configures the window in which you will still be considered writing
  - Paranoia Mode: This configures whether or not CSV files are output (per Paranoia Interval) every so many minutes. Note that this will only fire once if there are no new statistics to output.
  - Paranoia Interval: This configures the interval of which CSV files of statistics are output (every 1 - 30 minutes).
@@ -96,7 +92,7 @@ These settings can help to manage the size of the JSON files that make up the fi
 Note that if Obsidian when a file is changed in an external editor and a change is made within Obsidian to that file within the 15 minute time period, it will show up as words added/deleted instead of imported/exported.
 
 ### Time Periods
-Time periods are 15 minutes long and are calculcated to end at exactly the :00, :15, :30, and :45 minute park of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC.
+Time periods are 15 minutes long and are calculcated to end at exactly the :00, :15, :30, and :45 minute mark of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC.
 
 Writing time interacts with time periods. If you stop typing and later resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing. If the time period had ended, writing time will not be adjusted and will instead begin anew in the new time period.
 

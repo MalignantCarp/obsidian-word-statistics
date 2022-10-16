@@ -1,10 +1,10 @@
 
 import { App, DropdownComponent, Modal, Setting } from "obsidian";
-import type { WSDataCollector } from "./model/collector";
+import type { WSDataCollector } from "./oldmodel/collector";
 import type WordStatisticsPlugin from "./main";
-import { WSFileProject, type WSProject } from "./model/project";
+import { WSFileProject, type WSProject } from "./oldmodel/project";
 import type { WSTableSettings } from "./settings";
-import type { WSProjectManager } from "./model/manager";
+import type { WSProjectManager } from "./oldmodel/manager";
 import { FormatNumber } from './util';
 
 export default class ProjectTableModal extends Modal {

@@ -53,7 +53,7 @@ const SanitizeText = (text: string): string => {
     // remove markdown embeds
     text = text.replace(RE_EMBED, ""); // these will have already been collected to be catalogued as required
 
-    // we can probably ignore whatever is in code blocks as well, with the exception of admonitions. Need to examine all the usecases.
+    // we can probably ignore whatever is in code blocks as well, with the exception of admonitions. Need to examine all the use cases.
     // Probably can ignore the first line with the backticks
 
     return text;
@@ -80,9 +80,6 @@ const CollectText = (text: string): [string, string[]] => {
     let wordText = SanitizeText(text);
     return [wordText, embedContent];
 };
-
-
-
 
 /* Blurb from a comment on clipboard-related stuff in case it helps development:
 
