@@ -69,13 +69,10 @@ Word Count Statistics can track words added and words deleted over time for all 
 All times saved are saved in UTC to avoid time zone issues but will be viewed in local time.
 
 ### Configuration
-#### Index Settings
  - Show Word Counts In File Explorer: If enabled, word counts will be displayed for the vault and each folder and file in the file explorer.
  - Show Word Count Speed Messages: If enabled, the time taken to count words will be printed to the console (enable this if you experience slow-downs).
-#### Database Settings
-These settings can help to manage the size of the JSON files that make up the file, folder, unmatched databases. If enabled, the JSON files will have all extraneous whitespace removed. If disabled, the JSON files will be easily readable (this is also useful for version control to decrease the size of diffs).
- - Minify File Database
- - Minify Folder Database
+ - Minify Database: If enabled, the JSON file that contains file/folder/stats info will have all extraneous whitespace removed. If disabled, the JSON files will be easily readable (this is also useful for version control to decrease the size of diffs at a cost of additional file size).
+
 #### Word Statistics Settings
  - Monitor: Choose if word count statistics are monitored for All (Markdown) Files just files in Monitored Folders. Note that previously-recorded stats will not be removed if you change options.
  - Writing Timeout: This configures the window in which you will still be considered writing

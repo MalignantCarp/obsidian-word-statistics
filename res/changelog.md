@@ -1,5 +1,6 @@
 
 ## To-Do for first release
+ - Finish WordStatsManager
  - Context menu entries for changing folder statistics info such as goals and titles
  - Retrofit ProgressView for new statistics system
  - Retrofit Debug View for new statistics system
@@ -8,6 +9,10 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-10-16
+ - BUGFIX: canUseLastStat() was not calculating period end properly
+ - Added a few more routines to WordStatsManager.
+
 ### 2022-10-08, 2022-10-09, 2022-10-10, 2022-10-11, 2022-10-12, 2022-10-13, 2022-10-15
  - Eliminated the old file/folder/tag indexing system and old file/project/path model.
  - Built new File/Folder model to simplify all of the backend project management. Now Paths and Projects have been replaced by folders and they will function in a hierarchical manner. The files have their parent folders accessible, and folders have child folders and files accessible via arrays, so there will be no need to traverse backwards to find something via algorithm when it can be obtained easily by reference. Goals for files and folders for statistical purposes will stem from the parent folder if there is not one set, else it will be 0 if unset all the way up the file tree.

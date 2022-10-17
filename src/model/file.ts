@@ -304,7 +304,7 @@ newStat(startTime: number, startWords: number) {
 
 canUseLastStat(updateTime: number) {
     if (this.stats.length === 0) return false;
-    if (updateTime > this.last.startTime + Settings.Statistics.PERIOD_LENGTH) return false;
+    if (updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH) return false;
     if (updateTime - this.last.endTime > this.plugin.settings.statisticSettings.writingTimeout) return false;
     return true;
 }
