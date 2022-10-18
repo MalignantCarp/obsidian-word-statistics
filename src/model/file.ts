@@ -127,207 +127,47 @@ export class WSFile {
         this.plugin.events.trigger(new WSFileEvent({ type: WSEvents.File.Renamed, file: this, data: [oldName, newName] }, { filter: this }));
     }
 
-/* #region Statistics */
-
-get startTime() {
-    return this.stats.reduce((start, stat) => { return Math.min(start, stat.startTime); }, Number.MAX_SAFE_INTEGER);
-}
-
-getStartTimeForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((start, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return Math.min(start, stat.startTime);
-        }
-        return start;
-    }, periodEnd);
-}
-
-get startWords() {
-    return this.stats.reduce((start, stat) => { return Math.min(start, stat.startWords); }, Number.MAX_SAFE_INTEGER);
-}
-
-getStartWordsForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((start, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return Math.min(start, stat.startWords);
-        }
-        return start;
-    }, Number.MAX_SAFE_INTEGER);
-}
-
-get endTime() {
-    return this.stats.reduce((endTime, stat) => { return Math.max(endTime, stat.endTime); }, 0);
-}
-
-getEndTimeForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((endTime, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return Math.min(endTime, stat.endTime);
-        }
-        return endTime;
-    }, periodEnd);
-}
-
-get endWords() {
-    return this.stats.reduce((endWords, stat) => { return Math.max(endWords, stat.endWords); }, 0);
-}
-
-getEndWordsForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((endWords, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return Math.min(endWords, stat.endWords);
-        }
-        return endWords;
-    }, Number.MAX_SAFE_INTEGER);
-}
-
-get wordsAdded() {
-    return this.stats.reduce((total, stat) => { return total + stat.wordsAdded; }, 0);
-}
-
-getWordsAddedForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.wordsAdded;
-        }
-        return total;
-    }, 0);
-}
-
-get wordsDeleted() {
-    return this.stats.reduce((total, stat) => { return total + stat.wordsDeleted; }, 0);
-}
-
-getWordsDeletedForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.wordsDeleted;
-        }
-        return total;
-    }, 0);
-}
-
-get wordsImported() {
-    return this.stats.reduce((total, stat) => { return total + stat.wordsImported; }, 0);
-}
-
-getWordsImportedForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.wordsImported;
-        }
-        return total;
-    }, 0);
-}
-
-get wordsExported() {
-    return this.stats.reduce((total, stat) => { return total + stat.wordsExported; }, 0);
-}
-
-getWordsExportedForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.wordsExported;
-        }
-        return total;
-    }, 0);
-}
-
-get writingTime() {
-    return this.stats.reduce((total, stat) => { return total + stat.writingTime; }, 0);
-}
-
-getWritingTimeForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.writingTime;
-        }
-        return total;
-    }, 0);
-}
-
-get duration() {
-    return this.stats.reduce((total, stat) => { return total + stat.duration; }, 0);
-}
-
-getDurationForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.duration;
-        }
-        return total;
-    }, 0);
-}
-
-get netWords() {
-    return this.stats.reduce((total, stat) => { return total + stat.netWords; }, 0);
-}
-
-getNetWordsForPeriod(periodStart: number, periodEnd: number) {
-    return this.stats.reduce((total, stat) => {
-        if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-            return total + stat.netWords;
-        }
-        return total;
-    }, 0);
-}
-
-get WPM() {
-    return this.netWords / this.duration;
-}
-
-getWPMPeriod(periodStart: number, periodEnd: number) {
-    return this.getNetWordsForPeriod(periodStart, periodEnd) / this.getDurationForPeriod(periodStart, periodEnd);
-}
-
-get WPMA() {
-    return this.netWords / this.writingTime;
-}
-
-getWPMAPeriod(periodStart: number, periodEnd: number) {
-    return this.getNetWordsForPeriod(periodStart, periodEnd) / this.getWritingTimeForPeriod(periodStart, periodEnd);
-}
-
-get last() {
-    return this.stats.last();
-}
-
-get first() {
-    return this.stats.first();
-}
-
-newStat(startTime: number, startWords: number) {
-    let stat = new WSFileStat(this, startTime, startWords);
-    this.stats.push(stat);
-    return stat;
-}
-
-canUseLastStat(updateTime: number) {
-    if (this.stats.length === 0) return false;
-    if (updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH) return false;
-    if (updateTime - this.last.endTime > this.plugin.settings.statisticSettings.writingTimeout) return false;
-    return true;
-}
-
-updateStats(updateTime: number, oldCount: number, newCount: number) {
-    // console.log(`updateStat(${this.path} [${this.wordCount}], ${updateTime}, ${oldCount}, ${newCount})`);
-    if (!this.parent.isRecording) return;
-    // console.log("Okay to record stat.")
-    let writingTime = 0;
-    let first = false;
-    if (this.stats.length === 0) {
-        // console.log("This will be the first stat.")
-        // this will be the first WSFileStat for this file.
-        this.newStat(updateTime, 0);
-        first = true;
-    } else if (this.plugin.lastFile === this) {
-        // console.log("Updating writing time.")
-        writingTime = updateTime - this.last.endTime;
+    get last() {
+        return this.stats.last();
     }
-    // console.log("Updating stat.")
-    this.last.updateStat(updateTime, oldCount, newCount, writingTime, first);
-}
 
-/* #endregion */
+    get first() {
+        return this.stats.first();
+    }
+
+    newStat(startTime: number, startWords: number) {
+        let stat = new WSFileStat(this, startTime, startWords);
+        this.stats.push(stat);
+        return stat;
+    }
+
+    canUseLastStat(updateTime: number) {
+        // We check this in updateStats already, so no need to have it here anymore.
+        // if (this.stats.length === 0) return false;
+        if (updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH) return false;
+        if (updateTime - this.last.endTime > this.plugin.settings.statisticSettings.writingTimeout) return false;
+        return this.plugin.lastFile === this;
+    }
+
+    updateStats(updateTime: number, oldCount: number, newCount: number) {
+        // console.log(`updateStat(${this.path} [${this.wordCount}], ${updateTime}, ${oldCount}, ${newCount})`);
+        if (!this.parent.isRecording) return;
+        // console.log("Okay to record stat.")
+        let writingTime = 0;
+        let first = false;
+        if (this.stats.length === 0) {
+            // console.log("This will be the first stat.")
+            // this will be the first WSFileStat for this file.
+            this.newStat(updateTime, 0);
+            first = true;
+        } else if (this.canUseLastStat(updateTime)) {
+            // console.log("Updating writing time.")
+            writingTime = updateTime - this.last.endTime;
+        } else {
+            this.newStat(updateTime, this.last.endWords);
+        }
+        // console.log("Updating stat.")
+        this.last.updateStat(updateTime, oldCount, newCount, writingTime, first);
+    }
 
 }

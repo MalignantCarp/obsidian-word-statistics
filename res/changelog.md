@@ -4,11 +4,20 @@
  - Context menu entries for changing folder statistics info such as goals and titles
  - Retrofit ProgressView for new statistics system
  - Retrofit Debug View for new statistics system
+ - Add new Calendar Day/Week/Month statistics.
  - Implement a visual indicator for when a folder is monitored for stats changes (recording dot?)
  - Reimplement paranoia CSV exporting
  - Cleanup any outstanding bugs.
+ - Purge unused files and dependencies.
 
 ## Changelog
+### 2022-10-17
+ - Moved WSFile methods pertaining to stats into the WordStats namespace in stats.ts, as they will be used broadly on all lists of WSFileStat[].
+ - Brought in obsidian-calendar-ui from npm for use in the upcoming Day/Week/Month view.
+ - More tweaks to README.md
+ - Amended WSFile.canUseLastStat() so always compare self to plugin.lastFile in the end. Failure to do so will result in duration being counted multiple times if a user goes back and forth between multiple files.
+ - BUGFIX: WSFile.canUseLastStat() is never used. Corrected by adding to WSFile.updateStats().
+
 ### 2022-10-16
  - BUGFIX: canUseLastStat() was not calculating period end properly
  - Added a few more routines to WordStatsManager.

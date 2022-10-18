@@ -1,5 +1,5 @@
 # Caution
-__Please be aware that any modification of your files outside of Obsidian could break project and statistic storage. Please ensure you regularly backup your data.__
+__Please be aware that any modification of your files outside of Obsidian could break the database storage. Please ensure you regularly backup your data.__
 
 __This plugin is BETA software. Please ensure you regularly backup your data. Should you encounter any issues, please file a bug report or contact me in Discord for assistance.__
 
@@ -30,7 +30,7 @@ Prior to counting words, the content of comments and YAML blocks will be removed
 ### Non-English Languages
 As far as I am aware, this only works with English as I have little experience working with non-English languages. This should theoretically work fairly consistently across English-like languages, but if they have different rules with respect to apostrophes and hyphens and their place in determining word boundaries, the counts will definitely be off.
 
-By all means, please log an issue with respect to your language, being sure to provide example text and the correct word counts and I will attempt to implement support.
+By all means, please log an issue with respect to your language, being sure to provide example text and the correct word counts and I will attempt to implement support. Please utilize both simple and complicated punctuation.
 
 ### Code blocks and embeds
 Short of determining an adequate means of pre-rendering the content, any YAML block content in code blocks for things such as admonitions and dataview is likely to be included, and the contents of embeds is likely to not be. The latter, however, may be possible by loading the content of the markdown file and running it through the script (and so on and so forth), while maintaining a list of included files to ensure they are not included twice (in the case of recursive embeds or where two embeds embed the same document).
@@ -41,22 +41,15 @@ One caveat to note is that the word counts stored for a particular document will
 When content is pasted on top of other content, only the difference in word counts is noticed by the system. I'm not sure if there is a way to detect that content was replaced in a paste event, so I caution against the use of paste to add to a document. Also note this would ideally be considered imported text, but that support is not yet implemented.
 
 ## Features
-- [x] Project System (for grouping files together)
-    - [x] Markdown-indexed projects
-    - [x] Folder-indexed projects
-    - [x] Tag-indexed projects
-- [x] Path System (for grouping projects together)
 - [x] Basic word counting
-- [x] Custom status bar for word counts
-- [x] Project-based counting
+- [ ] Custom status bar for word counts
 - [x] Word count statistics (see below for more information)
-- [x] Project manager view
-- [x] Statistics view
-- [x] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
-- [x] Per-project word goals
-    - [x] Macro (i.e., project word goal)
-    - [x] Micro (i.e., individual note word goals, overridable on a per note basis)
-    - [x] Progress indicators (status bar)
+- [ ] Statistics view
+- [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
+- [ ] Per-project word goals
+    - [ ] Macro (i.e., project word goal)
+    - [ ] Micro (i.e., individual note word goals, overridable on a per note basis)
+    - [ ] Progress indicators (status bar)
 - [ ] Word counts for highlighted words (I believe now with CM6 that these may be universal, but I have separated them out in case they are not)
     - [ ] In Editor
     - [ ] In Rendered View
@@ -89,16 +82,18 @@ All times saved are saved in UTC to avoid time zone issues but will be viewed in
 Note that if Obsidian when a file is changed in an external editor and a change is made within Obsidian to that file within the 15 minute time period, it will show up as words added/deleted instead of imported/exported.
 
 ### Time Periods
-Time periods are 15 minutes long and are calculcated to end at exactly the :00, :15, :30, and :45 minute mark of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC.
+Time periods are 15 minutes long at most and are calculcated to end at exactly the :00, :15, :30, and :45 minute mark of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC to ensure that there are no overlap across days.
 
-Writing time interacts with time periods. If you stop typing and later resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing. If the time period had ended, writing time will not be adjusted and will instead begin anew in the new time period.
+Writing time interacts with time periods. If you stop typing and later resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing. If the time period has ended, writing time will not be adjusted and will instead begin anew in the new time period.
+
+Stats are recorded on a per-file basis, so switching between files will effectively end your current time period at the moment it was last typed in and create a new period when you return to the file. This is to avoid time counting twice.
 
 ### WPM
 There are 4 WPM statistics:
- - WPM: Words per minute, which is equal to the number of words added divided by the duration of the period, minus air.
- - WPMA: Words per minute (adjusted), which is equal to the number of words added divided by writing time (this is pretty close to typing speed unless you make a lot of brief stops during writing)
- - NWPM: Net words per minute, which is equal to the net words (words added - words deleted) divided by the duration of the period, minus air.
- - NWPMA: Net words per minute (adjusted), which is equal to the net words divided by writing time.
+ - WPM: Words per minute, which is equal to the number of net words (words added + words imported - words deleted - words exported) divided by duration.
+ - WPMA: Words per minute (adjusted), which is equal to net words added divided by writing time (this is pretty close to typing speed unless you make a lot of brief stops during writing)
+ - WAPM: Words added per minute, which is equal to words added divided by the duration.
+ - WAPMA: Words added per minute (adjusted), which is equal to words added divided by writing time.
 
 ## Planned Features
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.
