@@ -208,6 +208,7 @@ export class WSFileManager {
         fileRef.wordCount = newCount;
         fileRef.propagateWordCountChange(oldCount, newCount);
         this.plugin.lastFile = fileRef;
+        this.stats.extendStats([fileRef.last]);
         return fileRef;
     }
 
@@ -232,6 +233,7 @@ export class WSFileManager {
             fileRef.triggerWordsChanged(oldCount, newCount, updateTime, true);
         }
         this.plugin.lastFile = fileRef;
+        this.stats.extendStats([fileRef.last]);
         return fileRef;
     }
 
@@ -258,6 +260,7 @@ export class WSFileManager {
     }
 
     async buildTree() {
+        let startTime = Date.now();
         if (this.root instanceof WSFolder) return;
         // console.log("Obtaining root TFolder");
         let rootT = this.vault.getRoot();
@@ -267,10 +270,15 @@ export class WSFileManager {
         let children = rootT.children;
         // console.log("Building children");
         this.buildTreeChildrenAbstract(root, children);
+        let endTime = Date.now();
+        console.log(`Built ${this.folderMap.size} folder(s) and ${this.fileMap.size} file(s) in ${endTime - startTime}ms.`);
+        await this.syncStats();
+        await this.countAll();
     }
 
     async countAll() {
         // console.log(`countAll()`);
+        let startTime = Date.now();
         const files = this.vault.getMarkdownFiles();
         // console.log(files);
         // console.log(this.fileMap);
@@ -279,15 +287,21 @@ export class WSFileManager {
             this.updateFileMetadata(file);
             this.updateFileWordCountOffline(file);
         }
+        let endTime = Date.now();
+        console.log(`Counted all ${files.length} file(s) in ${endTime - startTime}ms.`);
     }
 
     async updateTree() {
         // console.log("updateTree()");
+        let startTime = Date.now();
+        let files = this.fileMap.size;
+        let folders = this.folderMap.size;
         let folder = this.vault.getRoot();
         this.root.path = folder.path;
         this.root.name = folder.name;
         this.buildTreeChildrenAbstract(this.root, folder.children);
-        this.countAll();
+        let endTime = Date.now();
+        console.log(`Updated tree in ${endTime - startTime}ms. Added ${this.folderMap.size - folders} folder(s) and ${this.fileMap.size - files} file(s).`);
     }
 
     async loadTree(root: WSFolder, folderMap: Map<string, WSFolder>, fileMap: Map<string, WSFile>) {
@@ -296,11 +310,17 @@ export class WSFileManager {
         this.folderMap = folderMap;
         this.fileMap = fileMap;
         this.loaded = true;
+        await this.updateTree();
+        await this.syncStats();
+        await this.countAll();
     }
 
-    syncStats() {
+    async syncStats() {
+        let startTime = Date.now();
         for (let file of this.fileMap.values()) {
             this.stats.extendStats(file.stats);
         }
+        let endTime = Date.now();
+        console.log(`Synchronized stats for ${this.fileMap.size} file(s) in ${endTime - startTime}ms.`);
     }
 }

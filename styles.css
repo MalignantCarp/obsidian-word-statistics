@@ -34,6 +34,22 @@
 	--ws-icon-okay: #33DD33;
 }
 
+.mc-ws-file-explorer-counts .nav-folder-title::after,
+.mc-ws-file-explorer-counts .nav-file-title::after {
+	content: attr(data-mc-word-stats);
+	display: flex;
+	align-items: center;
+	font-size: 0.8em;
+	opacity: 0.8;
+}
+
+.mc-ws-file-explorer-counts .nav-folder-title-content,
+.mc-ws-file-explorer-counts .nav-file-title-content {
+	flex: 1;
+}
+
+/*
+
 .status-bar-item.plugin-obsidian-word-statistics {
 	display: flex;
 	justify-content: space-evenly;
@@ -478,24 +494,6 @@ table.ws-pm-project-list-item-files> :is(tbody, tfoot)>tr.ws-pm-file-item>td.ws-
 	filter: drop-shadow(0px 0px 1px var(--ws-icon-delete)) drop-shadow(0px 0px 2px var(--ws-icon-delete));
 }
 
-/*
-tbody > tr.ws-pm-file-item,
-thead > tr.ws-pm-file-item,
-tfoot > tr.ws-pm-file-item {
-	background: inherit;
-}
-
-table.ws-pm-project-list-item-files {
-	background: inherit;
-}
-
-table.ws-pm-project-list-item-files > tbody,
-table.ws-pm-project-list-item-files > thead,
-table.ws-pm-project-list-item-files > tfoot {
-	background: inherit;
-}
-*/
-
 tbody>tr.ws-pm-file-item:hover {
 	background-image: linear-gradient(to right, var(--ws-pm-file-info), transparent);
 }
@@ -532,20 +530,6 @@ table.project-file-table tfoot tr td {
 td.word-count,
 td.total-head {
 	text-align: right;
-}
-
-.mc-ws-file-explorer-counts .nav-folder-title::after,
-.mc-ws-file-explorer-counts .nav-file-title::after {
-	content: attr(data-mc-word-stats);
-	display: flex;
-	align-items: center;
-	font-size: 0.8em;
-	opacity: 0.8;
-}
-
-.mc-ws-file-explorer-counts .nav-folder-title-content,
-.mc-ws-file-explorer-counts .nav-file-title-content {
-	flex: 1;
 }
 
 .ws-stat-view {
@@ -712,3 +696,5 @@ td.total-head {
 .ws-progress-bar[data-progress="10"] {
 	background-color: #6b6;
 }
+
+*/

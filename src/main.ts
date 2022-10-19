@@ -1,12 +1,13 @@
 import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView } from 'obsidian';
 import WordStatsSettingTab, { Settings } from './settings';
-import { WSFile } from './model/file';
+import { WSFile, WSFileStat } from './model/file';
 import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent, WSFolderEvent } from './model/events';
 import { FormatWords } from './util';
 import { WSFileManager } from './model/manager';
 import { ImportTree } from './model/import';
 import type { WSFolder } from './model/folder';
-import { BuildRootJSON } from './model/export';
+import { BuildRootJSON, StatisticDataToCSV } from './model/export';
+import { DateTime } from 'luxon';
 
 const DB_PATH = "database.json";
 
@@ -29,7 +30,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	settings: Settings.Plugin.Structure;
 	events: Dispatcher;
 	debounceRunCount: Debouncer<[file: TFile, data: string], any>;
-	debounceSave: Debouncer<any,any>;
+	debounceSave: Debouncer<any, any>;
 	wordsPerMS: number[] = [];
 	statusBar: HTMLElement;
 	//sbWidget: StatusBarWidget;
@@ -39,7 +40,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	focusFile: WSFile = null;
 	noFileData: boolean = true;
 	fileExplorer: FileExplorer;
-	//paranoiaTest: number = 0;
+	paranoiaTest: number = 0;
 	lastFile: WSFile = null;
 	updateTime: number = 0;
 	manager: WSFileManager;
@@ -53,7 +54,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		this.debounceRunCount = debounce(
 			(file: TFile, data: string) => {
-				this.RunCount(file, data)
+				this.RunCount(file, data);
 			},
 			250,
 			true
@@ -61,11 +62,11 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		this.debounceSave = debounce(
 			() => {
-				this.saveWSData()
+				this.saveWSData();
 			},
 			2000,
 			true
-		)
+		);
 		// there has to be a better event to hook onto here, this seems silly
 		this.registerEvent(this.app.workspace.on("quick-preview", this.onQuickPreview.bind(this)));
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
@@ -94,17 +95,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 	return new ProgressView(leaf, this);
 		// });
 
-		// this.addCommand({
-		// 	id: 'statistics-csv',
-		// 	name: 'Backup statistics to CSV',
-		// 	editorCheckCallback: (checking: boolean) => {
-		// 		if (checking) {
-		// 			return this.collector.stats.periods.length > 0;
-		// 		} else {
-		// 			this.saveStatsCSV();
-		// 		}
-		// 	}
-		// });
+		this.addCommand({
+			id: 'statistics-csv',
+			name: 'Backup statistics to CSV',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.manager.stats.stats.length > 0;
+				} else {
+					this.saveStatsCSV();
+				}
+			}
+		});
 
 		// this.addCommand({
 		// 	id: 'attach-project-manager',
@@ -166,16 +167,30 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("Obsidian Word Statistics loaded.");
 	}
 
-	// paranoiaHandler() {
-	// 	// console.log("Checking for paranoia...");
-	// 	// console.log(this.settings.statisticSettings.paranoiaMode, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
-	// 	if (this.settings.statisticSettings.paranoiaMode && this.collector.stats.currentPeriod instanceof WSTimePeriod && Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval * 60000 && this.collector.stats.currentPeriod.timeStart > this.paranoiaTest) {
-	// 		// console.log("Paranoia interval exceeded. Saving stats.")
-	// 		this.saveStatsCSV();
-	// 		// console.log("Done. resetting interval");
-	// 		this.paranoiaTest = Date.now();
-	// 	}
-	// }
+	saveStatsCSV() {
+		let csv = StatisticDataToCSV(this);
+		let now = DateTime.utc();
+		let path = now.toFormat('yyyy-LL-dd') + "T" + now.toFormat('HH_mm_ss_SSS') + "Z.csv";
+		// console.log("Saving to ", path);
+		// console.log(csv);
+		this.saveSerialData(path, csv);
+	}
+
+	paranoiaHandler() {
+		// console.log("Checking for paranoia...");
+		// console.log(this.settings.statisticSettings.paranoiaMode, this.manager.stats.last instanceof WSFileStat, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
+		// First check if paranoia mode is on, then if we have any stats, then if we've exceeded our interval, then if the most recent stat was updated after
+		// the last interval (i.e., we haven't already saved it).
+		if (this.settings.statisticSettings.paranoiaMode &&
+			this.manager.stats.last instanceof WSFileStat &&
+			Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval * 60000 &&
+			this.manager.stats.last.endTime > this.paranoiaTest) {
+			// console.log("Paranoia interval exceeded. Saving stats.")
+			this.saveStatsCSV();
+			// console.log("Done. resetting interval");
+			this.paranoiaTest = Date.now();
+		}
+	}
 
 	onunload() {
 		// this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
@@ -296,13 +311,12 @@ export default class WordStatisticsPlugin extends Plugin {
 					return;
 				}
 				this.noFileData = false;
-				this.manager.loadTree(root, folderMap, fileMap);
-				await this.manager.updateTree();
+				await this.manager.loadTree(root, folderMap, fileMap);
 			} else {
 				// file is empty
 				// so we will need to rebuild the entire tree
 				// console.log("Building file tree...");
-				this.manager.buildTree();
+				await this.manager.buildTree();
 				// console.log("Done.");
 				// console.log(this.manager);
 			}
@@ -320,13 +334,13 @@ export default class WordStatisticsPlugin extends Plugin {
 			// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
-			this.registerInterval(window.setInterval(this.saveStats.bind(this), 100));
+			this.registerInterval(window.setInterval(this.paranoiaHandler.bind(this), 1000)); // run every 1 second
+			this.registerInterval(window.setInterval(this.saveStats.bind(this), 250));
 			// this.initializeProjectManagementLeaf();
 			// this.initializeStatisticsLeaf();
 		}
-		await this.manager.countAll();
 		if (this.noFileData) {
-			this.saveStats()
+			this.saveStats();
 		}
 		this.updateFocusedFile();
 		let fe = this.app.workspace.getLeavesOfType("file-explorer");
@@ -341,10 +355,10 @@ export default class WordStatisticsPlugin extends Plugin {
 	saveStats(event?: WSDataEvent) {
 		let update = Date.now();
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
-		if (this.lastFile.endTime > this.updateTime) return; // if there have been no updates since last update, return
+		if (this.lastFile.last?.endTime > this.updateTime) return; // if there have been no updates since last update, return
 		this.updateTime = update;
 		this.saveFiles();
-}
+	}
 
 	async saveWSData() {
 		// console.log("<WS>", Date.now());

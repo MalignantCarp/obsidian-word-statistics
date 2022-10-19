@@ -6,11 +6,16 @@
  - Retrofit Debug View for new statistics system
  - Add new Calendar Day/Week/Month statistics.
  - Implement a visual indicator for when a folder is monitored for stats changes (recording dot?)
- - Reimplement paranoia CSV exporting
  - Cleanup any outstanding bugs.
  - Purge unused files and dependencies.
 
 ## Changelog
+### 2022-10-18
+ - Re-implemented paranoia CSV exporting.
+ - Finished adding sync routines for WordStatsManager to keep stats linked there for access.
+ - Commented out all old CSV for the great purge. Will add things back as necessary.
+ - Added some logging in to help benchmark building of larger trees and word counting.
+
 ### 2022-10-17
  - Moved WSFile methods pertaining to stats into the WordStats namespace in stats.ts, as they will be used broadly on all lists of WSFileStat[].
  - Brought in obsidian-calendar-ui from npm for use in the upcoming Day/Week/Month view.

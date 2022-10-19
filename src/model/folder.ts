@@ -51,6 +51,19 @@ export class WSFolder {
         return this.name;
     }
 
+    getAllFiles(): WSFile[] {
+        let files: WSFile[];
+        for (let folder of this.childFolders) {
+            for (let child of folder.getAllFiles()) {
+                files.push(child);
+            }
+        }
+        for (let child of this.children) {
+            files.push(child);
+        }
+        return files;
+    }
+
     moveChildFrom(child: WSFile) {
         let from = child.parent;
         from?.children.remove(child);

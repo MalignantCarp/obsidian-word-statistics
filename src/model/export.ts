@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import type WordStatisticsPlugin from "src/main";
 import type { WSFile, WSFileStat } from "./file";
 import type { RECORDING, WSFolder } from "./folder";
@@ -77,4 +78,32 @@ export function BuildRootJSON(plugin: WordStatisticsPlugin, root: WSFolder): str
     }
 
     return fileData;
+}
+
+export function StatisticDataToCSV(plugin: WordStatisticsPlugin): string {
+    let csv: string[] = [];
+    let header = "Timestamp,LocalDate,LocalTime,Duration,EndDate,EndTime,Path,File,WordsStart,WordsEnd,WordsAdded,WordsDeleted,WordsImported,WordsExported,WritingTime";
+    csv.push(header);
+    plugin.manager.stats.stats.forEach(info => {
+        let timestamp = info.startTime.toString();
+        let localTime = DateTime.fromMillis(info.startTime);
+        let endTime = DateTime.fromMillis(info.endTime);
+        let localDateStr = localTime.toFormat('yyyy-LL-dd');
+        let localTimeStr = localTime.toFormat('HH:mm:ss');
+        let endDateStr = endTime.toFormat('yyyy-LL-dd');
+        let endTimeStr = endTime.toFormat('HH:mm:ss');
+        let duration = (info.duration).toString();
+        let path = info.file.parent.path;
+        let file = info.file.path;
+        let wordsStart = info.startWords.toString();
+        let wordsEnd = info.endWords.toString();
+        let wordsAdded = info.wordsAdded.toString();
+        let wordsDeleted = info.wordsDeleted.toString();
+        let wordsImported = info.wordsImported.toString();
+        let wordsExported = info.wordsExported.toString();
+        let writingTime = info.writingTime.toString();
+        let row = [timestamp, localDateStr, localTimeStr, duration, endDateStr, endTimeStr, path, file, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, writingTime];
+        csv.push(row.join(","));
+    });
+    return csv.join("\n");
 }

@@ -187,8 +187,17 @@ export class WordStatsManager {
         public map: Map<WSFile, WSFileStat[]> = new Map<WSFile, WSFileStat[]>(),
     ){}
 
+    get first(): WSFileStat {
+        return this.stats.first();
+    }
+
+    get last(): WSFileStat {
+        return this.stats.last();
+    }
+
     extendStats(newStats: WSFileStat[]) {
         for (let stat of newStats) {
+            // console.log(stat, "discard=", this.stats.contains(stat));
             if (this.stats.contains(stat)) continue;
             this.stats.push(stat);
             let group: WSFileStat[] = this.map.get(stat.file) || [];
