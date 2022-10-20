@@ -145,7 +145,7 @@ export class WSFile {
         // We check this in updateStats already, so no need to have it here anymore.
         // if (this.stats.length === 0) return false;
         if (updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH) return false;
-        if (updateTime - this.last.endTime > this.plugin.settings.statisticSettings.writingTimeout) return false;
+        if (updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout) return false;
         return this.plugin.lastFile === this;
     }
 

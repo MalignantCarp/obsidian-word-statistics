@@ -51,6 +51,11 @@ export namespace WSEvents {
         export const File = "ws-event-focus-file";
     }
 
+    export namespace Setting {
+        export const Recording = "ws-event-settings-recording";
+        export const StatusBar = "ws-event-settings-statusbar";
+    }
+
     export namespace File {
         export const Created = "ws-event-file-created";
         export const Renamed = "ws-event-file-renamed";
@@ -67,17 +72,24 @@ export namespace WSEvents {
         export const WordsChanged = "ws-event-folder-words-changed";
         export const GoalSet = "ws-event-folder-goal-set";
         export const TitleSet = "ws-event-folder-title-set";
+        export const RecordingSet = "ws-event-folder-recording-set";
     }
 }
 
-type WSEventType = WSDataEventType | WSFocusEventType | WSFileEventType | WSFolderEventType;
+type WSEventType = WSDataEventType | WSFocusEventType | WSFileEventType | WSFolderEventType | WSSettingEventType;
 export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.Folder;
 export type WSFocusEventType = typeof WSEvents.Focus.File;
 export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.WordsChanged | typeof WSEvents.File.GoalSet | typeof WSEvents.File.TitleSet;
-export type WSFolderEventType = typeof WSEvents.Folder.Created | typeof WSEvents.Folder.Renamed | typeof WSEvents.Folder.Deleted | typeof WSEvents.Folder.WordsChanged  | typeof WSEvents.Folder.GoalSet | typeof WSEvents.Folder.TitleSet;
+export type WSFolderEventType = typeof WSEvents.Folder.Created | typeof WSEvents.Folder.Renamed | typeof WSEvents.Folder.Deleted | typeof WSEvents.Folder.WordsChanged  | typeof WSEvents.Folder.GoalSet | typeof WSEvents.Folder.TitleSet | typeof WSEvents.Folder.RecordingSet;
+export type WSSettingEventType = typeof WSEvents.Setting.Recording | typeof WSEvents.Setting.StatusBar;
 
 interface WSEventInfo {
     type: WSEventType;
+    data?: any[];
+}
+
+export interface WSSettingEventInfo extends WSEventInfo {
+    type: WSSettingEventType;
     data?: any[];
 }
 
@@ -116,6 +128,12 @@ export abstract class WSEvent {
 
     get stopped() {
         return this.stop;
+    }
+}
+
+export class WSSettingEvent extends WSEvent {
+    constructor(public info: WSSettingEventInfo, public focus: WSEventFilter) {
+        super(info, focus);
     }
 }
 

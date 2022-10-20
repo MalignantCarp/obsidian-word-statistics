@@ -8,6 +8,7 @@ import { ImportTree } from './model/import';
 import type { WSFolder } from './model/folder';
 import { BuildRootJSON, StatisticDataToCSV } from './model/export';
 import { DateTime } from 'luxon';
+import Statusbar from './view/svelte/statusbar.svelte';
 
 const DB_PATH = "database.json";
 
@@ -33,7 +34,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	debounceSave: Debouncer<any, any>;
 	wordsPerMS: number[] = [];
 	statusBar: HTMLElement;
-	//sbWidget: StatusBarWidget;
+	sbWidget: Statusbar;
 	//collector: WSDataCollector;
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
@@ -81,7 +82,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.events = new Dispatcher();
 
 		this.statusBar = this.addStatusBarItem();
-		//this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
+		this.sbWidget = new Statusbar({target: this.statusBar, props: {plugin: this}});
 
 		// this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
 		// 	return new ProjectManagementView(leaf, this);
@@ -181,9 +182,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		// console.log(this.settings.statisticSettings.paranoiaMode, this.manager.stats.last instanceof WSFileStat, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
 		// First check if paranoia mode is on, then if we have any stats, then if we've exceeded our interval, then if the most recent stat was updated after
 		// the last interval (i.e., we haven't already saved it).
-		if (this.settings.statisticSettings.paranoiaMode &&
+		if (this.settings.statistics.paranoiaMode &&
 			this.manager.stats.last instanceof WSFileStat &&
-			Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval * 60000 &&
+			Date.now() > this.paranoiaTest + this.settings.statistics.paranoiaInterval * 60000 &&
 			this.manager.stats.last.endTime > this.paranoiaTest) {
 			// console.log("Paranoia interval exceeded. Saving stats.")
 			this.saveStatsCSV();
@@ -291,7 +292,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.wordsPerMS.push(wordsCounted / duration); // words per millisecond
 		}
 
-		if (this.wordsPerMS.length > 0 && this.settings.showWordCountSpeedDebug) {
+		if (this.wordsPerMS.length > 0 && this.settings.debug.showWordCountSpeed) {
 			let sum = this.wordsPerMS.reduce((total, val) => total + val, 0);
 			let avg = sum / this.wordsPerMS.length;
 			console.log(`Running average words counted per millisecond: ${avg}`);
@@ -318,10 +319,11 @@ export default class WordStatisticsPlugin extends Plugin {
 				// console.log("Building file tree...");
 				await this.manager.buildTree();
 				// console.log("Done.");
-				// console.log(this.manager);
+				// console.log(this.manager.root);
 			}
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
+			this.sbWidget.updateVault();
 			// console.log("Initiating post-project vault re-scan...");
 			// await this.collector.scanVault();
 			// console.log("Complete.")
@@ -353,9 +355,12 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	saveStats(event?: WSDataEvent) {
+		// console.log("saveStats()");
 		let update = Date.now();
+		// console.log(update, this.lastFile instanceof WSFile);
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
 		if (this.lastFile.last?.endTime > this.updateTime) return; // if there have been no updates since last update, return
+		// console.log("Saving data.")
 		this.updateTime = update;
 		this.saveFiles();
 	}
@@ -368,7 +373,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	saveFiles() {
 		if (this.manager.fileMap.size === 0 && this.manager.folderMap.size === 0) return;
 		let statsData = BuildRootJSON(this, this.manager.root);
-		// console.log(data);
+		// console.log(statsData);
 		this.saveSerialData(DB_PATH, statsData);
 	}
 
@@ -412,8 +417,8 @@ export default class WordStatisticsPlugin extends Plugin {
 			file = this.manager.getFile(view.file);
 		}
 		// console.log("[!] Updating focused file:", file instanceof WSFile ? file.serialize() : null);
-		this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file }, { filter: file }));
 		this.focusFile = file;
+		this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file }, { filter: file }));
 	}
 
 	onFileRename(file: TAbstractFile, data: string) {
@@ -516,7 +521,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	updateFileExplorer(file: (WSFile | WSFolder) = null) {
 		if (this.fileExplorer instanceof View) {
-			if (this.settings.showWordCountsInFileExplorer) {
+			if (this.settings.view.showWordCountsInFileExplorer) {
 				let container = this.fileExplorer.containerEl;
 				container.toggleClass(FILE_EXP_CLASS, true);
 				let fileList = this.fileExplorer.fileItems;
@@ -529,7 +534,7 @@ export default class WordStatisticsPlugin extends Plugin {
 						if (wFile instanceof WSFile) {
 							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.wordCount));
 						} else {
-							let words = this.manager.folderMap.get(path)?.wordCount;
+							let words = path === "/" ? this.manager.root.wordCount : this.manager.folderMap.get(path)?.wordCount;
 							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
 						}
 					}

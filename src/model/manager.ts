@@ -5,6 +5,7 @@ import { WSFolder } from './folder';
 import { WordCountForText } from 'src/words';
 import { WordStatsManager } from './stats';
 import { WSDataEvent, WSEvent, WSEvents } from './events';
+import { FormatWords } from 'src/util';
 
 export class WSFileManager {
     public loaded: boolean = false;
@@ -201,7 +202,7 @@ export class WSFileManager {
         this.plugin.logSpeed(newCount, startTime, endTime);
         let oldCount = fileRef.wordCount;
         // do nothing else if the counts are unchanged
-        if (newCount === oldCount) return newCount;
+        if (newCount === oldCount) return null;
         // if there are offline changes, import/export text will show up
         let updateTime = Date.now();
         fileRef.updateStats(updateTime, oldCount, newCount);
@@ -285,10 +286,11 @@ export class WSFileManager {
         // console.log(this.root);
         for (let file of files) {
             this.updateFileMetadata(file);
-            this.updateFileWordCountOffline(file);
+            let fileRef = await this.updateFileWordCountOffline(file);
+            //console.log(fileRef?.path, fileRef?.wordCount)
         }
         let endTime = Date.now();
-        console.log(`Counted all ${files.length} file(s) in ${endTime - startTime}ms.`);
+        console.log(`Counted all ${files.length} file(s) in ${endTime - startTime}ms. ${FormatWords(this.root.wordCount)} counted.`);
     }
 
     async updateTree() {

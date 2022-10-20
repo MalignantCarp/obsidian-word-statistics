@@ -14,6 +14,10 @@
 	--ws-icon-delete: #993333;
 	--ws-icon-reset: #AA6633;
 	--ws-icon-okay: #339933;
+
+
+	--ws-icon-record-off: #444;
+	--ws-icon-record-on: #A22;
 }
 
 .theme-dark {
@@ -32,7 +36,13 @@
 	--ws-icon-delete: #DD3333;
 	--ws-icon-reset: #DDAA33;
 	--ws-icon-okay: #33DD33;
+
+	--ws-icon-record-off: #444;
+	--ws-icon-record-on: #A22;
+
 }
+
+/* File Explorer */
 
 .mc-ws-file-explorer-counts .nav-folder-title::after,
 .mc-ws-file-explorer-counts .nav-file-title::after {
@@ -46,6 +56,59 @@
 .mc-ws-file-explorer-counts .nav-folder-title-content,
 .mc-ws-file-explorer-counts .nav-file-title-content {
 	flex: 1;
+}
+
+
+/* Status Bar */
+.ws-status-bar-container {
+	margin-left: 0.125em;
+	border-left: var(--nav-indentation-guide-width) solid var(--nav-indentation-guide-color);
+	padding-left: 0.75em;
+
+	margin-right: 0.125em;
+	border-right: var(--nav-indentation-guide-width) solid var(--nav-indentation-guide-color);
+	padding-right: 0.75em;
+
+	display: flex;
+	column-gap: 0.75em;
+	align-items: center;
+}
+
+.ws-status-bar-record {
+	margin: auto;
+}
+
+.ws-status-bar-record > .record {
+	height: 14px;
+	width: 14px;
+	display: inline-block;
+	border-radius: 50%;
+	background-color: var(--ws-icon-record-off);
+}
+
+.ws-status-bar-record > .record.recording {
+	background-color: var(--ws-icon-record-on);
+}
+
+.ws-status-bar-file {
+	margin: auto;
+}
+
+.ws-status-bar-parent {
+	margin: auto;
+}
+
+.ws-status-bar-vault {
+	margin: auto;
+}
+
+.ws-status-bar-file,
+.ws-status-bar-parent,
+.ws-status-bar-vault {
+	margin: auto;
+	display: flex;
+	align-items: center;
+	column-gap: 0.25rem;
 }
 
 /*

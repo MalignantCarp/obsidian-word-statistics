@@ -10,6 +10,15 @@
  - Purge unused files and dependencies.
 
 ## Changelog
+### 2022-10-19
+ - Purged old TS files that are no longer used for the NewModel branch.
+ - Rebuilt layout of current Settings namespaces and moved some settings around. Added new settings for the status bar.
+ - Rebuilt status bar with new layout.
+ - Added some setting events for updating UI elements when certain settings change.
+ - BUGFIX: Main vault wasn't showing full word count on file explorer.
+ - BUGFIX: Database saving check was returning if the last update was newer than the last save rather than if the last update was older than the last save.
+ - BUGFIX: Manager.countAll() was not waiting on the word counts, resulting in word counts not being updated properly on initial load. This may need to be altered if large vaults lag on startup.
+
 ### 2022-10-18
  - Re-implemented paranoia CSV exporting.
  - Finished adding sync routines for WordStatsManager to keep stats linked there for access.

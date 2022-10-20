@@ -31,7 +31,7 @@ export class WSFolder {
     }
 
     get isRecording(): boolean {
-        if (this.plugin.settings.statisticSettings.record === Settings.Statistics.RECORD.ALL) return true;
+        if (this.plugin.settings.statistics.record === Settings.Statistics.RECORD.ALL) return true;
         if (this.recording === RECORDING.OFF) return false;
         if (this.recording === RECORDING.ON) return true;
         // must be inherited

@@ -71,7 +71,7 @@ export function BuildRootJSON(plugin: WordStatisticsPlugin, root: WSFolder): str
     endTime = Date.now();
     // console.log(`Built ${files.length} file(s) for export in ${endTime - startTime}ms.`);
     let fileData: string;
-    if (plugin.settings.databaseSettings.fileMinify) {
+    if (plugin.settings.database.fileMinify) {
         fileData = JSON.stringify(folders);
     } else {
         fileData = JSON.stringify(folders, null, 2);
