@@ -8,11 +8,12 @@ import { ImportTree } from './model/import';
 import type { WSFolder } from './model/folder';
 import { BuildRootJSON, StatisticDataToCSV } from './model/export';
 import { DateTime } from 'luxon';
-import Statusbar from './view/svelte/statusbar.svelte';
+import StatusBar from './view/svelte/StatusBar.svelte';
+import { ProgressView, PROGRESS_VIEW } from './view/obsidian/ProgressView';
 
 const DB_PATH = "database.json";
 
-const FILE_EXP_CLASS = "mc-ws-file-explorer-counts";
+const FILE_EXP_CLASS = "ws-file-explorer-counts";
 const FILE_EXP_DATA_ATTRIBUTE = "data-mc-word-stats";
 
 declare module "obsidian" {
@@ -34,8 +35,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	debounceSave: Debouncer<any, any>;
 	wordsPerMS: number[] = [];
 	statusBar: HTMLElement;
-	sbWidget: Statusbar;
-	//collector: WSDataCollector;
+	sbWidget: StatusBar;
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
 	focusFile: WSFile = null;
@@ -82,7 +82,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.events = new Dispatcher();
 
 		this.statusBar = this.addStatusBarItem();
-		this.sbWidget = new Statusbar({target: this.statusBar, props: {plugin: this}});
+		this.sbWidget = new StatusBar({target: this.statusBar, props: {plugin: this}});
 
 		// this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
 		// 	return new ProjectManagementView(leaf, this);
@@ -92,9 +92,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 	return new StatisticsView(leaf, this);
 		// });
 
-		// this.registerView(PROGRESS_VIEW.type, (leaf) => {
-		// 	return new ProgressView(leaf, this);
-		// });
+		this.registerView(PROGRESS_VIEW.type, (leaf) => {
+		 	return new ProgressView(leaf, this);
+		});
 
 		this.addCommand({
 			id: 'statistics-csv',
@@ -132,17 +132,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 	}
 		// });
 
-		// this.addCommand({
-		// 	id: 'attach-progress-view',
-		// 	name: 'Attach Progress View',
-		// 	editorCheckCallback: (checking: boolean) => {
-		// 		if (checking) {
-		// 			return this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length === 0;
-		// 		} else {
-		// 			this.initializeProgressLeaf();
-		// 		}
-		// 	}
-		// });
+		this.addCommand({
+			id: 'attach-progress-view',
+			name: 'Attach Progress View',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length === 0;
+				} else {
+					this.initializeProgressLeaf();
+				}
+			}
+		});
 
 		// this.addCommand({
 		// 	id: 'insert-project-table-modal',
@@ -226,14 +226,14 @@ export default class WordStatisticsPlugin extends Plugin {
 	// 	});
 	// }
 
-	// initializeProgressLeaf() {
-	// 	if (this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length > 0) {
-	// 		return;
-	// 	}
-	// 	this.app.workspace.getRightLeaf(false).setViewState({
-	// 		type: PROGRESS_VIEW.type
-	// 	});
-	// }
+	initializeProgressLeaf() {
+		if (this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length > 0) {
+			return;
+		}
+		this.app.workspace.getRightLeaf(false).setViewState({
+			type: PROGRESS_VIEW.type
+		});
+	}
 
 	async loadSettings() {
 		// console.log("Loading user settings. Default settings:");
@@ -359,7 +359,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		let update = Date.now();
 		// console.log(update, this.lastFile instanceof WSFile);
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
-		if (this.lastFile.last?.endTime > this.updateTime) return; // if there have been no updates since last update, return
+		if (this.lastFile.last?.endTime < this.updateTime) return; // if there have been no updates since last update, return
 		// console.log("Saving data.")
 		this.updateTime = update;
 		this.saveFiles();

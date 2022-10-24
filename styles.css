@@ -1,51 +1,43 @@
 .theme-light {
-	--project-background: #eeeeeedd;
-	--project-zebra-bg: #aaaaaadd;
-	--total-line-color: #333333dd;
-	--ws-table-line-color: #333333dd;
-	--ws-sb-error-color: #990000;
-	--ws-sb-wc-highlight: #006666;
-	--ws-validation-error: #990000;
-	--ws-validation-success: #009900;
-	--ws-table-highlight: #00000015;
-	--ws-table-heading: #00000030;
-	--ws-pm-file-info: #3355AA88;
-	--ws-icon-edit: #336699;
-	--ws-icon-delete: #993333;
-	--ws-icon-reset: #AA6633;
-	--ws-icon-okay: #339933;
-
-
 	--ws-icon-record-off: #444;
 	--ws-icon-record-on: #A22;
+	--ws-icon-record-light: #C22;
+
+	--ws-progress-0: #611;
+	--ws-progress-1: #711;
+	--ws-progress-2: #911;
+	--ws-progress-3: #941;
+	--ws-progress-4: #a61;
+	--ws-progress-5: #c83;
+	--ws-progress-6: #ca3;
+	--ws-progress-7: #aa5;
+	--ws-progress-8: #9a6;
+	--ws-progress-9: #8a6;
+	--ws-progress-10: #6b6;
 }
 
 .theme-dark {
-	--project-background: #00000022;
-	--project-zebra-bg: #FFFFFF0A;
-	--total-line-color: #eeeeeedd;
-	--ws-table-line-color: #eeeeeedd;
-	--ws-sb-error-color: #990000;
-	--ws-sb-wc-highlight: #00AAAA;
-	--ws-validation-error: #990000;
-	--ws-validation-success: #009900;
-	--ws-table-highlight: #ffffff15;
-	--ws-table-heading: #ffffff30;
-	--ws-pm-file-info: #5577FF88;
-	--ws-icon-edit: #3399CC;
-	--ws-icon-delete: #DD3333;
-	--ws-icon-reset: #DDAA33;
-	--ws-icon-okay: #33DD33;
-
 	--ws-icon-record-off: #444;
 	--ws-icon-record-on: #A22;
+	--ws-icon-record-light: #C22;
 
+	--ws-progress-0: #611;
+	--ws-progress-1: #711;
+	--ws-progress-2: #911;
+	--ws-progress-3: #941;
+	--ws-progress-4: #a61;
+	--ws-progress-5: #c83;
+	--ws-progress-6: #ca3;
+	--ws-progress-7: #aa5;
+	--ws-progress-8: #9a6;
+	--ws-progress-9: #8a6;
+	--ws-progress-10: #6b6;
 }
 
 /* File Explorer */
 
-.mc-ws-file-explorer-counts .nav-folder-title::after,
-.mc-ws-file-explorer-counts .nav-file-title::after {
+.ws-file-explorer-counts .nav-folder-title::after,
+.ws-file-explorer-counts .nav-file-title::after {
 	content: attr(data-mc-word-stats);
 	display: flex;
 	align-items: center;
@@ -53,13 +45,14 @@
 	opacity: 0.8;
 }
 
-.mc-ws-file-explorer-counts .nav-folder-title-content,
-.mc-ws-file-explorer-counts .nav-file-title-content {
+.ws-file-explorer-counts .nav-folder-title-content,
+.ws-file-explorer-counts .nav-file-title-content {
 	flex: 1;
 }
 
 
 /* Status Bar */
+
 .ws-status-bar-container {
 	margin-left: 0.125em;
 	border-left: var(--nav-indentation-guide-width) solid var(--nav-indentation-guide-color);
@@ -78,7 +71,7 @@
 	margin: auto;
 }
 
-.ws-status-bar-record > .record {
+.ws-status-bar-record>.record {
 	height: 14px;
 	width: 14px;
 	display: inline-block;
@@ -86,7 +79,7 @@
 	background-color: var(--ws-icon-record-off);
 }
 
-.ws-status-bar-record > .record.recording {
+.ws-status-bar-record>.record.recording {
 	background-color: var(--ws-icon-record-on);
 }
 
@@ -111,7 +104,156 @@
 	column-gap: 0.25rem;
 }
 
+/* Progress Bar Widget */
+
+.ws-progress {
+	height: 30px;
+	padding: 4px;
+	position: relative;
+	background: rgba(0, 0, 0, 0.25);
+	border-radius: 6px;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.ws-progress-bar {
+	--padding-fix: 1px;
+	position: absolute;
+	border-radius: 4px;
+	background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
+	transition: 0.4s linear;
+	transition-property: width, background-color;
+	box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
+	height: calc(100% - 8px);
+}
+
+.ws-progress-bar-label {
+	z-index: 2;
+	position: absolute;
+	width: calc(100% - 8px);
+	height: calc(100% - 8px);
+	text-align: center;
+	line-height: 1.6;
+	font-size: small;
+	margin: auto;
+	color: white;
+	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.ws-progress-bar[data-progress="0"] {
+	background-color: var(--ws-progress-0);
+}
+
+.ws-progress-bar[data-progress="1"] {
+	background-color: var(--ws-progress-1);
+}
+
+.ws-progress-bar[data-progress="2"] {
+	background-color: var(--ws-progress-2);
+}
+
+.ws-progress-bar[data-progress="3"] {
+	background-color: var(--ws-progress-3);
+}
+
+.ws-progress-bar[data-progress="4"] {
+	background-color: var(--ws-progress-4);
+}
+
+.ws-progress-bar[data-progress="5"] {
+	background-color: var(--ws-progress-5);
+}
+
+.ws-progress-bar[data-progress="6"] {
+	background-color: var(--ws-progress-6);
+}
+
+.ws-progress-bar[data-progress="7"] {
+	background-color: var(--ws-progress-7);
+}
+
+.ws-progress-bar[data-progress="8"] {
+	background-color: var(--ws-progress-8);
+}
+
+.ws-progress-bar[data-progress="9"] {
+	background-color: var(--ws-progress-9);
+}
+
+.ws-progress-bar[data-progress="10"] {
+	background-color: var(--ws-progress-10);
+}
+
+/* Progress View */
+
+.ws-progress-folder-name {
+	opacity: 0.8;
+}
+
+.ws-progress-label {
+	width: 100%;
+	text-align: center;
+	margin: auto;
+}
+
+.ws-progress-file .record,
+.ws-progress-folder .record {
+	height: 14px;
+	width: 14px;
+	margin-right: 8px;
+	margin-left: 8px;
+	display: inline-block;
+	border-radius: 50%;
+	background-color: var(--ws-icon-record-off);
+}
+
+.ws-progress-file .record.recording,
+.ws-progress-folder .record.recording {
+	background-color: var(--ws-icon-record-on);
+	filter: drop-shadow(0px 0px 6px var(--ws-icon-record-light));
+}
+
+/* */
+
 /*
+
+
+LIGHT THEME
+
+	--project-background: #eeeeeedd;
+	--project-zebra-bg: #aaaaaadd;
+	--total-line-color: #333333dd;
+	--ws-table-line-color: #333333dd;
+	--ws-sb-error-color: #990000;
+	--ws-sb-wc-highlight: #006666;
+	--ws-validation-error: #990000;
+	--ws-validation-success: #009900;
+	--ws-table-highlight: #00000015;
+	--ws-table-heading: #00000030;
+	--ws-pm-file-info: #3355AA88;
+	--ws-icon-edit: #336699;
+	--ws-icon-delete: #993333;
+	--ws-icon-reset: #AA6633;
+	--ws-icon-okay: #339933;
+
+DARK THEME
+
+	--project-background: #00000022;
+	--project-zebra-bg: #FFFFFF0A;
+	--total-line-color: #eeeeeedd;
+	--ws-table-line-color: #eeeeeedd;
+	--ws-sb-error-color: #990000;
+	--ws-sb-wc-highlight: #00AAAA;
+	--ws-validation-error: #990000;
+	--ws-validation-success: #009900;
+	--ws-table-highlight: #ffffff15;
+	--ws-table-heading: #ffffff30;
+	--ws-pm-file-info: #5577FF88;
+	--ws-icon-edit: #3399CC;
+	--ws-icon-delete: #DD3333;
+	--ws-icon-reset: #DDAA33;
+	--ws-icon-okay: #33DD33;
+
+
 
 .status-bar-item.plugin-obsidian-word-statistics {
 	display: flex;

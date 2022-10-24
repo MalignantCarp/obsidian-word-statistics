@@ -1,8 +1,7 @@
 
 ## To-Do for first release
  - Finish WordStatsManager
- - Context menu entries for changing folder statistics info such as goals and titles
- - Retrofit ProgressView for new statistics system
+ - Context menu entries for changing folder statistics info such as goals and titles and set things to record
  - Retrofit Debug View for new statistics system
  - Add new Calendar Day/Week/Month statistics.
  - Implement a visual indicator for when a folder is monitored for stats changes (recording dot?)
@@ -10,13 +9,19 @@
  - Purge unused files and dependencies.
 
 ## Changelog
+### 2022-10-23
+ - BUGFIX: Database saving check was returning if the last update was newer than the last save rather than if the last update was older than the last save.
+ - BUGFIX: WSFolders were being created with the name duplicated in the title field but title is not updated upon rename as it is independent of filename.
+ - Added basename capture for WSFile for use in place of title when one is not set.
+ - Removed the titleYAML and goalYAML flags, as they are redundant.
+ - Re-implemented ProgressView. ProgressView will show the currently focused file and any folders that have goals up to the outermost folder that has a goal. That is, in Root/Outer/Middle/Inner/File.md, if Inner and Middle have word goals, then both Inner and Middle will be shown in the listing. If Outer and Inner have word goals, Inner, Middle, and Outer will be shown.
+
 ### 2022-10-19
  - Purged old TS files that are no longer used for the NewModel branch.
  - Rebuilt layout of current Settings namespaces and moved some settings around. Added new settings for the status bar.
  - Rebuilt status bar with new layout.
  - Added some setting events for updating UI elements when certain settings change.
  - BUGFIX: Main vault wasn't showing full word count on file explorer.
- - BUGFIX: Database saving check was returning if the last update was newer than the last save rather than if the last update was older than the last save.
  - BUGFIX: Manager.countAll() was not waiting on the word counts, resulting in word counts not being updated properly on initial load. This may need to be altered if large vaults lag on startup.
 
 ### 2022-10-18

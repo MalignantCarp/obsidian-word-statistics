@@ -65,11 +65,10 @@ export class WSFile {
         public parent: WSFolder,
         public path: string,
         public name: string,
+        public basename: string,
         public title: string = "",
         public wordCount: number = 0,
         public wordGoal: number = 0,
-        public titleYAML: boolean = false,
-        public goalYAML: boolean = false,
         public stats: WSFileStat[] = []
     ) {
         if (parent !== null) {
@@ -84,18 +83,28 @@ export class WSFile {
     }
 
     getTitle(): string {
-        if (this.title != "") return this.title;
-        return this.name;
+        if (this.title !== "") return this.title;
+        return this.basename;
     }
 
     getWordGoal() {
         if (this.wordGoal > 0) return this.wordGoal;
-        let parent = this.parent;
-        while (this.parent !== null) {
-            if (parent.wordGoalForFiles > 0) return parent.wordGoalForFiles;
-            parent = parent.parent;
+        let ancestor = this.parent;
+        while (ancestor !== null) {
+            if (ancestor.wordGoalForFiles > 0) return ancestor.wordGoalForFiles;
+            ancestor = ancestor.parent;
         }
         return 0;
+    }
+
+    getGoalParents() {
+        let ancestor = this.parent;
+        let parents: WSFolder[] = [];
+        while (ancestor !== null && ancestor.getWordGoal() !== 0) {
+            parents.push(ancestor);
+            ancestor = ancestor.parent;
+        }
+        return parents;
     }
 
     propagateWordCountChange(oldCount: number, newCount: number) {

@@ -1,7 +1,7 @@
 import type WordStatisticsPlugin from "src/main";
 import { Settings } from "src/settings";
 import { WSEvents, WSFolderEvent } from "./events";
-import type { WSFile } from "./file";
+import { WSFile } from "./file";
 
 export enum RECORDING {
     OFF = 0,
@@ -15,7 +15,7 @@ export class WSFolder {
         public parent: WSFolder,
         public path: string,
         public name: string,
-        public title: string,
+        public title: string = "",
         public wordCount: number = 0,
         public wordGoalForFiles: number = 0,
         public wordGoalForFolders: number = 0,
@@ -111,10 +111,10 @@ export class WSFolder {
 
     getWordGoal() {
         if (this.wordGoal > 0) return this.wordGoal;
-        let parent = this.parent;
-        while (this.parent !== null) {
-            if (parent.wordGoalForFolders > 0) return parent.wordGoalForFolders;
-            parent = parent.parent;
+        let ancestor = this.parent;
+        while (ancestor !== null) {
+            if (ancestor.wordGoalForFolders > 0) return ancestor.wordGoalForFolders;
+            ancestor = ancestor.parent;
         }
         return 0;
     }
@@ -132,6 +132,14 @@ export class WSFolder {
         });
         this.children.forEach(file => count += file.wordCount);
         this.wordCount = count;
+    }
+
+    triggerRecordingSet(recording: RECORDING, chain: boolean) {
+        this.plugin.events.trigger(new WSFolderEvent({ type: WSEvents.Folder.RecordingSet, folder: this, data: [recording]}, {filter: this}));
+        if (!chain) return;
+        for (let child of this.childFolders) {
+            child.triggerRecordingSet(recording, chain);
+        }
     }
 
     triggerWordsChanged(oldCount: number, newCount: number, timestamp: number, chain: boolean = false) {
@@ -157,6 +165,32 @@ export class WSFolder {
 
     triggerRenamed(oldName: string, newName: string) {
         this.plugin.events.trigger(new WSFolderEvent({ type: WSEvents.Folder.Renamed, folder: this, data: [oldName, newName] }, { filter: this }));
+    }
+
+    isAncestor(relative: WSFolder): boolean {
+        // if we are root, then instantly false
+        if (!(this.parent instanceof WSFolder)) return false;
+        // if relative is our parent, true
+        if (relative === this.parent) return true;
+        // if relative is not our parent, go higher
+        return this.parent.isAncestor(relative);
+    }
+
+    isDescendent(relative: WSFile | WSFolder): boolean {
+        // if we have no children, we have no descendents
+        if (this.childFolders.length === 0 && this.children.length === 0) return false;
+        // if relative is a file and one of our children, return true
+        if (relative instanceof WSFile && this.children.contains(relative)) return true;
+        // if relative is a folder and one of our child folders, return true
+        if (relative instanceof WSFolder && this.childFolders.contains(relative)) return true;
+        // recurse through child folders until true or out of children
+        let descendent = false;
+        for (let child of this.childFolders) {
+            if (!child.isDescendent(relative)) continue;
+            descendent = true;
+            break;
+        }
+        return descendent;
     }
 
 }

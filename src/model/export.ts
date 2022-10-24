@@ -20,6 +20,7 @@ export interface EFile {
     parent: string,
     path: string,
     name: string,
+    basename: string,
     title: string,
     wordCount: number,
     wordGoal: number,
@@ -49,7 +50,7 @@ function BuildFileStats(stats: WSFileStat[]): EFileStat[] {
 function BuildChildFiles(children: WSFile[]): EFile[] {
     let childFiles: EFile[] = [];
     for (let child of children) {
-        childFiles.push({ parent: child.parent.path, path: child.path, name: child.name, title: child.title, wordCount: child.wordCount, wordGoal: child.wordGoal, stats: BuildFileStats(child.stats) });
+        childFiles.push({ parent: child.parent.path, path: child.path, name: child.name, basename: child.basename, title: child.title, wordCount: child.wordCount, wordGoal: child.wordGoal, stats: BuildFileStats(child.stats) });
     }
     return childFiles;
 }
@@ -94,7 +95,7 @@ export function StatisticDataToCSV(plugin: WordStatisticsPlugin): string {
         let endTimeStr = endTime.toFormat('HH:mm:ss');
         let duration = (info.duration).toString();
         let path = info.file.parent.path;
-        let file = info.file.path;
+        let file = info.file.name;
         let wordsStart = info.startWords.toString();
         let wordsEnd = info.endWords.toString();
         let wordsAdded = info.wordsAdded.toString();

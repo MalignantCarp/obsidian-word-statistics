@@ -47,7 +47,7 @@ export class WSFileManager {
         if (folder instanceof TFolder && this.folderMap.has(folder.path)) return this.folderMap.get(folder.path) as WSFolder;
         // console.log("Folder is not mapped. Mapping to parent folder.");
         let parent = this.mapToFolder(folder.parent);
-        let mappedFolder = new WSFolder(this.plugin, parent, folder.path, folder.name, folder.name);
+        let mappedFolder = new WSFolder(this.plugin, parent, folder.path, folder.name);
         // console.log(`Mapped folder ${folder.path} --> ${parent.path} --> ${mappedFolder.path}`);
         return mappedFolder;
     }
@@ -75,7 +75,8 @@ export class WSFileManager {
                 }
                 this.fileMap.set(file.path, fi);
                 let oldName = fi.name;
-                fi.name = file.basename;
+                fi.name = file.name;
+                fi.basename = file.basename;
                 fi.path = file.path;
                 let parent = this.mapToFolder(file.parent);
                 parent.moveChildFrom(fi);
@@ -155,35 +156,31 @@ export class WSFileManager {
     updateFileMetadata(file: TFile) {
         // console.log("updateFileMetadata");
         // console.log(file.path, this.fileMap.get(file.path));
-        // console.log(this.fileMap);
+        //console.log(this.fileMap);
         let fileRef = this.fileMap.get(file.path);
         let cache = this.cache.getCache(file.path);
         let title = parseFrontMatterEntry(cache?.frontmatter, "title") || undefined;
         let goal = parseFrontMatterEntry(cache?.frontmatter, "word-goal") as number || undefined;
         if (title === undefined) {
-            if (fileRef.titleYAML) {
+            if (fileRef.title !== "") {
                 fileRef.title = "";
                 fileRef.triggerTitleSet("");
-                fileRef.titleYAML = false;
             }
         } else {
-            if (fileRef.titleYAML || fileRef.title === "") {
+            if (fileRef.title != title) {
                 fileRef.title = title;
-                fileRef.titleYAML = true;
                 fileRef.triggerTitleSet(title);
             }
         }
         // console.log(goal);
         if (goal === undefined) {
-            if (fileRef.goalYAML) {
+            if (fileRef.wordGoal !== 0) {
                 fileRef.wordGoal = 0;
                 fileRef.triggerGoalSet(0);
-                fileRef.goalYAML = false;
             }
         } else {
             if (fileRef.wordGoal != goal) {
                 fileRef.wordGoal = goal;
-                fileRef.goalYAML = true;
                 fileRef.triggerGoalSet(goal);
             }
         }

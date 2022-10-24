@@ -3,6 +3,7 @@
 	import type WordStatisticsPlugin from "src/main";
 	import {
 		WSEvents,
+		WSFolderEvent,
 		WSSettingEvent,
 		type WSFileEvent,
 		type WSFocusEvent,
@@ -40,6 +41,9 @@
 		plugin.events.on(WSEvents.Setting.StatusBar, updateView, {
 			filter: null,
 		});
+		plugin.events.on(WSEvents.Folder.RecordingSet, updateView, {
+			filter: null,
+		});
 	});
 
 	onDestroy(() => {
@@ -49,10 +53,13 @@
 		plugin.events.off(WSEvents.File.WordsChanged, updateFileCount, {
 			filter: null,
 		});
-		plugin.events.on(WSEvents.Setting.Recording, updateView, {
+		plugin.events.off(WSEvents.Setting.Recording, updateView, {
 			filter: null,
 		});
-		plugin.events.on(WSEvents.Setting.StatusBar, updateView, {
+		plugin.events.off(WSEvents.Setting.StatusBar, updateView, {
+			filter: null,
+		});
+		plugin.events.on(WSEvents.Folder.RecordingSet, updateView, {
 			filter: null,
 		});
 	});
@@ -76,7 +83,7 @@
 		updateView();
 	}
 
-	export function updateView(event?: WSSettingEvent) {
+	export function updateView(event?: WSSettingEvent | WSFileEvent | WSFolderEvent) {
 		iconSetVault = plugin.settings.statusbar.showVaultCount;
 		iconSetFile = plugin.settings.statusbar.showFileCount;
 		iconSetParent = plugin.settings.statusbar.showParentCount;

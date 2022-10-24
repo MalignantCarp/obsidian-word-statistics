@@ -14,7 +14,7 @@ function BuildFileStats(file: WSFile, stats: EFileStat[]): WSFileStat[] {
 function BuildChildFiles(plugin: WordStatisticsPlugin, fileMap: Map<string, WSFile>, folderMap: Map<string, WSFolder>, parent: WSFolder, children: EFile[]): WSFile[] {
     let childFiles: WSFile[] = [];
     for (let child of children) {
-        let fileRef = new WSFile(plugin, parent, child.path, child.name, child.title, child.wordCount, child.wordGoal, child.title != "", child.wordGoal > 0);
+        let fileRef = new WSFile(plugin, parent, child.path, child.name, child.basename, child.title, child.wordCount, child.wordGoal);
         fileRef.stats = BuildFileStats(fileRef, child.stats);
         childFiles.push(fileRef);
         fileMap.set(child.path, fileRef);
