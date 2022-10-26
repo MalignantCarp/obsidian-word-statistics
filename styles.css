@@ -2,6 +2,8 @@
 	--ws-icon-record-off: #444;
 	--ws-icon-record-on: #A22;
 	--ws-icon-record-light: #C22;
+	--ws-icon-record-inherit: #A72;
+	--ws-icon-record-inherit-light: #C92;
 
 	--ws-progress-0: #611;
 	--ws-progress-1: #711;
@@ -20,6 +22,8 @@
 	--ws-icon-record-off: #444;
 	--ws-icon-record-on: #A22;
 	--ws-icon-record-light: #C22;
+	--ws-icon-record-inherit: #A72;
+	--ws-icon-record-inherit-light: #C92;
 
 	--ws-progress-0: #611;
 	--ws-progress-1: #711;
@@ -204,6 +208,12 @@
 	display: inline-block;
 	border-radius: 50%;
 	background-color: var(--ws-icon-record-off);
+}
+
+.ws-progress-file .record.inherit,
+.ws-progress-folder .record.inherit {
+	background-color: var(--ws-icon-record-inherit);
+	filter: drop-shadow(0px 0px 6px var(--ws-icon-record-inherit-light));
 }
 
 .ws-progress-file .record.recording,

@@ -9,6 +9,11 @@
  - Purge unused files and dependencies.
 
 ## Changelog
+### 2022-10-25
+ - Added context menu items to set word statistics recording state on folders, and commands to set it for the focused file's parent.
+ - BUGFIX: ProgressView was not monitoring changes to statistics recording state.
+ - Made ProgressView colour the recording light amber if it is inheriting an on recording state.
+
 ### 2022-10-23
  - BUGFIX: Database saving check was returning if the last update was newer than the last save rather than if the last update was older than the last save.
  - BUGFIX: WSFolders were being created with the name duplicated in the title field but title is not updated upon rename as it is independent of filename.

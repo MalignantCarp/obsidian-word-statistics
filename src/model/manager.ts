@@ -1,7 +1,7 @@
 import { type Vault, type MetadataCache, TFile, TAbstractFile, TFolder, parseFrontMatterEntry } from 'obsidian';
 import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
-import { WSFolder } from './folder';
+import { RECORDING, WSFolder } from './folder';
 import { WordCountForText } from 'src/words';
 import { WordStatsManager } from './stats';
 import { WSDataEvent, WSEvent, WSEvents } from './events';
@@ -185,6 +185,11 @@ export class WSFileManager {
             }
         }
         this.triggerFileUpdate(fileRef);
+    }
+
+    setMonitoringForFolder(folder: WSFolder, state: RECORDING) {
+        folder.recording = state;
+        folder.triggerRecordingSet(state, true);
     }
 
     async updateFileWordCountOffline(file: TFile) {

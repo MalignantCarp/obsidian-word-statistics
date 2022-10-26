@@ -28,7 +28,7 @@
 		focus = event.info.file;
 		folderList = focus?.getGoalParents().reverse() || [];
 	}
-
+	
 	$: if (focus instanceof WSFile) {
 		okay = true;
 	}
@@ -40,13 +40,13 @@
 </script>
 
 <div class="ws-progress-view">
-    <h1>Word Goal Progress</h1>
+	<h1>Word Goal Progress</h1>
 	{#if okay}
 		{#each folderList as folder}
 			<ProgressFolder {plugin} {folder} />
 		{/each}
 		<ProgressFile {plugin} file={focus} bind:this={progress} />
-    {:else}
-        <div>No file focused.</div>
+	{:else}
+		<div>No file focused.</div>
 	{/if}
 </div>

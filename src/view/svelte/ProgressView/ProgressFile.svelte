@@ -2,7 +2,7 @@
 	import type WordStatisticsPlugin from "src/main";
 	import { WSEvents, WSFileEvent, WSFolderEvent } from "src/model/events";
 	import { WSFile } from "src/model/file";
-	import { WSFolder } from "src/model/folder";
+	import { RECORDING, WSFolder } from "src/model/folder";
 	import { FormatNumber, FormatWords } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import ProgressBar from "./ProgressBar.svelte";
@@ -21,7 +21,8 @@
 
 	let label: string = "";
 
-	let okay = false;
+	let inherit = false;
+	let recording = false;
 
 	onMount(() => {
 		events.on(WSEvents.File.WordsChanged, onCountUpdate, { filter: null });
@@ -29,6 +30,8 @@
 		events.on(WSEvents.File.GoalSet, onFileUpdate, { filter: null });
 		events.on(WSEvents.File.Renamed, onFileUpdate, { filter: null });
 		events.on(WSEvents.Folder.GoalSet, onFolderUpdate, { filter: null });
+		events.on(WSEvents.Setting.Recording, onFolderUpdate, { filter: null});
+		events.on(WSEvents.Folder.RecordingSet, onFolderUpdate, { filter: null });
 		updateAll();
 	});
 
@@ -38,6 +41,8 @@
 		events.off(WSEvents.File.GoalSet, onFileUpdate, { filter: null });
 		events.off(WSEvents.File.Renamed, onFileUpdate, { filter: null });
 		events.off(WSEvents.Folder.GoalSet, onFolderUpdate, { filter: null });
+		events.off(WSEvents.Setting.Recording, onFolderUpdate, { filter: null});
+		events.off(WSEvents.Folder.RecordingSet, onFolderUpdate, { filter: null });
 	});
 
 	export function FocusFile(newFile: WSFile) {
@@ -86,6 +91,8 @@
 			countText = goal > 0 ? FormatNumber(count) : FormatWords(count);
 			label = goal > 0 ? countText + " / " + goalText : countText;
 			progress?.SetProgress(goal > 0 ? (count / goal) * 100 : 0);
+			inherit = file?.parent.recording === RECORDING.INHERIT;
+			recording = file?.parent.isRecording;
 		} else {
 			countText = "";
 			label = "";
@@ -94,7 +101,7 @@
 </script>
 
 <div class="ws-progress-file">
-	<h2><span class="record" class:recording={file?.parent.isRecording}/>{file?.getTitle()}</h2>
+	<h2><span class="record" class:recording={recording && !inherit} class:inherit={recording && inherit}/>{file?.getTitle()}</h2>
 	<ProgressBar bind:this={progress} />
 	<div class="ws-progress-label">{label}</div>
 </div>

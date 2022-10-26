@@ -1,11 +1,11 @@
-import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView } from 'obsidian';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView, Menu } from 'obsidian';
 import WordStatsSettingTab, { Settings } from './settings';
 import { WSFile, WSFileStat } from './model/file';
 import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent, WSFolderEvent } from './model/events';
 import { FormatWords } from './util';
 import { WSFileManager } from './model/manager';
 import { ImportTree } from './model/import';
-import type { WSFolder } from './model/folder';
+import { RECORDING, WSFolder } from './model/folder';
 import { BuildRootJSON, StatisticDataToCSV } from './model/export';
 import { DateTime } from 'luxon';
 import StatusBar from './view/svelte/StatusBar.svelte';
@@ -58,7 +58,7 @@ export default class WordStatisticsPlugin extends Plugin {
 				this.RunCount(file, data);
 			},
 			250,
-			true
+			false
 		);
 
 		this.debounceSave = debounce(
@@ -73,6 +73,12 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
 
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, file, source) => {
+				this.onFileMenu(menu, file, source);
+			}));
+
+
 		//this.registerEvent(this.app.workspace.on("editor-paste", this.onPasteEvent.bind(this)));
 
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
@@ -82,7 +88,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.events = new Dispatcher();
 
 		this.statusBar = this.addStatusBarItem();
-		this.sbWidget = new StatusBar({target: this.statusBar, props: {plugin: this}});
+		this.sbWidget = new StatusBar({ target: this.statusBar, props: { plugin: this } });
 
 		// this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
 		// 	return new ProjectManagementView(leaf, this);
@@ -93,7 +99,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		// });
 
 		this.registerView(PROGRESS_VIEW.type, (leaf) => {
-		 	return new ProgressView(leaf, this);
+			return new ProgressView(leaf, this);
 		});
 
 		this.addCommand({
@@ -104,6 +110,42 @@ export default class WordStatisticsPlugin extends Plugin {
 					return this.manager.stats.stats.length > 0;
 				} else {
 					this.saveStatsCSV();
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'recording-on',
+			name: 'Set Statistics Recording State for Parent Folder to ON',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.ON
+				} else {
+					this.cmdSetMonitorOn()
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'recording-off',
+			name: 'Set Statistics Recording State for Parent Folder to OFF',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.OFF
+				} else {
+					this.cmdSetMonitorOff()
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'recording-inherit',
+			name: 'Set Statistics Recording State for Parent Folder to INHERIT',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.INHERIT
+				} else {
+					this.cmdSetMonitorInherit()
 				}
 			}
 		});
@@ -190,6 +232,81 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.saveStatsCSV();
 			// console.log("Done. resetting interval");
 			this.paranoiaTest = Date.now();
+		}
+	}
+
+	setMonitorOn(folder: WSFolder) {
+		this.manager.setMonitoringForFolder(folder, RECORDING.ON);
+		new Notice(`Statistics recording set ON for folder: ${folder.path}`);
+	}
+
+	cmdSetMonitorOn() {
+		if (this.focusFile instanceof WSFile) {
+			this.setMonitorOn(this.focusFile.parent);
+		} else {
+			new Notice("No file has focus. Statistics recording not set.");
+		}
+	}
+
+	setMonitorOff(folder: WSFolder) {
+		this.manager.setMonitoringForFolder(folder, RECORDING.OFF);
+		new Notice(`Statistics recording set OFF for folder: ${folder.path}`);
+	}
+
+	cmdSetMonitorOff() {
+		if (this.focusFile instanceof WSFile) {
+			this.setMonitorOff(this.focusFile.parent);
+		} else {
+			new Notice("No file has focus. Statistics recording not set.");
+		}
+	}
+
+	setMonitorInherit(folder: WSFolder) {
+		this.manager.setMonitoringForFolder(folder, RECORDING.INHERIT);
+		new Notice(`Statistics recording set ON for folder: ${folder.path}`);
+	}
+
+	cmdSetMonitorInherit() {
+		if (this.focusFile instanceof WSFile) {
+			this.setMonitorInherit(this.focusFile.parent);
+		} else {
+			new Notice("No file has focus. Statistics recording not set.");
+		}
+	}
+
+	onFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
+		if (source !== "file-explorer-context-menu") return;
+		if (!file) return;
+		if (file instanceof TFolder) {
+			let ref = this.manager.folderMap.get(file.path);
+			if (!(ref instanceof WSFolder)) return;
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics Monitoring: On`)
+					.setIcon('monitor')
+					.setSection("word-stats")
+					.onClick(() => {
+						this.setMonitorOn(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics Monitoring: Off`)
+					.setIcon('monitor-off')
+					.setSection("word-stats")
+					.onClick(() => {
+						this.setMonitorOff(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics Monitoring: Inherit`)
+					.setIcon('network')
+					.setSection("word-stats")
+					.onClick(() => {
+						this.setMonitorInherit(ref);
+					});
+			});
 		}
 	}
 
