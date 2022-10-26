@@ -14,7 +14,8 @@
  - Added InputBox
  - Added context menu item for setting folder titles
  - BUGFIX: WordStatsManager.extendStats is run on WSFiles with no stats, resulting in an exception.
- 
+ - BUG: Title is not saved from new dialog.
+ - BUG: Minify database toggle does not seem to work. Need to attempt to reproduce on normal dev environment.
 
 ### 2022-10-25
  - Added context menu items to set word statistics recording state on folders, and commands to set it for the focused file's parent.
