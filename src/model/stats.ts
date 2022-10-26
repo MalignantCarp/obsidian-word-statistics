@@ -197,7 +197,7 @@ export class WordStatsManager {
 
     extendStats(newStats: WSFileStat[]) {
         for (let stat of newStats) {
-            // console.log(stat, "discard=", this.stats.contains(stat));
+            //console.log(stat, "discard=", this.stats.contains(stat));
             if (this.stats.contains(stat)) continue;
             this.stats.push(stat);
             let group: WSFileStat[] = this.map.get(stat.file) || [];

@@ -211,7 +211,7 @@ export class WSFileManager {
         fileRef.wordCount = newCount;
         fileRef.propagateWordCountChange(oldCount, newCount);
         this.plugin.lastFile = fileRef;
-        this.stats.extendStats([fileRef.last]);
+        if (fileRef.stats.length > 0) this.stats.extendStats([fileRef.last]);
         return fileRef;
     }
 
@@ -322,6 +322,7 @@ export class WSFileManager {
     async syncStats() {
         let startTime = Date.now();
         for (let file of this.fileMap.values()) {
+            // console.log(">>", file?.path, file?.stats);
             this.stats.extendStats(file.stats);
         }
         let endTime = Date.now();

@@ -8,8 +8,9 @@ import { ImportTree } from './model/import';
 import { RECORDING, WSFolder } from './model/folder';
 import { BuildRootJSON, StatisticDataToCSV } from './model/export';
 import { DateTime } from 'luxon';
-import StatusBar from './view/svelte/StatusBar.svelte';
-import { ProgressView, PROGRESS_VIEW } from './view/obsidian/ProgressView';
+import StatusBar from './ui/svelte/StatusBar.svelte';
+import { ProgressView, PROGRESS_VIEW } from './ui/obsidian/ProgressView';
+import { InputBox } from './ui/obsidian/InputBox';
 
 const DB_PATH = "database.json";
 
@@ -119,9 +120,9 @@ export default class WordStatisticsPlugin extends Plugin {
 			name: 'Set Statistics Recording State for Parent Folder to ON',
 			editorCheckCallback: (checking: boolean) => {
 				if (checking) {
-					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.ON
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.ON;
 				} else {
-					this.cmdSetMonitorOn()
+					this.cmdSetMonitorOn();
 				}
 			}
 		});
@@ -131,9 +132,9 @@ export default class WordStatisticsPlugin extends Plugin {
 			name: 'Set Statistics Recording State for Parent Folder to OFF',
 			editorCheckCallback: (checking: boolean) => {
 				if (checking) {
-					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.OFF
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.OFF;
 				} else {
-					this.cmdSetMonitorOff()
+					this.cmdSetMonitorOff();
 				}
 			}
 		});
@@ -143,9 +144,9 @@ export default class WordStatisticsPlugin extends Plugin {
 			name: 'Set Statistics Recording State for Parent Folder to INHERIT',
 			editorCheckCallback: (checking: boolean) => {
 				if (checking) {
-					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.INHERIT
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.INHERIT;
 				} else {
-					this.cmdSetMonitorInherit()
+					this.cmdSetMonitorInherit();
 				}
 			}
 		});
@@ -274,6 +275,27 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
+	setFolderTitle(folder: WSFolder) {
+		let modal = new InputBox(
+			this,
+			"Set Folder Title",
+			"Please provide a title for this folder to be displayed in all Word Statistics views.",
+			folder.getTitle,
+			(text: string) => {
+				if (text != folder.title) {
+					folder.title = text || "";
+					folder.triggerTitleSet(text || "");
+				}
+			});
+		modal.open();
+	}
+
+	clearFolderTitle(folder: WSFolder) {
+		if (folder.title === "") return;
+		folder.title = "";
+		folder.triggerTitleSet("");
+	}
+
 	onFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
 		if (source !== "file-explorer-context-menu") return;
 		if (!file) return;
@@ -305,6 +327,24 @@ export default class WordStatisticsPlugin extends Plugin {
 					.setSection("word-stats")
 					.onClick(() => {
 						this.setMonitorInherit(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics: Set Folder Title`)
+					.setIcon(`text-cursor-input`)
+					.setSection(`word-stats`)
+					.onClick(() => {
+						this.setFolderTitle(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics: Clear Folder Title`)
+					.setIcon(`text-cursor-input`)
+					.setSection(`word-stats`)
+					.onClick(() => {
+						this.clearFolderTitle(ref);
 					});
 			});
 		}
@@ -385,7 +425,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			let data = await adapter.read(loadPath);
 			// console.log(data);
 			return data;
-		}
+		};
 		return undefined;
 	}
 
