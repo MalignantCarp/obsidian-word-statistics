@@ -43,6 +43,7 @@ export class WSFileStat {
             // if this is the first time this file has been counted, whatever the new count is will be imported text
             // it wasn't written, it was pre-existing
             this.wordsImported = newCount;
+            this.endWords = newCount;
             return;
         }
         // if the oldCount on the file object itself doesn't match the previous endWords, then it has changed
@@ -151,10 +152,17 @@ export class WSFile {
     }
 
     canUseLastStat(updateTime: number) {
+        // console.log(this.path, updateTime, this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH,
+        //     updateTime - this.last.endTime,
+        //     updateTime - (this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH),
+        //     updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH,
+        //     updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout*1000,
+        //     this.plugin.lastFile === this);
+        // console.log(this.plugin.lastFile?.path);
         // We check this in updateStats already, so no need to have it here anymore.
         // if (this.stats.length === 0) return false;
         if (updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH) return false;
-        if (updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout) return false;
+        if (updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout*1000) return false;
         return this.plugin.lastFile === this;
     }
 
@@ -173,6 +181,7 @@ export class WSFile {
             // console.log("Updating writing time.")
             writingTime = updateTime - this.last.endTime;
         } else {
+            // console.log("Cannot use last stat. Creating new one.")
             this.newStat(updateTime, this.last.endWords);
         }
         // console.log("Updating stat.")

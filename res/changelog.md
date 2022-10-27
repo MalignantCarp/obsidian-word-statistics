@@ -10,12 +10,15 @@
 
 ## Changelog
 ### 2022-10-26
- - Re-added ConfirmationBox
- - Added InputBox
+ - Re-added ConfirmationBox.ts and SettingItem.svelte
+ - Added TextInputBox
  - Added context menu item for setting folder titles
+ - Added GoalModal chooser. Currently the goals are not saving.
+ - BUG: Changes to folder word goals are not saving.
  - BUGFIX: WordStatsManager.extendStats is run on WSFiles with no stats, resulting in an exception.
- - BUG: Title is not saved from new dialog.
- - BUG: Minify database toggle does not seem to work. Need to attempt to reproduce on normal dev environment.
+ - BUGFIX: Minify database toggle does not work on its own, as it does not force a re-save of the database.
+ - BUGFIX: UpdateStats was not updating the end words for first-time WSFileStats.
+ - BUGFIX: UpdateStats was incorrectly calculating writing timeout, resulting in a new stat for every update.
 
 ### 2022-10-25
  - Added context menu items to set word statistics recording state on folders, and commands to set it for the focused file's parent.

@@ -10,7 +10,8 @@ import { BuildRootJSON, StatisticDataToCSV } from './model/export';
 import { DateTime } from 'luxon';
 import StatusBar from './ui/svelte/StatusBar.svelte';
 import { ProgressView, PROGRESS_VIEW } from './ui/obsidian/ProgressView';
-import { InputBox } from './ui/obsidian/InputBox';
+import { TextInputBox } from './ui/obsidian/TextInputBox';
+import { GoalModal } from './ui/obsidian/GoalModal';
 
 const DB_PATH = "database.json";
 
@@ -276,17 +277,19 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	setFolderTitle(folder: WSFolder) {
-		let modal = new InputBox(
+		let modal = new TextInputBox(
 			this,
 			"Set Folder Title",
 			"Please provide a title for this folder to be displayed in all Word Statistics views.",
-			folder.getTitle,
+			folder.getTitle.bind(folder),
 			(text: string) => {
+				console.log(text, folder);
 				if (text != folder.title) {
 					folder.title = text || "";
 					folder.triggerTitleSet(text || "");
 				}
-			});
+			},
+			"Save");
 		modal.open();
 	}
 
@@ -294,6 +297,15 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (folder.title === "") return;
 		folder.title = "";
 		folder.triggerTitleSet("");
+	}
+
+	setFolderGoals(folder: WSFolder) {
+		let modal = new GoalModal(this, folder);
+		modal.open();
+	}
+
+	clearFolderGoal(folder: WSFolder) {
+		if (folder.wordGoal === 0) return;
 	}
 
 	onFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
@@ -341,10 +353,19 @@ export default class WordStatisticsPlugin extends Plugin {
 			menu.addItem((item) => {
 				item
 					.setTitle(`Word Statistics: Clear Folder Title`)
-					.setIcon(`text-cursor-input`)
+					.setIcon(`form-input`)
 					.setSection(`word-stats`)
 					.onClick(() => {
 						this.clearFolderTitle(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics: Manage Word Goals for Folder`)
+					.setIcon(`target`)
+					.setSection(`word-stats`)
+					.onClick(() => {
+						this.setFolderGoals(ref);
 					});
 			});
 		}
@@ -485,8 +506,8 @@ export default class WordStatisticsPlugin extends Plugin {
 			// await this.collector.scanVault();
 			// console.log("Complete.")
 			// We don't want to queue saving of data until it's all loaded.
-			this.events.on(WSEvents.Data.Folder, this.saveFiles.bind(this), { filter: null });
-			this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.Folder, this.saveStats.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.File, this.saveStats.bind(this), { filter: null });
 			this.events.on(WSEvents.File.WordsChanged, this.onFileWordCount.bind(this), { filter: null });
 			this.events.on(WSEvents.Folder.WordsChanged, this.onFolderWordCount.bind(this), { filter: null });
 
@@ -525,6 +546,11 @@ export default class WordStatisticsPlugin extends Plugin {
 	async saveWSData() {
 		// console.log("<WS>", Date.now());
 		this.saveStats();
+	}
+
+	async forceWSSave() {
+		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
+		this.saveFiles();
 	}
 
 	saveFiles() {

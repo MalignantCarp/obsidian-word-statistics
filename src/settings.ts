@@ -195,7 +195,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.database.fileMinify = value;
 					await this.plugin.saveSettings();
-					this.plugin.debounceSave();
+					await this.plugin.forceWSSave();
 				}));
 	}
 
@@ -238,7 +238,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Word Statistics Plugin.' });
+		containerEl.createEl('h2', { text: 'Word Statistics Plugin' });
 		containerEl.createEl('h3', { text: 'Project Index Settings' });
 
 		new Setting(containerEl)

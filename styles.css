@@ -222,7 +222,11 @@
 	filter: drop-shadow(0px 0px 6px var(--ws-icon-record-light));
 }
 
-/* */
+/* Word Goal Dialog */
+
+.ws-word-goals input[type=number]::-webkit-inner-spin-button {
+	-webkit-appearance: inner-spin-button;
+  }
 
 /*
 

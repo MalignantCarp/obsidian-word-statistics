@@ -1,11 +1,11 @@
 import { Modal, Setting, TextComponent } from 'obsidian';
 import type WordStatisticsPlugin from 'src/main';
 
-export class InputBox extends Modal {
+export class TextInputBox extends Modal {
     confirmation: boolean = false;
     entry: TextComponent;
 
-    constructor(public plugin: WordStatisticsPlugin, public name: string, public message: string, public loadHandler: Function, public saveHandler: Function, public label: string = "Continue") {
+    constructor(public plugin: WordStatisticsPlugin, public name: string, public message: string, public loadHandler: Function, public saveHandler: Function, public label: string = "Save") {
         super(plugin.app);
     }
 
@@ -40,7 +40,7 @@ export class InputBox extends Modal {
 
     onClose() {
         let { contentEl } = this;
-        contentEl.empty();
         this.saveHandler(this.entry.getValue());
+        contentEl.empty();
     }
 }

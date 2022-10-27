@@ -211,7 +211,7 @@ export class WSFileManager {
         fileRef.wordCount = newCount;
         fileRef.propagateWordCountChange(oldCount, newCount);
         this.plugin.lastFile = fileRef;
-        if (fileRef.stats.length > 0) this.stats.extendStats([fileRef.last]);
+        if (fileRef.parent.isRecording && fileRef.stats.length > 0) this.stats.extendStats([fileRef.last]);
         return fileRef;
     }
 
