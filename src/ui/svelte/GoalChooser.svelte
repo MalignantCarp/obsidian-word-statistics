@@ -15,7 +15,7 @@
 		wordGoalForFolders = folder.wordGoalForFolders;
 	});
 
-	export function getWordGoals() {
+	export function getWordGoals(): [number, number, number] {
 		return [wordGoal, wordGoalForFiles, wordGoalForFolders];
 	}
 

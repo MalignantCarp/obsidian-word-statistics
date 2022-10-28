@@ -533,23 +533,18 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	saveStats(event?: WSDataEvent) {
-		// console.log("saveStats()");
-		let update = Date.now();
-		// console.log(update, this.lastFile instanceof WSFile);
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
-		if (this.lastFile.last?.endTime < this.updateTime) return; // if there have been no updates since last update, return
-		// console.log("Saving data.")
-		this.updateTime = update;
 		this.saveFiles();
 	}
 
 	async saveWSData() {
 		// console.log("<WS>", Date.now());
-		this.saveStats();
-	}
-
-	async forceWSSave() {
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
+		let update = Date.now();
+		// console.log(update, this.lastFile instanceof WSFile);
+		if (this.lastFile.last?.endTime < this.updateTime) return; // if there have been no updates since last update, return
+		// console.log("Saving data.")
+		this.updateTime = update;
 		this.saveFiles();
 	}
 

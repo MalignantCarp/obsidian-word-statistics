@@ -1,7 +1,6 @@
 
 ## To-Do for first release
  - Finish WordStatsManager
- - Context menu entries for changing folder statistics info such as goals and titles and set things to record
  - Retrofit Debug View for new statistics system
  - Add new Calendar Day/Week/Month statistics.
  - Implement a visual indicator for when a folder is monitored for stats changes (recording dot?)
@@ -9,6 +8,14 @@
  - Purge unused files and dependencies.
 
 ## Changelog
+### 2022-10-27
+ - BUGFIX: Changes to folder word goals are not saving.
+ - BUGFIX: ProgressMain does no update word goals when they are modified.
+ - BUGFIX: ProgressMain does not add new folders to the listing when word goals are set.
+ - BUGFIX: Data events are not triggering a save when no stats have changed.
+ - BUG: (ProgressMain) When switching to another file that has as long a folder tree (or longer), those folders are not updated. Svelte reactivity seems to have an issue here because the array is the same or greater length. When the array has fewer items, it updates correctly.
+ - BUG: (ProgressMain) When renaming a folder, there is a name/title mismatch that occurs, and the title is not updated correctly. May also be an issue in ProgressFolder.
+
 ### 2022-10-26
  - Re-added ConfirmationBox.ts and SettingItem.svelte
  - Added TextInputBox

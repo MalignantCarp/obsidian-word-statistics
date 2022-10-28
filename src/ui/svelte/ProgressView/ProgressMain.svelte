@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type WordStatisticsPlugin from "src/main";
-	import { WSEvents, WSFocusEvent } from "src/model/events";
+	import { WSEvents, WSFocusEvent, WSFolderEvent } from "src/model/events";
 	import { WSFile } from "src/model/file";
-	import type { WSFolder } from "src/model/folder";
+	import { WSFolder } from "src/model/folder";
 	import { onDestroy, onMount } from "svelte";
 	import ProgressFile from "./ProgressFile.svelte";
 	import ProgressFolder from "./ProgressFolder.svelte";
@@ -18,24 +18,36 @@
 
 	onMount(() => {
 		plugin.events.on(WSEvents.Focus.File, onFocus, { filter: null });
+		plugin.events.on(WSEvents.Folder.GoalSet, updateFolders, { filter: null });
 	});
 
 	onDestroy(() => {
 		plugin.events.off(WSEvents.Focus.File, onFocus, { filter: null });
+		plugin.events.off(WSEvents.Folder.GoalSet, updateFolders, { filter: null });
 	});
 
 	function onFocus(event: WSFocusEvent) {
 		focus = event.info.file;
-		folderList = focus?.getGoalParents().reverse() || [];
 	}
-	
+
+	function updateFolders(event: WSFolderEvent) {
+		console.log(event.info.folder?.path, focus?.path, event.info.folder === focus.parent, event.info.folder.isAncestorOf(focus));
+		if (event.info.folder instanceof WSFolder && focus instanceof WSFile && (event.info.folder === focus.parent || event.info.folder.isAncestorOf(focus))) {
+			progress?.updateAll();
+			focus = focus;
+		}
+	}
+
 	$: if (focus instanceof WSFile) {
 		okay = true;
 	}
 
 	$: if (focus instanceof WSFile) {
+		folderList = focus.getGoalParents().reverse();
 		progress?.FocusFile(focus);
 		progress?.updateAll();
+	} else {
+		folderList = [];
 	}
 </script>
 

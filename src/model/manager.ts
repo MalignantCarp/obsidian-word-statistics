@@ -1,7 +1,7 @@
 import { type Vault, type MetadataCache, TFile, TAbstractFile, TFolder, parseFrontMatterEntry } from 'obsidian';
 import { WSFile } from './file';
 import type WordStatisticsPlugin from '../main';
-import { RECORDING, WSFolder } from './folder';
+import { GOAL, RECORDING, WSFolder } from './folder';
 import { WordCountForText } from 'src/words';
 import { WordStatsManager } from './stats';
 import { WSDataEvent, WSEvent, WSEvents } from './events';
@@ -36,6 +36,26 @@ export class WSFileManager {
 
     updateCache() {
         this.cache = this.plugin.app.metadataCache;
+    }
+
+    updateGoals(folder: WSFolder, wordGoal: number, wordGoalForFiles: number, wordGoalForFolders: number) {
+        let triggers: [GOAL, number][] = [];
+        if (wordGoal != folder.wordGoal) {
+            folder.wordGoal = wordGoal;
+            triggers.push([GOAL.SELF, wordGoal])
+        }
+        if (wordGoalForFiles != folder.wordGoalForFiles) {
+            folder.wordGoalForFiles = wordGoalForFiles;
+            triggers.push([GOAL.FILES, wordGoalForFiles]);
+        }
+        if (wordGoalForFolders != folder.wordGoalForFolders) {
+            folder.wordGoalForFolders = wordGoalForFolders;
+            triggers.push([GOAL.FOLDERS, wordGoalForFolders]);
+        }
+        if (triggers.length > 0) {
+            folder.triggerGoalSet(triggers);
+            this.triggerFolderUpdate(folder);
+        }
     }
 
     mapToFolder(folder: TFolder): WSFolder {
@@ -236,7 +256,7 @@ export class WSFileManager {
             fileRef.triggerWordsChanged(oldCount, newCount, updateTime, true);
         }
         this.plugin.lastFile = fileRef;
-        this.stats.extendStats([fileRef.last]);
+        if (fileRef.parent.isRecording && fileRef.stats.length > 0) this.stats.extendStats([fileRef.last]);
         return fileRef;
     }
 

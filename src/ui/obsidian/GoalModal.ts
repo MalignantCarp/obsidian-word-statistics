@@ -11,11 +11,7 @@ export class GoalModal extends Modal {
     }
 
     onSave(event?: MouseEvent) {
-        let [wordGoal, wordGoalForFiles, wordGoalForFolders] = this.panel.getWordGoals();
-        this.folder.wordGoal = wordGoal;
-        this.folder.wordGoalForFiles = wordGoalForFiles;
-        this.folder.wordGoalForFolders = wordGoalForFolders;
-        this.folder.triggerGoalSet(wordGoal);
+        this.plugin.manager.updateGoals(this.folder, ...this.panel.getWordGoals());
         this.close();
     }
 

@@ -9,6 +9,12 @@ export enum RECORDING {
     INHERIT = 2
 }
 
+export enum GOAL {
+    SELF = 0,
+    FILES = 1,
+    FOLDERS = 2
+}
+
 export class WSFolder {
     constructor(
         public plugin: WordStatisticsPlugin,
@@ -151,8 +157,8 @@ export class WSFolder {
         this.plugin.events.trigger(new WSFolderEvent({ type: WSEvents.Folder.TitleSet, folder: this, data: [title] }, { filter: this }));
     }
 
-    triggerGoalSet(goal: number) {
-        this.plugin.events.trigger(new WSFolderEvent({ type: WSEvents.Folder.GoalSet, folder: this, data: [goal] }, { filter: this }));
+    triggerGoalSet(goals: [GOAL, number][]) {
+        this.plugin.events.trigger(new WSFolderEvent({ type: WSEvents.Folder.GoalSet, folder: this, data: goals }, { filter: this }));
     }
 
     triggerCreated() {
@@ -167,16 +173,16 @@ export class WSFolder {
         this.plugin.events.trigger(new WSFolderEvent({ type: WSEvents.Folder.Renamed, folder: this, data: [oldName, newName] }, { filter: this }));
     }
 
-    isAncestor(relative: WSFolder): boolean {
+    isDescendentOf(relative: WSFolder): boolean {
         // if we are root, then instantly false
         if (!(this.parent instanceof WSFolder)) return false;
         // if relative is our parent, true
         if (relative === this.parent) return true;
         // if relative is not our parent, go higher
-        return this.parent.isAncestor(relative);
+        return this.parent.isDescendentOf(relative);
     }
 
-    isDescendent(relative: WSFile | WSFolder): boolean {
+    isAncestorOf(relative: WSFile | WSFolder): boolean {
         // if we have no children, we have no descendents
         if (this.childFolders.length === 0 && this.children.length === 0) return false;
         // if relative is a file and one of our children, return true
@@ -186,7 +192,7 @@ export class WSFolder {
         // recurse through child folders until true or out of children
         let descendent = false;
         for (let child of this.childFolders) {
-            if (!child.isDescendent(relative)) continue;
+            if (!child.isAncestorOf(relative)) continue;
             descendent = true;
             break;
         }
