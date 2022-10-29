@@ -42,18 +42,14 @@ When content is pasted on top of other content, only the difference in word coun
 
 ## Features
 - [x] Basic word counting
-- [ ] Custom status bar for word counts
+- [x] Custom status bar for word counts
 - [x] Word count statistics (see below for more information)
 - [ ] Statistics view
-- [ ] Per-project statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
-- [ ] Per-project word goals
-    - [ ] Macro (i.e., project word goal)
-    - [ ] Micro (i.e., individual note word goals, overridable on a per note basis)
-    - [ ] Progress indicators (status bar)
-- [ ] Word counts for highlighted words (I believe now with CM6 that these may be universal, but I have separated them out in case they are not)
-    - [ ] In Editor
-    - [ ] In Rendered View
-    - [ ] Legacy editor? (Maybe; since the legacy editor will eventually be removed, not sure there is a huge userbase for whom this would be a useful feature.)
+- [x] Per-folder word goals
+    - [x] Macro (i.e., folder word goal)
+    - [x] Micro (i.e., individual note word goals, overridable on a per note basis)
+    - [x] Progress indicators (status bar)
+- [ ] Per-folder statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
 
 ## Word Count Statistics
 ### Overview

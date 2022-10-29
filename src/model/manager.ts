@@ -42,7 +42,7 @@ export class WSFileManager {
         let triggers: [GOAL, number][] = [];
         if (wordGoal != folder.wordGoal) {
             folder.wordGoal = wordGoal;
-            triggers.push([GOAL.SELF, wordGoal])
+            triggers.push([GOAL.SELF, wordGoal]);
         }
         if (wordGoalForFiles != folder.wordGoalForFiles) {
             folder.wordGoalForFiles = wordGoalForFiles;
@@ -85,14 +85,15 @@ export class WSFileManager {
     }
 
     onRename(file: TAbstractFile, oldPath: string) {
+        // console.log(`WSFileManager.onRename(${file.path}, ${oldPath}): ${this.fileMap.has(file.path)}/${this.folderMap.has(file.path)}, ${this.fileMap.has(oldPath)}/${this.folderMap.has(oldPath)}`);
         if (file instanceof TFile) {
+            if (this.fileMap.has(file.path)) {
+                console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldPath, file.path);
+                throw Error("Cannot rename file reference as new file path already in use.");
+            }
             if (this.fileMap.has(oldPath)) {
                 let fi = this.fileMap.get(oldPath);
                 this.fileMap.delete(oldPath);
-                if (this.fileMap.has(file.path)) {
-                    console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldPath, file.path);
-                    throw Error("Cannot rename file reference as new file path already in use.");
-                }
                 this.fileMap.set(file.path, fi);
                 let oldName = fi.name;
                 fi.name = file.name;
@@ -106,13 +107,13 @@ export class WSFileManager {
                 console.log("!!! onRename('%s' to '%s'): Old file does not exist!", oldPath, file.path);
             }
         } else if (file instanceof TFolder) {
+            if (this.folderMap.has(file.path)) {
+                console.log("!!! onRename('%s' to '%s'): New folder path already exists!", oldPath, file.path);
+                throw Error("Cannot rename folder reference as new folder path already in use.");
+            }
             if (this.folderMap.has(oldPath)) {
                 let fo = this.folderMap.get(oldPath);
                 this.folderMap.delete(oldPath);
-                if (this.folderMap.has(file.path)) {
-                    console.log("!!! onRename('%s' to '%s'): New folder path already exists!", oldPath, file.path);
-                    throw Error("Cannot rename folder reference as new folder path already in use.");
-                }
                 this.folderMap.set(file.path, fo);
                 let oldName = fo.name;
                 fo.name = file.name;

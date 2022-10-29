@@ -40,21 +40,17 @@
 
 	$: if (focus instanceof WSFile) {
 		okay = true;
-	}
-
-	$: if (focus instanceof WSFile) {
-		folderList = focus.getGoalParents().reverse();
 		progress?.FocusFile(focus);
 		progress?.updateAll();
-	} else {
-		folderList = [];
 	}
+
+	$: folderList = focus instanceof WSFile ? focus.getGoalParents().reverse() : [];
 </script>
 
 <div class="ws-progress-view">
 	<h1>Word Goal Progress</h1>
 	{#if okay}
-		{#each folderList as folder}
+		{#each folderList as folder (folder.path)}
 			<ProgressFolder {plugin} {folder} />
 		{/each}
 		<ProgressFile {plugin} file={focus} bind:this={progress} />
