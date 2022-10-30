@@ -1,7 +1,7 @@
 # Caution
 __Please be aware that any modification of your files outside of Obsidian could break the database storage. Please ensure you regularly backup your data.__
 
-__This plugin is BETA software. Please ensure you regularly backup your data. Should you encounter any issues, please file a bug report or contact me in Discord for assistance.__
+__This plugin is BETA software. Please ensure you regularly backup your data. Should you encounter any issues, please file a bug report or contact me in Discord for assistance. This plugin has NOT been extensively tested. Please monitor your statistics for any discrepencies and report any you find.__
 
 # Obsidian Word Statistics
 
@@ -33,9 +33,7 @@ As far as I am aware, this only works with English as I have little experience w
 By all means, please log an issue with respect to your language, being sure to provide example text and the correct word counts and I will attempt to implement support. Please utilize both simple and complicated punctuation.
 
 ### Code blocks and embeds
-Short of determining an adequate means of pre-rendering the content, any YAML block content in code blocks for things such as admonitions and dataview is likely to be included, and the contents of embeds is likely to not be. The latter, however, may be possible by loading the content of the markdown file and running it through the script (and so on and so forth), while maintaining a list of included files to ensure they are not included twice (in the case of recursive embeds or where two embeds embed the same document).
-
-One caveat to note is that the word counts stored for a particular document will not include the embed. It will be for display purposes only, as the original file that is referenced will be the one storing its own word count.
+Short of determining an adequate means of pre-rendering the content, any YAML block content in code blocks for things such as admonitions and dataview will be included in the word count. Conversely, content of embeds will not be included.
 
 ### Pasting over copy
 When content is pasted on top of other content, only the difference in word counts is noticed by the system. I'm not sure if there is a way to detect that content was replaced in a paste event, so I caution against the use of paste to add to a document. Also note this would ideally be considered imported text, but that support is not yet implemented.
@@ -47,29 +45,37 @@ Careful of using undo/redo, as this will be counted as though you had simply don
 - [x] Basic word counting
 - [x] Custom status bar for word counts
 - [x] Word count statistics (see below for more information)
-- [ ] Statistics view
+- [x] Statistics view
 - [x] Per-folder word goals
     - [x] Macro (i.e., folder word goal)
     - [x] Micro (i.e., individual note word goals, overridable on a per note basis)
     - [x] Progress indicators (status bar)
-- [ ] Per-folder statistics tables via command (i.e., Markdown tables that could be included in daily notes to show progress on a particular project over time.)
 
 ## Word Count Statistics
 ### Overview
-Word Count Statistics can track words added and words deleted over time for all files, just project files, or just specific project files (tracked on the project level). It also tracks writing time (time spent writing) as configured under settings. Word count changes that occur outside of Obsidian will be recorded as words imported or exported.
+Word Count Statistics can track words added and words deleted over time for all files or files under monitored folders. It also tracks writing time (time spent writing) as configured under settings. Word count changes that occur outside of Obsidian will be recorded as words imported or exported.
 
 All times saved are saved in UTC to avoid time zone issues but will be viewed in local time.
 
 ### Configuration
  - Show Word Counts In File Explorer: If enabled, word counts will be displayed for the vault and each folder and file in the file explorer.
+ - Moving Target Mode: This will create a new word goal for you for your current file or folder if you do not set one.
  - Show Word Count Speed Messages: If enabled, the time taken to count words will be printed to the console (enable this if you experience slow-downs).
- - Minify Database: If enabled, the JSON file that contains file/folder/stats info will have all extraneous whitespace removed. If disabled, the JSON files will be easily readable (this is also useful for version control to decrease the size of diffs at a cost of additional file size).
+
+#### Status Bar Settings
+ - Show File Word Count: Shows the current file's word count in the status bar.
+ - Show Parent Word Count: Shows the current file's parent folder word count in the status bar.
+ - Show Vault Word Count: Shows the whole vault's word count in the status bar.
 
 #### Word Statistics Settings
- - Monitor: Choose if word count statistics are monitored for All (Markdown) Files just files in Monitored Folders. Note that previously-recorded stats will not be removed if you change options.
+ - Monitor: Choose if word count statistics are monitored for All (Markdown) Files or just files in Monitored Folders. Note that previously-recorded stats will not be removed if you change options. To monitor a folder, right click on it in the file explorer and set recording to ON.
  - Writing Timeout: This configures the window in which you will still be considered writing
  - Paranoia Mode: This configures whether or not CSV files are output (per Paranoia Interval) every so many minutes. Note that this will only fire once if there are no new statistics to output.
  - Paranoia Interval: This configures the interval of which CSV files of statistics are output (every 1 - 30 minutes).
+ - Minify Database: If enabled, the JSON file that contains file/folder/stats info will have all extraneous whitespace removed. If disabled, the JSON files will be easily readable (this is also useful for version control to decrease the size of diffs at a cost of additional file size).
+
+##### Recording Modes
+ - A folder can be set to record ON, OFF, and INHERIT. When ON, all files within the folder will be monitored for detail stats changes, as will the contents of any ancestor folders that are set to INHERIT. Any files within a folder explicitly set to OFF (or inheriting the off state from a parent) will not be recorded. You can see some of the recording lights in ProgressView, but should always be able to see the current file's recording state from the status bar.
 
 ### Tracked Statistics
  - Words Added: Any time the word count goes up, it counts as words added.
@@ -86,7 +92,7 @@ Writing time interacts with time periods. If you stop typing and later resume ty
 Stats are recorded on a per-file basis, so switching between files will effectively end your current time period at the moment it was last typed in and create a new period when you return to the file. This is to avoid counting time twice.
 
 ### WPM
-There are 4 WPM statistics:
+There are 4 WPM statistics (not all are displayed at this time):
  - WPM: Words per minute, which is equal to the number of net words (words added + words imported - words deleted - words exported) divided by duration.
  - WPMA: Words per minute (adjusted), which is equal to net words added divided by writing time (this is pretty close to typing speed unless you make a lot of brief stops during writing)
  - WAPM: Words added per minute, which is equal to words added divided by the duration.
@@ -95,6 +101,7 @@ There are 4 WPM statistics:
 ## Planned Features
 - [ ] Non-English language support - The main challenge with this feature is in coming up with some universal regex for counting words. Mine is potentially more robust than the internal word counting algorithm, but the internal one is supposedly multi-lingual, which mine is not. I will need test cases and breakdowns of what results are obtained and what results _should_ be obtained in order to make the necessary determinations for counting non-English words.
 - [ ] Clipboard fixes - A big challenge for the statistics is the handling of the clipboard and clipboard activities. If you paste in text, it will invalidate your WPM statistics, as you could potentially be adding hundreds or even thousands of words in a split-second. Words imported will eventually be used to record when things are pasted in. Determining just how to work that code-wise is proving to be a bit of a challenge, however.
+- [ ] Undo/Redo fixes - Similar to clipboard fixes, it would be nice to be able to prevent issues arising from use of undo-redo. The simplest thought on the matter may be to log individual changes to WSFile stats and if they are inverse, undo the change instead. But in the event a legitimate change is made that is the inverse of what was done, this would incorrectly alter the stats.
 
 ## Future Possibilities
 - [ ] Statistics graphs
@@ -102,7 +109,7 @@ There are 4 WPM statistics:
 - [ ] XP and Level system
 - [ ] Achievement system
 - [ ] Clipboard-related word count deferrals
-    - We may need to add words moved in and words moved out if it's possible to monitor clipboard-related activity that changes word counts. This would be ideal to ensure moved content does not count as words added or deleted, as it is simply being moved around. At the same time we need to track when words are cut because they are in fact deleted if they do not then get pasted back in.
+- [ ] Undo/redo event handling
 
 ## Installation
 ### Via GitHub

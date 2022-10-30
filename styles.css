@@ -1,9 +1,9 @@
 .theme-light {
 	--ws-icon-record-off: #444;
-	--ws-icon-record-on: #A22;
-	--ws-icon-record-light: #C22;
-	--ws-icon-record-inherit: #A72;
-	--ws-icon-record-inherit-light: #C92;
+	--ws-icon-record-on: #BB1E10;
+	--ws-icon-record-light: #f14f41;
+	--ws-icon-record-inherit: #F7B500;
+	--ws-icon-record-inherit-light: #f5cc5e;
 
 	--ws-progress-0: #611;
 	--ws-progress-1: #711;
@@ -21,10 +21,10 @@
 
 .theme-dark {
 	--ws-icon-record-off: #444;
-	--ws-icon-record-on: #A22;
-	--ws-icon-record-light: #C22;
-	--ws-icon-record-inherit: #A72;
-	--ws-icon-record-inherit-light: #C92;
+	--ws-icon-record-on: #BB1E10;
+	--ws-icon-record-light: #f14f41;
+	--ws-icon-record-inherit: #F7B500;
+	--ws-icon-record-inherit-light: #f5cc5e;
 
 	--ws-progress-0: #611;
 	--ws-progress-1: #711;

@@ -349,6 +349,10 @@ export class WSFileManager {
         for (let file of this.fileMap.values()) {
             // console.log(">>", file?.path, file?.stats);
             this.stats.extendStats(file.stats);
+            file.recalculateStats();
+        }
+        for (let file of this.fileMap.values()) {
+            if (file.parent?.isRecording) file.parent.recalculateStats();
         }
         let endTime = Date.now();
         console.log(`Synchronized stats for ${this.fileMap.size} file(s) in ${endTime - startTime}ms.`);

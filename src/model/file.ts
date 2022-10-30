@@ -2,6 +2,7 @@ import type WordStatisticsPlugin from "src/main";
 import { WSEvents, WSFileEvent } from "src/model/events";
 import type { WSFolder } from "src/model/folder";
 import { Settings } from "src/settings";
+import { StatsPropagate, WordStats } from "./stats";
 
 export class WSFileStat {
     constructor(
@@ -38,29 +39,51 @@ export class WSFileStat {
 
     updateStat(updateTime: number, oldCount: number, newCount: number, writingTime: number, first: boolean = false) {
         this.writingTime += writingTime;
+
+        let duration = updateTime - this.endTime;
         this.endTime = updateTime;
+
+        let endTime = updateTime;
+        let wordsImported = 0;
+        let wordsExported = 0;
+        let wordsAdded = 0;
+        let wordsDeleted = 0;
+        let endWords = newCount;
+
         if (first) {
             // if this is the first time this file has been counted, whatever the new count is will be imported text
             // it wasn't written, it was pre-existing
-            this.wordsImported = newCount;
-            this.endWords = newCount;
-            return;
+            wordsImported = newCount;
+        } else {
+            // if the oldCount on the file object itself doesn't match the previous endWords, then it has changed
+            // outside of Obsidian, so any content added or deleted is imported or exported prior to whatever
+            // the new count will be adding/deleting.
+            if (oldCount !== this.endWords) {
+                console.log("Words have been imported/exported.", oldCount, this.endWords, Math.max(oldCount - this.endWords, 0), Math.max(this.endWords - oldCount, 0));
+                wordsImported += Math.max(oldCount - this.endWords, 0);
+                wordsExported += Math.max(this.endWords - oldCount, 0);
+            }
+            wordsAdded += Math.max(newCount - oldCount, 0);
+            wordsDeleted += Math.max(oldCount - newCount, 0);
         }
-        // if the oldCount on the file object itself doesn't match the previous endWords, then it has changed
-        // outside of Obsidian, so any content added or deleted is imported or exported prior to whatever
-        // the new count will be adding/deleting.
-        if (oldCount !== this.endWords) {
-            console.log("Words have been imported/exported.", oldCount, this.endWords, Math.max(oldCount - this.endWords, 0), Math.max(this.endWords - oldCount, 0));
-            this.wordsImported += Math.max(oldCount - this.endWords, 0);
-            this.wordsExported += Math.max(this.endWords - oldCount, 0);
-        }
-        this.wordsAdded += Math.max(newCount - oldCount, 0);
-        this.wordsDeleted += Math.max(oldCount - newCount, 0);
-        this.endWords = newCount;
+        this.endTime = endTime;
+        this.wordsImported += wordsImported;
+        this.wordsExported += wordsExported;
+        this.wordsAdded += wordsAdded;
+        this.wordsDeleted += wordsDeleted;
+        this.endWords = endWords;
+
+        this.file.propagateEndTime(endTime);
+        if (duration > 0) this.file.propagateDuration(duration);
+        if (wordsAdded > 0) this.file.propagateWordsAdded(wordsAdded);
+        if (wordsDeleted > 0) this.file.propagateWordsDeleted(wordsDeleted);
+        if (wordsImported > 0) this.file.propagateWordsImported(wordsImported);
+        if (wordsExported > 0) this.file.propagateWordsExported(wordsExported);
+        if (writingTime > 0) this.file.propagateWritingTime(writingTime);
     }
 }
 
-export class WSFile {
+export class WSFile extends StatsPropagate{
     constructor(
         public plugin: WordStatisticsPlugin,
         public parent: WSFolder,
@@ -70,8 +93,20 @@ export class WSFile {
         public title: string = "",
         public wordCount: number = 0,
         public wordGoal: number = 0,
-        public stats: WSFileStat[] = []
+        public stats: WSFileStat[] = [],
+        public startTime: number = 0,
+        public endTime: number = 0,
+        public duration: number = 0,
+        public startWords: number = 0,
+        public endWords: number = 0,
+        public wordsAdded: number = 0,
+        public wordsDeleted: number = 0,
+        public wordsImported: number = 0,
+        public wordsExported: number = 0,
+        public netWords: number = 0,
+        public writingTime: number = 0
     ) {
+        super();
         if (parent !== null) {
             // console.log(`Adding WSFile(${path}) to parent: ${parent.path}`);
             this.parent.addChild(this);
@@ -81,6 +116,34 @@ export class WSFile {
     clear() {
         this.parent = null;
         this.stats = [];
+    }
+
+    recalculateStats() {
+        if (this.stats.length > 0) {
+            this.startTime = WordStats.GetStartTime(this.stats);
+            this.endTime = WordStats.GetEndTime(this.stats);
+            this.duration = WordStats.GetDuration(this.stats);
+            this.startWords = WordStats.GetStartWords(this.stats);
+            this.endWords = WordStats.GetEndWords(this.stats);
+            this.wordsAdded = WordStats.GetWordsAdded(this.stats);
+            this.wordsDeleted = WordStats.GetWordsDeleted(this.stats);
+            this.wordsImported = WordStats.GetWordsImported(this.stats);
+            this.wordsExported = WordStats.GetWordsExported(this.stats);
+            this.netWords = WordStats.GetNetWords(this.stats);
+            this.writingTime = WordStats.GetWritingTime(this.stats);
+        } else {
+            this.startTime = 0;
+            this.endTime = 0;
+            this.duration = 0;
+            this.startWords = 0;
+            this.endWords = 0;
+            this.wordsAdded = 0;
+            this.wordsDeleted = 0;
+            this.wordsImported = 0;
+            this.wordsExported = 0;
+            this.netWords = 0;
+            this.writingTime = 0;
+        }
     }
 
     getTitle(): string {
@@ -106,7 +169,7 @@ export class WSFile {
             ancestor = ancestor.parent;
         }
         let lastGoalIndex = -1;
-        for (let i = parents.length - 1; i >= 0; i --) {
+        for (let i = parents.length - 1; i >= 0; i--) {
             if (parents[i].getWordGoal() > 0) {
                 lastGoalIndex = i;
                 break;
@@ -189,7 +252,7 @@ export class WSFile {
             this.last.updateStat(updateTime, oldCount, oldCount, writingTime, true);
         } else if (this.canUseLastStat(updateTime)) {
             // console.log("Updating writing time.")
-            writingTime = updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout*1000 ? 0 : updateTime - this.last.endTime;
+            writingTime = updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout * 1000 ? 0 : updateTime - this.last.endTime;
         } else {
             // console.log("Cannot use last stat. Creating new one.", updateTime, this.last.endWords)
             this.newStat(updateTime, this.last.endWords);

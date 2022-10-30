@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { DateTime } from "luxon";
 	import type WordStatisticsPlugin from "src/main";
 	import {
 		WSEvents,
@@ -9,14 +8,14 @@
 	} from "src/model/events";
 	import { WSFile } from "src/model/file";
 	import { RECORDING, WSFolder } from "src/model/folder";
-	import { WordStats } from "src/model/stats";
+	import { StatsPropagate } from "src/model/stats";
 	import {
 		FormatNumber,
 		FormatWords,
 		MoveTheTarget,
-		SecondsToHMS,
 	} from "src/util";
 	import { onDestroy, onMount } from "svelte";
+	import CachedStatsDisplay from "../CachedStatsDisplay.svelte";
 	import ProgressBar from "./ProgressBar.svelte";
 
 	export let plugin: WordStatisticsPlugin;
@@ -37,28 +36,7 @@
 	let inherit = false;
 	let recording = false;
 
-	let startDate: DateTime;
-	let endDate: DateTime;
-
-	let updateTime: number = 0;
-	let updateFile: WSFile = null;
-
-	let duration: number;
-	let netWords: number;
-
-	let startWords: number;
-	let endWords: number;
-
-	let wordsAdded: number;
-	let wordsDeleted: number;
-	let wordsImported: number;
-	let wordsExported: number;
-	let writingTime: number;
-
-	let WPM: number;
-	let WPMA: number;
-	let WAPM: number;
-	let WAPMA: number;
+	let statsDisplay: CachedStatsDisplay;
 
 	onMount(() => {
 		events.on(WSEvents.File.WordsChanged, onCountUpdate, { filter: null });
@@ -134,29 +112,9 @@
 	$: if (
 		showStats &&
 		file instanceof WSFile &&
-		file.hasStats &&
-		(file.last.endTime > updateTime || file != updateFile)
+		file.hasStats
 	) {
-		startDate = DateTime.fromMillis(file.first.startTime);
-		endDate = DateTime.fromMillis(file.last.endTime);
-		startWords = file.last.startWords;
-		endWords = file.last.endWords;
-		duration = WordStats.GetDuration(file.stats);
-		netWords = WordStats.GetNetWords(file.stats);
-
-		wordsAdded = WordStats.GetWordsAdded(file.stats);
-		wordsDeleted = WordStats.GetWordsDeleted(file.stats);
-		wordsImported = WordStats.GetWordsImported(file.stats);
-		wordsExported = WordStats.GetWordsExported(file.stats);
-		writingTime = WordStats.GetWritingTime(file.stats);
-
-		WPM = Math.round(netWords / (duration / 60000));
-		WAPM = Math.round(wordsAdded / (duration / 60000));
-
-		WPMA = Math.round(netWords / (writingTime / 60000));
-		WAPMA = Math.round(wordsAdded / (writingTime / 60000));
-		updateTime = file.last.endTime;
-		updateFile = file;
+		statsDisplay?.Update(file);
 	}
 
 	export function updateAll() {
@@ -195,36 +153,7 @@
 	</h2>
 	<ProgressBar bind:this={progress} />
 	<div class="ws-progress-label">{label}</div>
-	<div class="ws-progress-stats">
-		{#if showStats && file instanceof WSFile && file.hasStats}
-			<div class="heading">Start Time</div>
-			<div class="value">
-				{startDate.toLocaleString(DateTime.DATETIME_SHORT)}
-			</div>
-			<div class="heading">End Time</div>
-			<div class="value">
-				{endDate.toLocaleString(DateTime.DATETIME_SHORT)}
-			</div>
-			<div class="heading">Start Words</div>
-			<div class="value">{FormatWords(startWords)}</div>
-			<div class="heading">End Words</div>
-			<div class="value">{FormatWords(endWords)}</div>
-			<div class="heading">Words Added</div>
-			<div class="value">{FormatWords(wordsAdded)}</div>
-			<div class="heading">Words Deleted</div>
-			<div class="value">{FormatWords(wordsDeleted)}</div>
-			<div class="heading">Words Imported</div>
-			<div class="value">{FormatWords(wordsImported)}</div>
-			<div class="heading">Words Exported</div>
-			<div class="value">{FormatWords(wordsExported)}</div>
-			<div class="heading">Duration</div>
-			<div class="value">{SecondsToHMS(duration / 1000)}</div>
-			<div class="heading">Writing Time</div>
-			<div class="value">{SecondsToHMS(writingTime / 1000)}</div>
-			<div class="heading">WPM</div>
-			<div class="value">{FormatWords(WPM)}</div>
-			<div class="heading">WAPM</div>
-			<div class="value">{FormatWords(WAPM)}</div>
-		{/if}
-	</div>
+	{#if showStats && file instanceof WSFile && file.hasStats}
+	<CachedStatsDisplay updateObject={file} bind:this={statsDisplay}/>
+	{/if}
 </div>

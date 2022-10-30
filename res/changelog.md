@@ -1,12 +1,20 @@
-
-## To-Do for first release
- - Finish WordStatsManager
+## To-Do for 1.0 release
  - Retrofit Debug View for new statistics system.
- - Retrofit ProgressView to be more compact and show basis start/end date and time/stats and word stats for the file/folder.
- - Add new Calendar Day/Week/Month statistics.
+ - Add stats view to folders in ProgressView
+ - Add calendar UI for stats display
+ - Create a project overview and reporting system for generating statistics reports.
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-10-30
+ - BUGFIX: WordStats namespace functions were returning sums for statistics that should be returned as individual values (e.g., StartTime, EndTime).
+ - BUGFIX: WordStats namespace functions were returning incorrect values for StartWords and EndWords. In the case of StartWords, the startWords should be the beginning word count from the first stat in the collection (sorted by startTime), while the EndWords needs to be the sum total of each individual WSFile's most recent stats object.
+ - Removed WordStats functions for certain periods, as those periods should be obtained before sending the array into the functions so that sorts and filters aren't being done multiple times. Added Sort() and SortForPeriod() functions.
+ - Added stat propagation to files and folders to keep total stats cached. Recalulation function is available on load and when files are moved.
+ - Moved stats display out of ProgressFile and ints CachedStatsDisplay so that it can be re-used in ProgressFolder. Made a slightly altered copy called DebugStatDisplay for the debug of individual WSFileStats for the debug view.
+ - Updated some Settings text that was out of date, along with many updates to README.md. Preparing for 0.0.1 pre-release.
+ - CSS adjustment for recording light colors.
+
 ### 2022-10-29
  - BUGFIX: Stats saving doesn't complete when no files have been changed on load. WordStatisticsPlugin.lastRef was not updated in updateFileWordCountOffline() because newCount was the same as oldCount. It is now saved before the return when word count hasn't changed.
  - BUGFIX: WSFile.getGoalParents() does not return parents that have a word goal but have not set file or folder word goals when there is a WSFolder in between that has no word goal resolution (e.g., Folder 1/Folder 2/Folder 3 if Folder 3 has a goal set, Folder 2 has no word goals set but Folder 1 has just its own word goal set, getGoalParents) would only return Folder 3 rather than the whole hierarchy.
@@ -292,8 +300,6 @@
  - BUGFIX: Path data from paths.json was not being loaded into existing path structure. Now paths are loaded first, before projects, so they can be populated as necessary from saved path data. Then projects are loaded and any remaining path structures built. (It might be worth just saving all paths at some point.)
  - BUGFIX: ProjectWordCount.svelte was not watching project or path events for GoalsSet, so was not updating when goals were set
 
-
-
 ### 2022-06-15
  - BUGFIX: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty
  - BUGFIX: Delete project doesn't reset the path buttons correct for the paths above it.
@@ -492,7 +498,6 @@
  - Broke UI up into ui folder for easier organization
  - Further work on Project Group manager. Lots of untested code.
  - Need to further refine and breakdown UI code to minimize duplicate code and maximize usefulness of components and helper routines.
-
 
 ### 2022-04-19
  - ProjectViewer and ProjectManager panels and modals appear to be fully functional. Next testing requires the viewer leaf so live changes can be seen.

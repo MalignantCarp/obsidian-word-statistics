@@ -4,180 +4,153 @@ import { Settings } from "src/settings";
 import type { WSFileStat, WSFile } from "./file";
 import type { WSFolder } from "./folder";
 
+export class StatsPropagate {
+    public startTime: number = 0;
+    public endTime: number = 0;
+    public duration: number = 0;
+    public startWords: number = 0;
+    public endWords: number = 0;
+    public wordsAdded: number = 0;
+    public wordsDeleted: number = 0;
+    public wordsImported: number = 0;
+    public wordsExported: number = 0;
+    public netWords: number = 0;
+    public writingTime: number = 0;
+    public parent: WSFolder;
+
+    propagateEndTime(endTime: number) {
+        this.endTime = Math.max(endTime, this.endTime);
+        if (this.parent?.isRecording) this.parent.propagateEndTime(endTime);
+    }
+
+    propagateDuration(duration: number) {
+        this.duration += duration;
+        if (this.parent?.isRecording) this.parent.propagateDuration(duration);
+    }
+
+    propagateWordsAdded(words: number) {
+        this.wordsAdded += words;
+        this.endWords += words;
+        if (this.parent?.isRecording) this.parent.propagateWordsAdded(words);
+    }
+
+    propagateWordsDeleted(words: number) {
+        this.wordsDeleted += words;
+        this.endWords -= words;
+        if (this.parent?.isRecording) this.parent.propagateWordsDeleted(words);
+    }
+
+    propagateWordsImported(words: number) {
+        this.wordsImported += words;
+        this.endWords += words;
+        if (this.parent?.isRecording) this.parent.propagateWordsImported(words);
+    }
+
+    propagateWordsExported(words: number) {
+        this.wordsExported += words;
+        this.endWords -= words;
+        if (this.parent?.isRecording) this.parent.propagateWordsExported(words);
+    }
+
+    propagateWritingTime(writingTime: number) {
+        this.writingTime += writingTime;
+        if (this.parent?.isRecording) this.parent.propagateWritingTime(writingTime);
+    }
+}
+
 export namespace WordStats {
-    export function getStartTime(stats: WSFileStat[]) {
-        return stats.reduce((start, stat) => { return Math.min(start, stat.startTime); }, Number.MAX_SAFE_INTEGER);
+    export function Sort(stats: WSFileStat[]) {
+        let group = stats.sort((a, b) => a.startTime - b.startTime);
+        return group;
     }
 
-    export function getStartTimeForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((start, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return Math.min(start, stat.startTime);
-            }
-            return start;
-        }, periodEnd);
+    export function SortForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
+        let group = stats.sort((a, b) => a.startTime - b.startTime).filter((stat) => { return stat.startTime >= periodStart && stat.endTime <= periodEnd; });
+        return group;
     }
 
+    export function GetStartTime(stats: WSFileStat[]) {
+        return stats.first().startTime;
+    }
+
+    /**
+     * @param stats - A collection of WSFileStat objects, presumably the collection of stats objects for all files within a folder, or all stats objects within a file.
+     * 
+     * @return The first startWords value that occurs within the collection of stats as sorted by startTime
+     */
     export function GetStartWords(stats: WSFileStat[]) {
-        return stats.reduce((start, stat) => { return Math.min(start, stat.startWords); }, Number.MAX_SAFE_INTEGER);
-    }
-
-    export function GetStartWordsForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((start, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return Math.min(start, stat.startWords);
-            }
-            return start;
-        }, Number.MAX_SAFE_INTEGER);
+        return stats.first().startWords;
     }
 
     export function GetEndTime(stats: WSFileStat[]) {
-        return stats.reduce((endTime, stat) => { return Math.max(endTime, stat.endTime); }, 0);
+        return stats.last().endTime;
     }
 
-    export function GetEndTimeForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((endTime, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return Math.min(endTime, stat.endTime);
+    /**
+     * @param stats - A collection of WSFileStat objects, presumably the collection of stats objects for all files within a folder, or all stats objects within a file.
+     * 
+     * @return The sum of all endWords for the latest occurance of each file housed within the collection.
+     */
+     export function GetEndWords(stats: WSFileStat[]) {
+        let files: WSFile[] = []
+        for (let stat of stats) {
+            if (!files.contains(stat.file)) {
+                files.push(stat.file);
             }
-            return endTime;
-        }, periodEnd);
-    }
-
-    export function GetEndWords(stats: WSFileStat[]) {
-        return stats.reduce((endWords, stat) => { return Math.max(endWords, stat.endWords); }, 0);
-    }
-
-    export function GetEndWordsForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((endWords, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return Math.min(endWords, stat.endWords);
+        }
+        let words = 0;
+        for (let i = stats.length - 1; i >= 0; i--) {
+            if (files.contains(stats[i].file)) {
+                words += stats[i].endWords;
+                files.remove(stats[i].file);
             }
-            return endWords;
-        }, Number.MAX_SAFE_INTEGER);
+            if (files.length === 0) break;
+        }
+        return words;
     }
 
     export function GetWordsAdded(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.wordsAdded; }, 0);
     }
 
-    export function GetWordsAddedForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.wordsAdded;
-            }
-            return total;
-        }, 0);
-    }
-
     export function GetWordsDeleted(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.wordsDeleted; }, 0);
-    }
-
-    export function GetWordsDeletedForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.wordsDeleted;
-            }
-            return total;
-        }, 0);
     }
 
     export function GetWordsImported(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.wordsImported; }, 0);
     }
 
-    export function GetWordsImportedForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.wordsImported;
-            }
-            return total;
-        }, 0);
-    }
-
     export function GetWordsExported(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.wordsExported; }, 0);
-    }
-
-    export function GetWordsExportedForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.wordsExported;
-            }
-            return total;
-        }, 0);
     }
 
     export function GetWritingTime(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.writingTime; }, 0);
     }
 
-    export function GetWritingTimeForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.writingTime;
-            }
-            return total;
-        }, 0);
-    }
-
     export function GetDuration(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.duration; }, 0);
-    }
-
-    export function GetDurationForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.duration;
-            }
-            return total;
-        }, 0);
     }
 
     export function GetNetWords(stats: WSFileStat[]) {
         return stats.reduce((total, stat) => { return total + stat.netWords; }, 0);
     }
 
-    export function GetNetWordsForPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return stats.reduce((total, stat) => {
-            if (stat.startTime >= periodStart && stat.endTime <= periodEnd) {
-                return total + stat.netWords;
-            }
-            return total;
-        }, 0);
-    }
-
     export function GetWPM(stats: WSFileStat[]) {
         return GetNetWords(stats) / (GetDuration(stats) / 60000);
-    }
-
-    export function GetWPMPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetNetWordsForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
     }
 
     export function GetWAPM(stats: WSFileStat[]) {
         return GetWordsAdded(stats) / (GetDuration(stats) / 60000);
     }
 
-    export function GetWAPMPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetWordsAddedForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
-    }
-
     export function GetWPMA(stats: WSFileStat[]) {
         return GetNetWords(stats) / (GetWritingTime(stats) / 60000);
     }
 
-    export function GetWPMAPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetNetWordsForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
-    }
-
     export function GetWAPMA(stats: WSFileStat[]) {
         return GetWordsAdded(stats) / (GetWritingTime(stats) / 60000);
-    }
-
-    export function GetWAPMAPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetWordsAddedForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
     }
 }
 
@@ -186,7 +159,7 @@ export class WordStatsManager {
         public plugin: WordStatisticsPlugin,
         public stats: WSFileStat[] = [],
         public map: Map<WSFile, WSFileStat[]> = new Map<WSFile, WSFileStat[]>(),
-    ){}
+    ) { }
 
     get first(): WSFileStat {
         return this.stats.first();
@@ -231,7 +204,7 @@ export class WordStatsManager {
     getStatsForFileForDate(file: WSFile, start: DateTime, end?: DateTime): WSFileStat[] {
         let stats = this.stats.filter((stat) => {
             return stat.file === file && stat.startTime >= start.toMillis() && stat.endTime <= (end?.toMillis() || start.toMillis() + Settings.Statistics.DAY_LENGTH);
-        })
+        });
         return stats;
     }
 
@@ -242,7 +215,7 @@ export class WordStatsManager {
         return stats;
     }
 
-    getStatsForFolderForDate(folder: WSFolder, start: DateTime, end?:DateTime): WSFileStat[] {
+    getStatsForFolderForDate(folder: WSFolder, start: DateTime, end?: DateTime): WSFileStat[] {
         let stats = this.stats.filter((stat) => {
             return folder.isAncestorOf(stat.file) && stat.startTime >= start.toMillis() && stat.endTime <= (end?.toMillis() || start.toMillis() + Settings.Statistics.DAY_LENGTH);
         });

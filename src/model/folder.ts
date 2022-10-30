@@ -2,6 +2,7 @@ import type WordStatisticsPlugin from "src/main";
 import { Settings } from "src/settings";
 import { WSEvents, WSFolderEvent } from "./events";
 import { WSFile } from "./file";
+import { StatsPropagate, WordStats } from "./stats";
 
 export enum RECORDING {
     OFF = 0,
@@ -15,7 +16,7 @@ export enum GOAL {
     FOLDERS = 2
 }
 
-export class WSFolder {
+export class WSFolder extends StatsPropagate {
     constructor(
         public plugin: WordStatisticsPlugin,
         public parent: WSFolder,
@@ -28,8 +29,20 @@ export class WSFolder {
         public wordGoal: number = 0,
         public recording: RECORDING = RECORDING.INHERIT,
         public childFolders: WSFolder[] = [],
-        public children: WSFile[] = []
+        public children: WSFile[] = [],
+        public startTime: number = 0,
+        public endTime: number = 0,
+        public duration: number = 0,
+        public startWords: number = 0,
+        public endWords: number = 0,
+        public wordsAdded: number = 0,
+        public wordsDeleted: number = 0,
+        public wordsImported: number = 0,
+        public wordsExported: number = 0,
+        public netWords: number = 0,
+        public writingTime: number = 0
     ) {
+        super();
         if (parent !== null) {
             // console.log(`Adding WSFolder(${path}) to parent: ${parent.path}`);
             this.parent.addChildFolder(this);
@@ -113,6 +126,36 @@ export class WSFolder {
         if (childFolder.parent === this) {
             childFolder.clear();
         }
+    }
+
+    recalculateStats() {
+        let stats = this.plugin.manager.stats.getStatsForFolder(this);
+        if (stats.length > 0) {
+            this.startTime = WordStats.GetStartTime(stats);
+            this.endTime = WordStats.GetEndTime(stats);
+            this.duration = WordStats.GetDuration(stats);
+            this.startWords = WordStats.GetStartWords(stats);
+            this.endWords = WordStats.GetEndWords(stats);
+            this.wordsAdded = WordStats.GetWordsAdded(stats);
+            this.wordsDeleted = WordStats.GetWordsDeleted(stats);
+            this.wordsImported = WordStats.GetWordsImported(stats);
+            this.wordsExported = WordStats.GetWordsExported(stats);
+            this.netWords = WordStats.GetNetWords(stats);
+            this.writingTime = WordStats.GetWritingTime(stats);
+        } else {
+            this.startTime = 0;
+            this.endTime = 0;
+            this.duration = 0;
+            this.startWords = 0;
+            this.endWords = 0;
+            this.wordsAdded = 0;
+            this.wordsDeleted = 0;
+            this.wordsImported = 0;
+            this.wordsExported = 0;
+            this.netWords = 0;
+            this.writingTime = 0;
+        }
+        if (this.parent?.isRecording) this.parent.recalculateStats();
     }
 
     getWordGoal() {

@@ -123,7 +123,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 		containerEl.createEl('h3', { text: "Statistics History Settings" });
 		new Setting(containerEl)
 			.setName("Monitor")
-			.setDesc(`Choose between monitoring word count changes for all files, only files in projects, or only files in projects with "Monitor Word Count" enabled.`)
+			.setDesc(`Choose between monitoring word count changes for all files or only in monitored folders (and subfolders). Please note that you can technically set a subfolder is NOT recorded, so be careful. You can monitor recording state from the Progress View, but only for folders with goals. You can always see the current file's recording state from the status bar.`)
 			.addDropdown(drop => drop
 				.addOption(Settings.Statistics.RECORD.ALL, Settings.Statistics.RECORD.ALL)
 				.addOption(Settings.Statistics.RECORD.MONITORED, Settings.Statistics.RECORD.MONITORED)
@@ -217,7 +217,6 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Word Statistics Plugin' });
-		containerEl.createEl('h3', { text: 'Project Index Settings' });
 
 		new Setting(containerEl)
 			.setName('Show Word Counts in File Explorer')
