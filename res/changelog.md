@@ -1,13 +1,20 @@
 
 ## To-Do for first release
  - Finish WordStatsManager
- - Add visual indicator for when a custom title is set on a folder or file (in ProgressView)
  - Retrofit Debug View for new statistics system.
  - Retrofit ProgressView to be more compact and show basis start/end date and time/stats and word stats for the file/folder.
  - Add new Calendar Day/Week/Month statistics.
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-10-29
+ - BUGFIX: Stats saving doesn't complete when no files have been changed on load. WordStatisticsPlugin.lastRef was not updated in updateFileWordCountOffline() because newCount was the same as oldCount. It is now saved before the return when word count hasn't changed.
+ - BUGFIX: WSFile.getGoalParents() does not return parents that have a word goal but have not set file or folder word goals when there is a WSFolder in between that has no word goal resolution (e.g., Folder 1/Folder 2/Folder 3 if Folder 3 has a goal set, Folder 2 has no word goals set but Folder 1 has just its own word goal set, getGoalParents) would only return Folder 3 rather than the whole hierarchy.
+ - BUGFIX: Adding a word to a file without a pre-existing stat object was showing that initial word as imported when it was not. New stat is now initialized and run with the old count and then the later update with the new count updates it appropriately. This eliminates a long-standing issue in previous version where if the first action recorded was deletion, it would show the initial count as 0. Now it shows the initial count and deletion of the words.
+ - Made ProgressView a bit more compact.
+ - Added a setting for moving the target when a goal doesn't exist. When a goal is unset and the option is unset, the progress bar is solid blue. When Moving Target Mode is enabled and no goal is set, the goal will be increased to the next 10% increment of the current count.
+ - Added statistics viewing information to ProgressFile (ProgressFolder is coming). Need to adjust positioning and sizing and then decided whether to leave certain stats out in favour of a different view to be created at a later date. This one is simple but detailed enough to work. ProgressFolder stats may show more basic stats, as I suspect it may get a little slow constantly reducing arrays of data every time there is a debounced change. Will need to cache stats information by sending data with the wordsChanged event so each folder can adjust its stats accordingly.
+
 ### 2022-10-28
  - BUGFIX: (ProgressMain) When switching to another file that has as long a folder tree (or longer), those folders are not updated. Svelte was not reactive because the array items were not properly keyed.
  - ProgressMain renaming bug was not a bug. A folder title was in place causing the presumed mismatch.

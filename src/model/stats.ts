@@ -2,6 +2,7 @@ import type { DateTime } from "luxon";
 import type WordStatisticsPlugin from "src/main";
 import { Settings } from "src/settings";
 import type { WSFileStat, WSFile } from "./file";
+import type { WSFolder } from "./folder";
 
 export namespace WordStats {
     export function getStartTime(stats: WSFileStat[]) {
@@ -148,35 +149,35 @@ export namespace WordStats {
     }
 
     export function GetWPM(stats: WSFileStat[]) {
-        return GetNetWords(stats) / GetDuration(stats);
+        return GetNetWords(stats) / (GetDuration(stats) / 60000);
     }
 
     export function GetWPMPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetNetWordsForPeriod(stats, periodStart, periodEnd) / GetDurationForPeriod(stats, periodStart, periodEnd);
+        return GetNetWordsForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
     }
 
     export function GetWAPM(stats: WSFileStat[]) {
-        return GetWordsAdded(stats) / GetDuration(stats);
+        return GetWordsAdded(stats) / (GetDuration(stats) / 60000);
     }
 
     export function GetWAPMPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetWordsAddedForPeriod(stats, periodStart, periodEnd) / GetDurationForPeriod(stats, periodStart, periodEnd);
+        return GetWordsAddedForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
     }
 
     export function GetWPMA(stats: WSFileStat[]) {
-        return GetNetWords(stats) / GetWritingTime(stats);
+        return GetNetWords(stats) / (GetWritingTime(stats) / 60000);
     }
 
     export function GetWPMAPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetNetWordsForPeriod(stats, periodStart, periodEnd) / GetWritingTimeForPeriod(stats, periodStart, periodEnd);
+        return GetNetWordsForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
     }
 
     export function GetWAPMA(stats: WSFileStat[]) {
-        return GetWordsAdded(stats) / GetWritingTime(stats);
+        return GetWordsAdded(stats) / (GetWritingTime(stats) / 60000);
     }
 
     export function GetWAPMAPeriod(stats: WSFileStat[], periodStart: number, periodEnd: number) {
-        return GetWordsAddedForPeriod(stats, periodStart, periodEnd) / GetWritingTimeForPeriod(stats, periodStart, periodEnd);
+        return GetWordsAddedForPeriod(stats, periodStart, periodEnd) / (GetWritingTimeForPeriod(stats, periodStart, periodEnd) / 60000);
     }
 }
 
@@ -233,4 +234,19 @@ export class WordStatsManager {
         })
         return stats;
     }
+
+    getStatsForFolder(folder: WSFolder): WSFileStat[] {
+        let stats = this.stats.filter((stat) => {
+            return folder.isAncestorOf(stat.file);
+        });
+        return stats;
+    }
+
+    getStatsForFolderForDate(folder: WSFolder, start: DateTime, end?:DateTime): WSFileStat[] {
+        let stats = this.stats.filter((stat) => {
+            return folder.isAncestorOf(stat.file) && stat.startTime >= start.toMillis() && stat.endTime <= (end?.toMillis() || start.toMillis() + Settings.Statistics.DAY_LENGTH);
+        });
+        return stats;
+    }
+
 }

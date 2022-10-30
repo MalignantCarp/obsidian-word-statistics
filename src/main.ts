@@ -65,7 +65,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 		this.debounceSave = debounce(
 			() => {
-				this.saveWSData();
+				this.statsChangedSave();
 			},
 			2000,
 			true
@@ -506,8 +506,8 @@ export default class WordStatisticsPlugin extends Plugin {
 			// await this.collector.scanVault();
 			// console.log("Complete.")
 			// We don't want to queue saving of data until it's all loaded.
-			this.events.on(WSEvents.Data.Folder, this.saveStats.bind(this), { filter: null });
-			this.events.on(WSEvents.Data.File, this.saveStats.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.Folder, this.databaseChangedSave.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.File, this.databaseChangedSave.bind(this), { filter: null });
 			this.events.on(WSEvents.File.WordsChanged, this.onFileWordCount.bind(this), { filter: null });
 			this.events.on(WSEvents.Folder.WordsChanged, this.onFolderWordCount.bind(this), { filter: null });
 
@@ -515,12 +515,11 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
 			this.registerInterval(window.setInterval(this.paranoiaHandler.bind(this), 1000)); // run every 1 second
-			this.registerInterval(window.setInterval(this.saveStats.bind(this), 250));
 			// this.initializeProjectManagementLeaf();
 			// this.initializeStatisticsLeaf();
 		}
 		if (this.noFileData) {
-			this.saveStats();
+			this.databaseChangedSave();
 		}
 		this.updateFocusedFile();
 		let fe = this.app.workspace.getLeavesOfType("file-explorer");
@@ -532,12 +531,15 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.updateFileExplorer();
 	}
 
-	saveStats(event?: WSDataEvent) {
+	databaseChangedSave(event?: WSDataEvent) {
+		// console.log("Received WSDataEvent");
+		// console.log(this.lastFile);
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
+		// console.log("Saving stats");
 		this.saveFiles();
 	}
 
-	async saveWSData() {
+	async statsChangedSave() {
 		// console.log("<WS>", Date.now());
 		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
 		let update = Date.now();

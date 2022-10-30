@@ -16,6 +16,7 @@
 	--ws-progress-8: #9a6;
 	--ws-progress-9: #8a6;
 	--ws-progress-10: #6b6;
+	--ws-progress-i: #66c;
 }
 
 .theme-dark {
@@ -36,6 +37,7 @@
 	--ws-progress-8: #9a6;
 	--ws-progress-9: #8a6;
 	--ws-progress-10: #6b6;
+	--ws-progress-i: #66c;
 }
 
 /* File Explorer */
@@ -111,7 +113,7 @@
 /* Progress Bar Widget */
 
 .ws-progress {
-	height: 30px;
+	height: 24px;
 	padding: 4px;
 	position: relative;
 	background: rgba(0, 0, 0, 0.25);
@@ -124,7 +126,7 @@
 	position: absolute;
 	border-radius: 4px;
 	background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
-	transition: 0.4s linear;
+	transition: 0.2s linear;
 	transition-property: width, background-color;
 	box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
 	height: calc(100% - 8px);
@@ -134,10 +136,9 @@
 	z-index: 2;
 	position: absolute;
 	width: calc(100% - 8px);
-	height: calc(100% - 8px);
+	height: calc(100% - 4px);
 	text-align: center;
-	line-height: 1.6;
-	font-size: small;
+	font-size: 0.8rem;
 	margin: auto;
 	color: white;
 	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
@@ -187,7 +188,38 @@
 	background-color: var(--ws-progress-10);
 }
 
+.ws-progress-bar[data-progress="-1"] {
+	background-color: var(--ws-progress-i);
+}
+
 /* Progress View */
+
+.ws-progress-view h1 {
+	font-size: var(--h2-size);
+	text-align: center;
+}
+
+.ws-progress-view h2 {
+	margin-block-start: 0.5em;
+	margin-block-end: 0.5em;
+	font-size: var(--h3-size);
+}
+
+.ws-progress-view h3 {
+	font-size: var(--h4-size);
+}
+
+.ws-progress-view h4 {
+	font-size: var(--h5-size);
+}
+
+.ws-progress-view h5 {
+	font-size: var(--h6-size);
+}
+
+.ws-progress-view h6 {
+	font-size: var(--h6-size);
+}
 
 .ws-progress-folder-name {
 	opacity: 0.8;
@@ -197,6 +229,8 @@
 	width: 100%;
 	text-align: center;
 	margin: auto;
+	margin-top: 0.25rem;
+	font-size: 0.9rem;
 }
 
 .ws-progress-file .record,
@@ -220,6 +254,18 @@
 .ws-progress-folder .record.recording {
 	background-color: var(--ws-icon-record-on);
 	filter: drop-shadow(0px 0px 6px var(--ws-icon-record-light));
+}
+
+.ws-progress-stats {
+	margin-top: 0.5rem;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
+	font-size: 0.8rem;
+}
+
+.ws-progress-stats .heading {
+	font-weight: bold;
 }
 
 /* Word Goal Dialog */

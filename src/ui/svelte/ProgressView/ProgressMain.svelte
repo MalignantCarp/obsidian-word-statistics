@@ -31,7 +31,7 @@
 	}
 
 	function updateFolders(event: WSFolderEvent) {
-		console.log(event.info.folder?.path, focus?.path, event.info.folder === focus.parent, event.info.folder.isAncestorOf(focus));
+		// console.log(event.info.folder?.path, focus?.path, event.info.folder === focus.parent, event.info.folder.isAncestorOf(focus));
 		if (event.info.folder instanceof WSFolder && focus instanceof WSFile && (event.info.folder === focus.parent || event.info.folder.isAncestorOf(focus))) {
 			progress?.updateAll();
 			focus = focus;

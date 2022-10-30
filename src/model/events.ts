@@ -54,6 +54,7 @@ export namespace WSEvents {
     export namespace Setting {
         export const Recording = "ws-event-settings-recording";
         export const StatusBar = "ws-event-settings-statusbar";
+        export const MovingTarget = "ws-event-settings-moving-goal";
     }
 
     export namespace File {
@@ -81,7 +82,7 @@ export type WSDataEventType = typeof WSEvents.Data.File | typeof WSEvents.Data.F
 export type WSFocusEventType = typeof WSEvents.Focus.File;
 export type WSFileEventType = typeof WSEvents.File.Created | typeof WSEvents.File.Renamed | typeof WSEvents.File.Deleted | typeof WSEvents.File.WordsChanged | typeof WSEvents.File.GoalSet | typeof WSEvents.File.TitleSet;
 export type WSFolderEventType = typeof WSEvents.Folder.Created | typeof WSEvents.Folder.Renamed | typeof WSEvents.Folder.Deleted | typeof WSEvents.Folder.WordsChanged  | typeof WSEvents.Folder.GoalSet | typeof WSEvents.Folder.TitleSet | typeof WSEvents.Folder.RecordingSet;
-export type WSSettingEventType = typeof WSEvents.Setting.Recording | typeof WSEvents.Setting.StatusBar;
+export type WSSettingEventType = typeof WSEvents.Setting.Recording | typeof WSEvents.Setting.StatusBar | typeof WSEvents.Setting.MovingTarget;
 
 interface WSEventInfo {
     type: WSEventType;

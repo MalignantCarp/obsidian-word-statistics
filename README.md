@@ -40,6 +40,9 @@ One caveat to note is that the word counts stored for a particular document will
 ### Pasting over copy
 When content is pasted on top of other content, only the difference in word counts is noticed by the system. I'm not sure if there is a way to detect that content was replaced in a paste event, so I caution against the use of paste to add to a document. Also note this would ideally be considered imported text, but that support is not yet implemented.
 
+### Undo/Redo
+Careful of using undo/redo, as this will be counted as though you had simply done whatever change you are making. This could include adding a swath of text if you just deleted it, etc.
+
 ## Features
 - [x] Basic word counting
 - [x] Custom status bar for word counts
@@ -75,14 +78,12 @@ All times saved are saved in UTC to avoid time zone issues but will be viewed in
  - Words Imported: Any time the word count goes up outside of Obsidian, it is considered imported.
  - Words Exported: Any time the word count goes down outside of Obsidian, it is considered exported.
 
-Note that if Obsidian when a file is changed in an external editor and a change is made within Obsidian to that file within the 15 minute time period, it will show up as words added/deleted instead of imported/exported.
-
 ### Time Periods
 Time periods are 15 minutes long at most and are calculcated to end at exactly the :00, :15, :30, and :45 minute mark of each hour UTC. This was chosen due to time zones that have 30 or 45 minute adjustments from UTC to ensure that there are no overlap across days.
 
 Writing time interacts with time periods. If you stop typing and later resume typing before the writing timeout has expired and the time period has not yet ended, your writing time will be adjusted as though you had not stopped writing. If the time period has ended, writing time will not be adjusted and will instead begin anew in the new time period.
 
-Stats are recorded on a per-file basis, so switching between files will effectively end your current time period at the moment it was last typed in and create a new period when you return to the file. This is to avoid time counting twice.
+Stats are recorded on a per-file basis, so switching between files will effectively end your current time period at the moment it was last typed in and create a new period when you return to the file. This is to avoid counting time twice.
 
 ### WPM
 There are 4 WPM statistics:

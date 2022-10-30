@@ -3,11 +3,12 @@
     let style: string = "";
     let label: string = "";
 
-    export function SetProgress(prog: number) {
-        label = prog >= 0 ? prog.toFixed(2) + "%" : "";
+    export function SetProgress(prog: number, throbber: boolean) {
+        label = prog >= 0 && !throbber ? prog.toFixed(2) + "%" : "";
         prog = Math.max(0, prog);
         prog = Math.min(100, prog);
-        progressData = (prog/10).toFixed(0);
+        progressData = !throbber ? (prog/10).toFixed(0) : "-1";
+        if (throbber) prog = 100;
         style = "width: calc(" + (prog*0.98).toFixed(0) + "% - var(--padding-fix));";
     }
 

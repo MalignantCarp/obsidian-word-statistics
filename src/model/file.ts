@@ -101,11 +101,18 @@ export class WSFile {
     getGoalParents() {
         let ancestor = this.parent;
         let parents: WSFolder[] = [];
-        while (ancestor !== null && ancestor.getWordGoal() !== 0) {
+        while (ancestor !== null) {
             parents.push(ancestor);
             ancestor = ancestor.parent;
         }
-        return parents;
+        let lastGoalIndex = -1;
+        for (let i = parents.length - 1; i >= 0; i --) {
+            if (parents[i].getWordGoal() > 0) {
+                lastGoalIndex = i;
+                break;
+            }
+        }
+        return lastGoalIndex > 0 ? parents.slice(0, lastGoalIndex + 1) : [];
     }
 
     propagateWordCountChange(oldCount: number, newCount: number) {
@@ -145,6 +152,10 @@ export class WSFile {
         return this.stats.first();
     }
 
+    get hasStats() {
+        return this.stats.length > 0;
+    }
+
     newStat(startTime: number, startWords: number) {
         let stat = new WSFileStat(this, startTime, startWords);
         this.stats.push(stat);
@@ -162,7 +173,7 @@ export class WSFile {
         // We check this in updateStats already, so no need to have it here anymore.
         // if (this.stats.length === 0) return false;
         if (updateTime > this.last.startTime - (this.last.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH) return false;
-        if (updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout*1000) return false;
+        // if (updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout*1000) return false;
         return this.plugin.lastFile === this;
     }
 
@@ -171,21 +182,20 @@ export class WSFile {
         if (!this.parent.isRecording) return;
         // console.log("Okay to record stat.")
         let writingTime = 0;
-        let first = false;
         if (this.stats.length === 0) {
             // console.log("This will be the first stat.")
             // this will be the first WSFileStat for this file.
             this.newStat(updateTime, 0);
-            first = true;
+            this.last.updateStat(updateTime, oldCount, oldCount, writingTime, true);
         } else if (this.canUseLastStat(updateTime)) {
             // console.log("Updating writing time.")
-            writingTime = updateTime - this.last.endTime;
+            writingTime = updateTime - this.last.endTime > this.plugin.settings.statistics.writingTimeout*1000 ? 0 : updateTime - this.last.endTime;
         } else {
-            // console.log("Cannot use last stat. Creating new one.")
+            // console.log("Cannot use last stat. Creating new one.", updateTime, this.last.endWords)
             this.newStat(updateTime, this.last.endWords);
         }
         // console.log("Updating stat.")
-        this.last.updateStat(updateTime, oldCount, newCount, writingTime, first);
+        this.last.updateStat(updateTime, oldCount, newCount, writingTime);
     }
 
 }

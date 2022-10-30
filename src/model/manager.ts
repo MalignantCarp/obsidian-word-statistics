@@ -39,6 +39,7 @@ export class WSFileManager {
     }
 
     updateGoals(folder: WSFolder, wordGoal: number, wordGoalForFiles: number, wordGoalForFolders: number) {
+        console.log("updatedGoals()");
         let triggers: [GOAL, number][] = [];
         if (wordGoal != folder.wordGoal) {
             folder.wordGoal = wordGoal;
@@ -217,13 +218,15 @@ export class WSFileManager {
         // this is an offline change, such as one done when first reading in the file on load
         // first, we don't do anything if we can't resolve this file
         let fileRef = this.getFile(file);
-        // console.log(`updateFileWordCountOffline(${file.path}) = ${fr instanceof WSFile}`)
+        // console.log(`updateFileWordCountOffline(${file.path}) = ${fileRef instanceof WSFile}`);
         if (!(fileRef instanceof WSFile)) return null;
         let startTime = Date.now();
         let newCount = WordCountForText(await this.vault.cachedRead(file));
         let endTime = Date.now();
         this.plugin.logSpeed(newCount, startTime, endTime);
         let oldCount = fileRef.wordCount;
+        // console.log('lastFile set');
+        this.plugin.lastFile = fileRef;
         // do nothing else if the counts are unchanged
         if (newCount === oldCount) return null;
         // if there are offline changes, import/export text will show up
@@ -231,7 +234,6 @@ export class WSFileManager {
         fileRef.updateStats(updateTime, oldCount, newCount);
         fileRef.wordCount = newCount;
         fileRef.propagateWordCountChange(oldCount, newCount);
-        this.plugin.lastFile = fileRef;
         if (fileRef.parent.isRecording && fileRef.stats.length > 0) this.stats.extendStats([fileRef.last]);
         return fileRef;
     }
@@ -239,6 +241,7 @@ export class WSFileManager {
     async updateFileWordCountOnline(file: TFile, newText: string) {
         // this is a live change; somebody is either typing or just loaded this file
         let fileRef = this.getFile(file);
+        // console.log(`updateFileWordCountOnline(${file.path}) = ${fileRef instanceof WSFile}`);
         if (!(fileRef instanceof WSFile)) return null;
         let startTime = Date.now();
         let newCount = WordCountForText(newText);
@@ -248,6 +251,8 @@ export class WSFileManager {
         let updateTime = Date.now();
         fileRef.updateStats(updateTime, oldCount, newCount);
         fileRef.wordCount = newCount;
+        // console.log('lastFile set');
+        this.plugin.lastFile = fileRef;
         if (oldCount === newCount) {
             // if the word count hasn't changed, the stats info has so send an update for the UI to update stats as may be applicable
             fileRef.triggerWordsChanged(oldCount, newCount, updateTime);
@@ -256,7 +261,6 @@ export class WSFileManager {
             fileRef.propagateWordCountChange(oldCount, newCount);
             fileRef.triggerWordsChanged(oldCount, newCount, updateTime, true);
         }
-        this.plugin.lastFile = fileRef;
         if (fileRef.parent.isRecording && fileRef.stats.length > 0) this.stats.extendStats([fileRef.last]);
         return fileRef;
     }

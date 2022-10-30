@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type WordStatisticsPlugin from "./main";
-import { WSEvents, WSSettingEvent } from "./model/events";
+import { WSEvents, WSFolderEvent, WSSettingEvent } from "./model/events";
 
 export namespace Settings {
 	export namespace Statistics {
@@ -45,11 +45,13 @@ export namespace Settings {
 		}
 
 		export interface Structure {
+			movingTarget: boolean,
 			showWordCountsInFileExplorer: boolean,
 			statistics: StatisticsPanel.Structure;
 		}
 
 		export const DEFAULT: Structure = {
+			movingTarget: true,
 			showWordCountsInFileExplorer: true,
 			statistics: StatisticsPanel.DEFAULT
 		};
@@ -64,28 +66,6 @@ export namespace Settings {
 		export const DEFAULT: Structure = {
 			showWordCountSpeed: false,
 		}
-	}
-
-	export namespace Table {
-		export interface Structure {
-			showNumericIndex: boolean,
-			alphaSortForced: boolean,
-			alphaSortDisplayName: boolean,
-			showFileGoalProgress: boolean,
-			showProjectGoalProgress: boolean,
-			showPathGoalProgress: boolean,
-			showFileShare: boolean;
-		};
-
-		export const DEFAULT: Structure = {
-			showNumericIndex: true,
-			alphaSortForced: false,
-			alphaSortDisplayName: false,
-			showFileGoalProgress: true,
-			showProjectGoalProgress: true,
-			showPathGoalProgress: true,
-			showFileShare: true
-		};
 	}
 
 	export namespace Database {
@@ -114,7 +94,6 @@ export namespace Settings {
 
 	export namespace Plugin {
 		export interface Structure {
-			table: Settings.Table.Structure,
 			view: Settings.View.Structure,
 			database: Settings.Database.Structure,
 			statistics: Settings.Statistics.Structure,
@@ -123,7 +102,6 @@ export namespace Settings {
 		};
 
 		export const DEFAULT: Structure = {
-			table: Settings.Table.DEFAULT,
 			view: Settings.View.DEFAULT,
 			database: Settings.Database.DEFAULT,
 			statistics: Settings.Statistics.DEFAULT,
@@ -195,7 +173,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.database.fileMinify = value;
 					await this.plugin.saveSettings();
-					await this.plugin.forceWSSave();
+					await this.plugin.databaseChangedSave();
 				}));
 	}
 
@@ -249,6 +227,17 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.view.showWordCountsInFileExplorer = value;
 					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Moving Target Mode')
+			.setDesc('When enabled and there is no word goal set for a file or folder, Progress Bars will have one calculated based on the current word count.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.view.movingTarget)
+				.onChange(async (value) => {
+					this.plugin.settings.view.movingTarget = value;
+					await this.plugin.saveSettings();
+					this.plugin.events.trigger(new WSSettingEvent({type: WSEvents.Setting.MovingTarget}, {filter: null}));
 				}));
 
 		new Setting(containerEl)
