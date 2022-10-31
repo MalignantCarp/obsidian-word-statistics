@@ -256,7 +256,9 @@
 	filter: drop-shadow(0px 0px 6px var(--ws-icon-record-light));
 }
 
-.ws-progress-stats {
+.ws-progress-stats,
+.ws-debug-stats,
+.ws-day-stats {
 	margin-top: 0.5rem;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -264,18 +266,43 @@
 	font-size: 0.8rem;
 }
 
-.ws-progress-stats .heading {
+.ws-progress-stats .heading,
+.ws-debug-stats .heading,
+.ws-day-stats .heading {
 	font-weight: bold;
+}
+
+.ws-progress-stats .value,
+.ws-debug-stats .value,
+.ws-day-stats .value {
+	text-align: right;
 }
 
 /* Word Goal Dialog */
 
 .ws-word-goals input[type=number]::-webkit-inner-spin-button {
 	-webkit-appearance: inner-spin-button;
-  }
+}
+
+
+/* Debug Stats View */
+
+.ws-debug-buttons {
+	display: grid;
+	grid-template-columns: auto auto;
+}
+
+.ws-debug-buttons button:disabled {
+	opacity: 50%;
+	pointer-events: none;
+}
+
+.ws-stat-button {
+	margin: auto;
+}
+
 
 /*
-
 
 LIGHT THEME
 

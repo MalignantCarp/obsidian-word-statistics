@@ -1,5 +1,4 @@
 ## To-Do for 1.0 release
- - Retrofit Debug View for new statistics system.
  - Add stats view to folders in ProgressView
  - Add calendar UI for stats display
  - Create a project overview and reporting system for generating statistics reports.
@@ -10,10 +9,11 @@
  - BUGFIX: WordStats namespace functions were returning sums for statistics that should be returned as individual values (e.g., StartTime, EndTime).
  - BUGFIX: WordStats namespace functions were returning incorrect values for StartWords and EndWords. In the case of StartWords, the startWords should be the beginning word count from the first stat in the collection (sorted by startTime), while the EndWords needs to be the sum total of each individual WSFile's most recent stats object.
  - Removed WordStats functions for certain periods, as those periods should be obtained before sending the array into the functions so that sorts and filters aren't being done multiple times. Added Sort() and SortForPeriod() functions.
- - Added stat propagation to files and folders to keep total stats cached. Recalulation function is available on load and when files are moved.
+ - Added stat propagation to files and folders to keep total stats cached. Recalulation function is available on load and when files are moved/renamed and deleted.
  - Moved stats display out of ProgressFile and ints CachedStatsDisplay so that it can be re-used in ProgressFolder. Made a slightly altered copy called DebugStatDisplay for the debug of individual WSFileStats for the debug view.
  - Updated some Settings text that was out of date, along with many updates to README.md. Preparing for 0.0.1 pre-release.
  - CSS adjustment for recording light colors.
+ - Reimplemented Debug View and Day Stats Views.
 
 ### 2022-10-29
  - BUGFIX: Stats saving doesn't complete when no files have been changed on load. WordStatisticsPlugin.lastRef was not updated in updateFileWordCountOffline() because newCount was the same as oldCount. It is now saved before the return when word count hasn't changed.

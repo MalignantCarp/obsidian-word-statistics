@@ -12,6 +12,7 @@ import StatusBar from './ui/svelte/StatusBar.svelte';
 import { ProgressView, PROGRESS_VIEW } from './ui/obsidian/ProgressView';
 import { TextInputBox } from './ui/obsidian/TextInputBox';
 import { GoalModal } from './ui/obsidian/GoalModal';
+import { StatisticsView, STATISTICS_VIEW } from './ui/obsidian/StatisticsView';
 
 const DB_PATH = "database.json";
 
@@ -96,9 +97,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 	return new ProjectManagementView(leaf, this);
 		// });
 
-		// this.registerView(STATISTICS_VIEW.type, (leaf) => {
-		// 	return new StatisticsView(leaf, this);
-		// });
+		this.registerView(STATISTICS_VIEW.type, (leaf) => {
+			return new StatisticsView(leaf, this);
+		});
 
 		this.registerView(PROGRESS_VIEW.type, (leaf) => {
 			return new ProgressView(leaf, this);
@@ -164,17 +165,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		// 	}
 		// });
 
-		// this.addCommand({
-		// 	id: 'attach-statistics-view',
-		// 	name: 'Attach Statistics View',
-		// 	editorCheckCallback: (checking: boolean) => {
-		// 		if (checking) {
-		// 			return this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length === 0;
-		// 		} else {
-		// 			this.initializeStatisticsLeaf();
-		// 		}
-		// 	}
-		// });
+		this.addCommand({
+			id: 'attach-statistics-view',
+			name: 'Attach Statistics View',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length === 0;
+				} else {
+					this.initializeStatisticsLeaf();
+				}
+			}
+		});
 
 		this.addCommand({
 			id: 'attach-progress-view',
@@ -203,8 +204,8 @@ export default class WordStatisticsPlugin extends Plugin {
 		if (this.app.workspace.layoutReady) {
 			this.onStartup();
 			// this.initializeProjectManagementLeaf();
-			// this.initializeStatisticsLeaf();
-			// this.initializeProgressLeaf();
+			this.initializeStatisticsLeaf();
+			this.initializeProgressLeaf();
 		} else {
 			this.app.workspace.onLayoutReady(this.onStartup.bind(this));
 		}
@@ -373,8 +374,8 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	onunload() {
 		// this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
-		// this.app.workspace.detachLeavesOfType(STATISTICS_VIEW.type);
-		// this.app.workspace.detachLeavesOfType(PROGRESS_VIEW.type);
+		this.app.workspace.detachLeavesOfType(STATISTICS_VIEW.type);
+		this.app.workspace.detachLeavesOfType(PROGRESS_VIEW.type);
 		// this.collector.manager.cleanup();
 		this.manager.cleanup();
 		console.log("Obsidian Word Statistics unloaded.");
@@ -395,14 +396,14 @@ export default class WordStatisticsPlugin extends Plugin {
 	// 	});
 	// }
 
-	// initializeStatisticsLeaf() {
-	// 	if (this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length > 0) {
-	// 		return;
-	// 	}
-	// 	this.app.workspace.getRightLeaf(false).setViewState({
-	// 		type: STATISTICS_VIEW.type
-	// 	});
-	// }
+	initializeStatisticsLeaf() {
+		if (this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length > 0) {
+			return;
+		}
+		this.app.workspace.getRightLeaf(false).setViewState({
+			type: STATISTICS_VIEW.type
+		});
+	}
 
 	initializeProgressLeaf() {
 		if (this.app.workspace.getLeavesOfType(PROGRESS_VIEW.type).length > 0) {
@@ -516,7 +517,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
 			this.registerInterval(window.setInterval(this.paranoiaHandler.bind(this), 1000)); // run every 1 second
 			// this.initializeProjectManagementLeaf();
-			// this.initializeStatisticsLeaf();
+			this.initializeStatisticsLeaf();
 		}
 		if (this.noFileData) {
 			this.databaseChangedSave();

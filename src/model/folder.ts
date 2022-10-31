@@ -83,7 +83,7 @@ export class WSFolder extends StatsPropagate {
         return files;
     }
 
-    moveChildFrom(child: WSFile) {
+    moveChildHere(child: WSFile) {
         let from = child.parent;
         from?.children.remove(child);
         this.addChild(child);
@@ -94,7 +94,7 @@ export class WSFolder extends StatsPropagate {
         this.children.sort((a, b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true }));
     }
 
-    moveFolderFrom(childFolder: WSFolder) {
+    moveFolderHere(childFolder: WSFolder) {
         let from = childFolder.parent;
         from?.childFolders.remove(childFolder);
         this.addChildFolder(childFolder);

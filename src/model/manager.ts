@@ -100,8 +100,13 @@ export class WSFileManager {
                 fi.name = file.name;
                 fi.basename = file.basename;
                 fi.path = file.path;
-                let parent = this.mapToFolder(file.parent);
-                parent.moveChildFrom(fi);
+                let destination = this.mapToFolder(file.parent);
+                let source = fi.parent;
+                if (source != destination) {
+                    destination.moveChildHere(fi);
+                    source.recalculateStats();
+                    destination.recalculateStats();
+                }
                 fi.triggerRenamed(oldName, fi.name);
                 this.triggerFileUpdate(fi);
             } else {
@@ -119,8 +124,13 @@ export class WSFileManager {
                 let oldName = fo.name;
                 fo.name = file.name;
                 fo.path = file.path;
-                let parent = this.mapToFolder(file);
-                parent.moveFolderFrom(fo);
+                let destination = this.mapToFolder(file.parent);
+                let source = fo.parent;
+                if (source != destination) {
+                    destination.moveFolderHere(fo);
+                    source.recalculateStats();
+                    destination.recalculateStats();
+                }
                 fo.triggerRenamed(oldName, fo.name);
                 this.triggerFolderUpdate(fo);
             } else {
@@ -135,7 +145,9 @@ export class WSFileManager {
             if (this.fileMap.has(file.path)) {
                 let fi = this.fileMap.get(file.path);
                 this.fileMap.delete(file.path);
+                let parent = fi.parent;
                 fi.parent.deleteChild(fi);
+                parent.recalculateStats();
                 this.triggerFileUpdate(fi);
             } else {
                 console.log("!!! onDelete('%s'): File does not exist. Nothing to delete.", file.path);
@@ -144,7 +156,9 @@ export class WSFileManager {
             if (this.folderMap.has(file.path)) {
                 let fo = this.folderMap.get(file.path);
                 this.folderMap.delete(file.path);
+                let parent = fo.parent;
                 fo.parent.deleteChildFolder(fo);
+                parent.recalculateStats();
                 this.triggerFolderUpdate(fo);
             } else {
                 console.log("!!! onDelete('%s'): Folder does not exist. Nothing to delete.", file.path);

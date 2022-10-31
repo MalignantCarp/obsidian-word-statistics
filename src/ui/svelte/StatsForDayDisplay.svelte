@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { DateTime } from "luxon";
-	import { WSFileStat } from "src/model/file";
+	import type { WSFileStat } from "src/model/file";
+	import { WordStats } from "src/model/stats";
 	import { FormatWords, SecondsToHMS } from "src/util";
 	import { onMount } from "svelte";
 
-	export let updateObject: WSFileStat;
+	export let stats: WSFileStat[];
 
 	let okay = false;
 
@@ -29,23 +30,23 @@
 	let WAPMA: number;
 
 	onMount(() => {
-		Update(updateObject);
+		Update(stats);
 	});
 
-	export function Update(object: WSFileStat) {
-		updateObject = object;
-		startDate = DateTime.fromMillis(object.startTime);
-		endDate = DateTime.fromMillis(object.endTime);
-		startWords = object.startWords;
-		endWords = object.endWords;
-		duration = object.duration;
-		netWords = object.netWords;
+	export function Update(newStats: WSFileStat[]) {
+        stats = newStats;
+		startDate = DateTime.fromMillis(WordStats.GetStartTime(stats));
+		endDate = DateTime.fromMillis(WordStats.GetEndTime(stats));
+		startWords = WordStats.GetStartWords(stats);
+		endWords = WordStats.GetEndWords(stats);
+		duration = WordStats.GetDuration(stats);
+		netWords = WordStats.GetNetWords(stats);
 
-		wordsAdded = object.wordsAdded;
-		wordsDeleted = object.wordsDeleted;
-		wordsImported = object.wordsImported;
-		wordsExported = object.wordsExported;
-		writingTime = object.writingTime;
+		wordsAdded = WordStats.GetWordsAdded(stats);
+		wordsDeleted = WordStats.GetWordsDeleted(stats);
+		wordsImported = WordStats.GetWordsImported(stats);
+		wordsExported = WordStats.GetWordsExported(stats);
+		writingTime = WordStats.GetWritingTime(stats);
 
 		WPM = Math.round(netWords / (duration / 60000));
 		WAPM = Math.round(wordsAdded / (duration / 60000));
@@ -55,11 +56,11 @@
 	}
 
 	$: okay =
-		updateObject instanceof WSFileStat && startDate instanceof DateTime && updateObject.startTime > 0;
+		stats.length > 0 && startDate instanceof DateTime;
 </script>
 
 {#if okay}
-	<div class="ws-debug-stats">
+	<div class="ws-day-stats">
 		<div class="heading">Start Time</div>
 		<div class="value">
 			{startDate?.toLocaleString(DateTime.DATETIME_SHORT)}
