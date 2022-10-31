@@ -1,8 +1,18 @@
 import type { DateTime } from "luxon";
 
 export const GetDateStart = (day: DateTime): DateTime => {
-    return day.set({hour: 0, minute: 0, second: 0, millisecond: 0})
-}
+    return day.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+};
+
+export const MoveTheTarget = (target: number): number => {
+    let digits = Math.max(2, Math.ceil(Math.log10(target + 1)));
+    let base = Math.pow(10, digits - 1);
+    let top = Math.trunc(target / base);
+    let additional = top < 4 ? base / 2 : base;
+    let remainder = target % additional;
+    let onGoal = remainder === 0;
+    return Math.max(10, onGoal ? target : target - remainder + additional);
+};
 
 export const FormatWords = (words: number): string => {
     return Intl.NumberFormat().format(words) + " " + (words == 1 ? "word" : "words");
@@ -14,11 +24,11 @@ export const FormatNumber = (words: number): string => {
 
 export const RightWordForNumber = (num: number, singular: string, plural: string, padLeft: boolean = true) => {
     return (padLeft ? " " : "") + (num == 1 ? singular : plural);
-}
+};
 
 export const SecondsToHMS = (seconds: number) => {
     return new Date(seconds * 1000).toISOString().slice(11, 19);
-}
+};
 
 export const GetProgressGrade = (percent: number): string => {
     if (percent < 25) return "1"; // 0-24

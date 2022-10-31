@@ -1,26 +1,28 @@
 <script lang="ts">
+	import type WordStatisticsPlugin from "src/main";
 	import {
 		WSEvents,
 		WSFileEvent,
-		WSPathEvent,
-		WSProjectEvent,
-	} from "src/model/event";
+		WSFolderEvent,
+		WSSettingEvent,
+	} from "src/model/events";
 	import { WSFile } from "src/model/file";
-	import type { WSProjectManager } from "src/model/manager";
-	import { WSPath } from "src/model/path";
-	import { WSProject } from "src/model/project";
-	import { FormatNumber, FormatWords } from "src/util";
+	import { RECORDING, WSFolder } from "src/model/folder";
+	import { StatsPropagate } from "src/model/stats";
+	import {
+		FormatNumber,
+		FormatWords,
+		MoveTheTarget,
+	} from "src/util";
 	import { onDestroy, onMount } from "svelte";
-	import ProgressBar from "../util/ProgressBar.svelte";
+	import CachedStatsDisplay from "../CachedStatsDisplay.svelte";
+	import ProgressBar from "./ProgressBar.svelte";
 
-	export let manager: WSProjectManager;
-	export let events = manager.plugin.events;
-
+	export let plugin: WordStatisticsPlugin;
 	export let file: WSFile;
+	export let showStats: boolean = true;
 
-	let project: WSProject;
-	let projects: WSProject[] = [];
-	let path: WSPath;
+	let events = plugin.events;
 
 	let progress: ProgressBar;
 	let goal: number;
@@ -31,76 +33,58 @@
 
 	let label: string = "";
 
+	let inherit = false;
+	let recording = false;
+
+	let statsDisplay: CachedStatsDisplay;
+
 	onMount(() => {
 		events.on(WSEvents.File.WordsChanged, onCountUpdate, { filter: null });
 		events.on(WSEvents.File.Deleted, onFileDeleted, { filter: null });
-		events.on(WSEvents.File.GoalsSet, onFileUpdate, { filter: null });
+		events.on(WSEvents.File.GoalSet, onFileUpdate, { filter: null });
 		events.on(WSEvents.File.Renamed, onFileUpdate, { filter: null });
-		events.on(WSEvents.Project.Created, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.Deleted, onProjectDeleted, { filter: null });
-		events.on(WSEvents.Project.GoalsSet, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.IndexSet, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.PathSet, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.Renamed, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.TitleSet, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.Updated, onProjectUpdate, { filter: null });
-		events.on(WSEvents.Project.CategorySet, onProjectUpdate, {
+		events.on(WSEvents.Folder.GoalSet, onFolderUpdate, { filter: null });
+		events.on(WSEvents.Setting.Recording, onSettingUpdate, {
 			filter: null,
 		});
-		events.on(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, {
+		events.on(WSEvents.Setting.MovingTarget, onSettingUpdate, {
 			filter: null,
 		});
-		events.on(WSEvents.Path.Cleared, onPathUpdate, { filter: null });
-		events.on(WSEvents.Path.Created, onPathUpdate, { filter: null });
-		events.on(WSEvents.Path.Deleted, onPathUpdate, { filter: null });
-		events.on(WSEvents.Path.GoalsSet, onPathUpdate, { filter: null });
-		events.on(WSEvents.Path.Set, onPathUpdate, { filter: null });
-		events.on(WSEvents.Path.Titled, onPathUpdate, { filter: null });
-		events.on(WSEvents.Path.Updated, onPathUpdate, { filter: null });
+		events.on(WSEvents.Folder.RecordingSet, onFolderUpdate, {
+			filter: null,
+		});
+		updateAll();
 	});
 
 	onDestroy(() => {
 		events.off(WSEvents.File.WordsChanged, onCountUpdate, { filter: null });
 		events.off(WSEvents.File.Deleted, onFileDeleted, { filter: null });
-		events.off(WSEvents.File.GoalsSet, onFileUpdate, { filter: null });
+		events.off(WSEvents.File.GoalSet, onFileUpdate, { filter: null });
 		events.off(WSEvents.File.Renamed, onFileUpdate, { filter: null });
-		events.off(WSEvents.Project.Created, onProjectUpdate, { filter: null });
-		events.off(WSEvents.Project.Deleted, onProjectDeleted, {
+		events.off(WSEvents.Folder.GoalSet, onFolderUpdate, { filter: null });
+		events.off(WSEvents.Setting.Recording, onSettingUpdate, {
 			filter: null,
 		});
-		events.off(WSEvents.Project.GoalsSet, onProjectUpdate, {
+		events.off(WSEvents.Setting.MovingTarget, onSettingUpdate, {
 			filter: null,
 		});
-		events.off(WSEvents.Project.IndexSet, onProjectUpdate, {
+		events.off(WSEvents.Folder.RecordingSet, onFolderUpdate, {
 			filter: null,
 		});
-		events.off(WSEvents.Project.PathSet, onProjectUpdate, { filter: null });
-		events.off(WSEvents.Project.Renamed, onProjectUpdate, { filter: null });
-		events.off(WSEvents.Project.TitleSet, onProjectUpdate, {
-			filter: null,
-		});
-		events.off(WSEvents.Project.Updated, onProjectUpdate, { filter: null });
-		events.off(WSEvents.Project.CategorySet, onProjectUpdate, {
-			filter: null,
-		});
-		events.off(WSEvents.Project.FilesUpdated, onProjectFilesUpdate, {
-			filter: null,
-		});
-		events.off(WSEvents.Path.Cleared, onPathUpdate, { filter: null });
-		events.off(WSEvents.Path.Created, onPathUpdate, { filter: null });
-		events.off(WSEvents.Path.Deleted, onPathUpdate, { filter: null });
-		events.off(WSEvents.Path.GoalsSet, onPathUpdate, { filter: null });
-		events.off(WSEvents.Path.Set, onPathUpdate, { filter: null });
-		events.off(WSEvents.Path.Titled, onPathUpdate, { filter: null });
-		events.off(WSEvents.Path.Updated, onPathUpdate, { filter: null });
 	});
 
 	export function FocusFile(newFile: WSFile) {
 		file = newFile;
+		updateAll();
+	}
+
+	function onSettingUpdate(event: WSSettingEvent) {
+		updateAll();
 	}
 
 	function onCountUpdate(event: WSFileEvent) {
 		if (event.info.file !== file) return;
+		file = file;
 		updateAll();
 	}
 
@@ -111,66 +95,47 @@
 		updateAll();
 	}
 
-	function onProjectDeleted(event: WSProjectEvent) {
-		if (event.info.project === project) {
-			project = null;
-		}
-		if (projects.contains(event.info.project)) {
-			projects.remove(event.info.project);
-		}
-		updateAll();
-	}
-
 	function onFileUpdate(event: WSFileEvent) {
+		// console.log(Date.now(), event);
 		if (event.info.file !== file) return;
 		file = event.info.file;
-	}
-
-	function onProjectUpdate(event: WSProjectEvent) {
-		if (!(event.info.project instanceof WSProject)) return;
-		if (event.info.project !== project) return;
-		project = event.info.project;
 		updateAll();
 	}
 
-	function onProjectFilesUpdate(event: WSProjectEvent) {
-		if (!(event.info.project instanceof WSProject)) return;
-		if (!event.info.project.files.contains(file)) return;
-		updateProject();
+	function onFolderUpdate(event: WSFolderEvent) {
+		if (!(event.info.folder instanceof WSFolder)) return;
+		if (event.info.folder !== file.parent) return;
+		file = file;
 		updateAll();
 	}
 
-	export function updateProject() {
-		projects = manager.getProjectsByFile(file);
-		if (projects.length === 1) {
-			project = projects[0];
-		} else {
-			project = null;
-		}
-	}
-
-	function onPathUpdate(event: WSPathEvent) {
-		if (event.info.path! instanceof WSPath) return;
-		if (event.info.path === path) {
-			path = event.info.path;
-			return;
-		}
+	$: if (
+		showStats &&
+		file instanceof WSFile &&
+		file.hasStats
+	) {
+		statsDisplay?.Update(file);
 	}
 
 	export function updateAll() {
 		let g: number;
 		if (file instanceof WSFile) {
-			count = file.words;
-			g = manager.getWordGoalForFileByContext(file, project);
-			if (g === undefined) {
-				goal = Math.ceil(count / 10) * 10;
+			count = file.wordCount;
+			g = file.getWordGoal();
+			if (g === 0 && plugin.settings.view.movingTarget) {
+				goal = MoveTheTarget(count);
 			} else {
 				goal = g;
 			}
 			goalText = FormatWords(goal);
 			countText = goal > 0 ? FormatNumber(count) : FormatWords(count);
 			label = goal > 0 ? countText + " / " + goalText : countText;
-			progress?.SetProgress(goal > 0 ? (count / goal) * 100 : 0);
+			progress?.SetProgress(
+				goal > 0 ? (count / goal) * 100 : 0,
+				goal === 0
+			);
+			inherit = file?.parent.recording === RECORDING.INHERIT;
+			recording = file?.parent.isRecording;
 		} else {
 			countText = "";
 			label = "";
@@ -179,7 +144,16 @@
 </script>
 
 <div class="ws-progress-file">
-	<h4>{file.title}</h4>
+	<h2>
+		<span
+			class="record"
+			class:recording={recording && !inherit}
+			class:inherit={recording && inherit}
+		/>{file?.getTitle()}
+	</h2>
 	<ProgressBar bind:this={progress} />
 	<div class="ws-progress-label">{label}</div>
+	{#if showStats && file instanceof WSFile && file.hasStats}
+	<CachedStatsDisplay updateObject={file} bind:this={statsDisplay}/>
+	{/if}
 </div>

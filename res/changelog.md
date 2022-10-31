@@ -1,24 +1,94 @@
-## Bugs
- - BUG: In Project Editor (and likely other modals), both ValidatedInput and SuggestBox error message styling moves the element within the flex box. May need to use a different layout style so it doesn't move around. May need some CSS help.
- - BUG: (potential need for consideration) If a file's word count changes outside of Obsidian but no change is made within Obsidian that triggers an update, the new word count is recorded in the files.json file but there is no corresponding update to the word stats database. It may be good to have a check for when those change and then just log an entry with 0 duration with the update at the local midnight of the day the word count change occurs. That way it would only cause timing issues if the person were to do an update within the first 15 minutes of the day.
- - BUG: In TimePeriod.svelte, sometimes the Files list is not properly updated or the display is not updated. The displayed files list was empty, but it should not have been. (not yet reproduced)
- - BUG: WordsImported and WordsExported are incorrectly triggered on occasion by the first change made to a new file.
- - BUG: Ending words is not being set correctly for time period.
- - BUG: Changing project path is no longer successful. Throws an exception in getAncestors().
- - BUG: When workspace changes and removes the project and statistics views, the editorCheckCallback seems to report that the view exists so the option to attach it no longer exists.
- - STYLE ISSUE: Way too much whitespace between lines in the tree view for project listing.
- - STYLE ISSUE: Way too much whitespace in the status bar counters. Probably want to remove the progress bars and get the ProgressView complete so that the counters can balance with the other elements.
-
-### Maybe fixed
- - BUG: Changing project path makes project disappear from project view.
- - BUG: Updating the file index for a project does not appear to update the word count
-
-## To-Do for first release
- - StatisticsView: Week/Month/Quarter/Year/Year+ modes - This will replicate the information in Today mode but for the larger time period.
+## To-Do for 1.0 release
+ - Add stats view to folders in ProgressView
+ - Add calendar UI for stats display
+ - Create a project overview and reporting system for generating statistics reports.
  - Cleanup any outstanding bugs.
- - Add settings for display of date and time formats
 
 ## Changelog
+### 2022-10-30
+ - BUGFIX: WordStats namespace functions were returning sums for statistics that should be returned as individual values (e.g., StartTime, EndTime).
+ - BUGFIX: WordStats namespace functions were returning incorrect values for StartWords and EndWords. In the case of StartWords, the startWords should be the beginning word count from the first stat in the collection (sorted by startTime), while the EndWords needs to be the sum total of each individual WSFile's most recent stats object.
+ - Removed WordStats functions for certain periods, as those periods should be obtained before sending the array into the functions so that sorts and filters aren't being done multiple times. Added Sort() and SortForPeriod() functions.
+ - Added stat propagation to files and folders to keep total stats cached. Recalulation function is available on load and when files are moved/renamed and deleted.
+ - Moved stats display out of ProgressFile and ints CachedStatsDisplay so that it can be re-used in ProgressFolder. Made a slightly altered copy called DebugStatDisplay for the debug of individual WSFileStats for the debug view.
+ - Updated some Settings text that was out of date, along with many updates to README.md. Preparing for 0.0.1 pre-release.
+ - CSS adjustment for recording light colors.
+ - Reimplemented Debug View and Day Stats Views.
+
+### 2022-10-29
+ - BUGFIX: Stats saving doesn't complete when no files have been changed on load. WordStatisticsPlugin.lastRef was not updated in updateFileWordCountOffline() because newCount was the same as oldCount. It is now saved before the return when word count hasn't changed.
+ - BUGFIX: WSFile.getGoalParents() does not return parents that have a word goal but have not set file or folder word goals when there is a WSFolder in between that has no word goal resolution (e.g., Folder 1/Folder 2/Folder 3 if Folder 3 has a goal set, Folder 2 has no word goals set but Folder 1 has just its own word goal set, getGoalParents) would only return Folder 3 rather than the whole hierarchy.
+ - BUGFIX: Adding a word to a file without a pre-existing stat object was showing that initial word as imported when it was not. New stat is now initialized and run with the old count and then the later update with the new count updates it appropriately. This eliminates a long-standing issue in previous version where if the first action recorded was deletion, it would show the initial count as 0. Now it shows the initial count and deletion of the words.
+ - Made ProgressView a bit more compact.
+ - Added a setting for moving the target when a goal doesn't exist. When a goal is unset and the option is unset, the progress bar is solid blue. When Moving Target Mode is enabled and no goal is set, the goal will be increased to the next 10% increment of the current count.
+ - Added statistics viewing information to ProgressFile (ProgressFolder is coming). Need to adjust positioning and sizing and then decided whether to leave certain stats out in favour of a different view to be created at a later date. This one is simple but detailed enough to work. ProgressFolder stats may show more basic stats, as I suspect it may get a little slow constantly reducing arrays of data every time there is a debounced change. Will need to cache stats information by sending data with the wordsChanged event so each folder can adjust its stats accordingly.
+
+### 2022-10-28
+ - BUGFIX: (ProgressMain) When switching to another file that has as long a folder tree (or longer), those folders are not updated. Svelte was not reactive because the array items were not properly keyed.
+ - ProgressMain renaming bug was not a bug. A folder title was in place causing the presumed mismatch.
+
+### 2022-10-27
+ - BUGFIX: Changes to folder word goals are not saving.
+ - BUGFIX: ProgressMain does no update word goals when they are modified.
+ - BUGFIX: ProgressMain does not add new folders to the listing when word goals are set.
+ - BUGFIX: Data events are not triggering a save when no stats have changed.
+ - BUG: (ProgressMain) When switching to another file that has as long a folder tree (or longer), those folders are not updated. Svelte reactivity seems to have an issue here because the array is the same or greater length. When the array has fewer items, it updates correctly.
+ - ~~BUG: (ProgressMain) When renaming a folder, there is a name/title mismatch that occurs, and the title is not updated correctly. May also be an issue in ProgressFolder.~~
+
+### 2022-10-26
+ - Re-added ConfirmationBox.ts and SettingItem.svelte
+ - Added TextInputBox
+ - Added context menu item for setting folder titles
+ - Added GoalModal chooser. Currently the goals are not saving.
+ - BUG: Changes to folder word goals are not saving.
+ - BUGFIX: WordStatsManager.extendStats is run on WSFiles with no stats, resulting in an exception.
+ - BUGFIX: Minify database toggle does not work on its own, as it does not force a re-save of the database.
+ - BUGFIX: UpdateStats was not updating the end words for first-time WSFileStats.
+ - BUGFIX: UpdateStats was incorrectly calculating writing timeout, resulting in a new stat for every update.
+
+### 2022-10-25
+ - Added context menu items to set word statistics recording state on folders, and commands to set it for the focused file's parent.
+ - BUGFIX: ProgressView was not monitoring changes to statistics recording state.
+ - Made ProgressView colour the recording light amber if it is inheriting an on recording state.
+
+### 2022-10-23
+ - BUGFIX: Database saving check was returning if the last update was newer than the last save rather than if the last update was older than the last save.
+ - BUGFIX: WSFolders were being created with the name duplicated in the title field but title is not updated upon rename as it is independent of filename.
+ - Added basename capture for WSFile for use in place of title when one is not set.
+ - Removed the titleYAML and goalYAML flags, as they are redundant.
+ - Re-implemented ProgressView. ProgressView will show the currently focused file and any folders that have goals up to the outermost folder that has a goal. That is, in Root/Outer/Middle/Inner/File.md, if Inner and Middle have word goals, then both Inner and Middle will be shown in the listing. If Outer and Inner have word goals, Inner, Middle, and Outer will be shown.
+
+### 2022-10-19
+ - Purged old TS files that are no longer used for the NewModel branch.
+ - Rebuilt layout of current Settings namespaces and moved some settings around. Added new settings for the status bar.
+ - Rebuilt status bar with new layout.
+ - Added some setting events for updating UI elements when certain settings change.
+ - BUGFIX: Main vault wasn't showing full word count on file explorer.
+ - BUGFIX: Manager.countAll() was not waiting on the word counts, resulting in word counts not being updated properly on initial load. This may need to be altered if large vaults lag on startup.
+
+### 2022-10-18
+ - Re-implemented paranoia CSV exporting.
+ - Finished adding sync routines for WordStatsManager to keep stats linked there for access.
+ - Commented out all old CSV for the great purge. Will add things back as necessary.
+ - Added some logging in to help benchmark building of larger trees and word counting.
+
+### 2022-10-17
+ - Moved WSFile methods pertaining to stats into the WordStats namespace in stats.ts, as they will be used broadly on all lists of WSFileStat[].
+ - Brought in obsidian-calendar-ui from npm for use in the upcoming Day/Week/Month view.
+ - More tweaks to README.md
+ - Amended WSFile.canUseLastStat() so always compare self to plugin.lastFile in the end. Failure to do so will result in duration being counted multiple times if a user goes back and forth between multiple files.
+ - BUGFIX: WSFile.canUseLastStat() is never used. Corrected by adding to WSFile.updateStats().
+
+### 2022-10-16
+ - BUGFIX: canUseLastStat() was not calculating period end properly
+ - Added a few more routines to WordStatsManager.
+
+### 2022-10-08, 2022-10-09, 2022-10-10, 2022-10-11, 2022-10-12, 2022-10-13, 2022-10-15
+ - Eliminated the old file/folder/tag indexing system and old file/project/path model.
+ - Built new File/Folder model to simplify all of the backend project management. Now Paths and Projects have been replaced by folders and they will function in a hierarchical manner. The files have their parent folders accessible, and folders have child folders and files accessible via arrays, so there will be no need to traverse backwards to find something via algorithm when it can be obtained easily by reference. Goals for files and folders for statistical purposes will stem from the parent folder if there is not one set, else it will be 0 if unset all the way up the file tree.
+ - The new file model has complete statistics and methods to fire all event triggers related to its use. These will allow internal properties to be set if necessary without triggering, while also providing a quick means of triggering the event.
+ - The new system will allow one to open a Word Statistics Properties on folders to set titles and word goals using the context menu or command palette. The Project Management View will be replaced with a listing of watched folders. By default, only folders that are "set to record" will have ongoing statistics recorded.
+
 ### 2022-10-02
  - BUGFIX: CSV stats using localTime instead of endTime for end date and end time.
  - BUGFIX: Starting Words is incorrect for time period.
@@ -230,8 +300,6 @@
  - BUGFIX: Path data from paths.json was not being loaded into existing path structure. Now paths are loaded first, before projects, so they can be populated as necessary from saved path data. Then projects are loaded and any remaining path structures built. (It might be worth just saving all paths at some point.)
  - BUGFIX: ProjectWordCount.svelte was not watching project or path events for GoalsSet, so was not updating when goals were set
 
-
-
 ### 2022-06-15
  - BUGFIX: clearEmptyPath setting deletion of paths does not ascend the tree, deleting the parent paths that are also empty
  - BUGFIX: Delete project doesn't reset the path buttons correct for the paths above it.
@@ -430,7 +498,6 @@
  - Broke UI up into ui folder for easier organization
  - Further work on Project Group manager. Lots of untested code.
  - Need to further refine and breakdown UI code to minimize duplicate code and maximize usefulness of components and helper routines.
-
 
 ### 2022-04-19
  - ProjectViewer and ProjectManager panels and modals appear to be fully functional. Next testing requires the viewer leaf so live changes can be seen.

@@ -1,26 +1,22 @@
-import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView } from 'obsidian';
-import { WSDataCollector } from './model/collector';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView, Menu } from 'obsidian';
 import WordStatsSettingTab, { Settings } from './settings';
-import ProjectTableModal, { BuildProjectTable } from './tables';
-import { WordCountForText } from './words';
-import { WSFile } from './model/file';
-import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent } from './model/event';
-import StatusBarWidget from './ui/svelte/StatusBar/StatusBarWidget.svelte';
-import { PROJECT_MANAGEMENT_VIEW, ProjectManagementView } from './ui/ProjectManagementView';
-import { WSFormat } from './model/formats';
-import type { WSProject } from './model/project';
+import { WSFile, WSFileStat } from './model/file';
+import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent, WSFolderEvent } from './model/events';
 import { FormatWords } from './util';
-import { StatisticsView, STATISTICS_VIEW } from './ui/StatisticsView';
-import { WSTimePeriod } from './model/statistics';
+import { WSFileManager } from './model/manager';
+import { ImportTree } from './model/import';
+import { RECORDING, WSFolder } from './model/folder';
+import { BuildRootJSON, StatisticDataToCSV } from './model/export';
 import { DateTime } from 'luxon';
-import { ProgressView, PROGRESS_VIEW } from './ui/ProgressView';
+import StatusBar from './ui/svelte/StatusBar.svelte';
+import { ProgressView, PROGRESS_VIEW } from './ui/obsidian/ProgressView';
+import { TextInputBox } from './ui/obsidian/TextInputBox';
+import { GoalModal } from './ui/obsidian/GoalModal';
+import { StatisticsView, STATISTICS_VIEW } from './ui/obsidian/StatisticsView';
 
-const PROJECT_PATH = "projects.json";
-const FILE_PATH = "files.json";
-const PATH_PATH = "paths.json";
-const STATS_PATH = "stats.json";
+const DB_PATH = "database.json";
 
-const FILE_EXP_CLASS = "mc-ws-file-explorer-counts";
+const FILE_EXP_CLASS = "ws-file-explorer-counts";
 const FILE_EXP_DATA_ATTRIBUTE = "data-mc-word-stats";
 
 declare module "obsidian" {
@@ -39,34 +35,54 @@ export default class WordStatisticsPlugin extends Plugin {
 	settings: Settings.Plugin.Structure;
 	events: Dispatcher;
 	debounceRunCount: Debouncer<[file: TFile, data: string], any>;
+	debounceSave: Debouncer<any, any>;
 	wordsPerMS: number[] = [];
 	statusBar: HTMLElement;
-	sbWidget: StatusBarWidget;
-	collector: WSDataCollector;
+	sbWidget: StatusBar;
 	initialScan: boolean = false;
 	projectLoad: boolean = false;
 	focusFile: WSFile = null;
 	noFileData: boolean = true;
 	fileExplorer: FileExplorer;
 	paranoiaTest: number = 0;
+	lastFile: WSFile = null;
+	updateTime: number = 0;
+	manager: WSFileManager;
 
 	async onload() {
 		await this.loadSettings();
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new WordStatsSettingTab(this.app, this));
-		this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
+		//this.collector = new WSDataCollector(this, this.app.vault, this.app.metadataCache);
+		this.manager = new WSFileManager(this, this.app.vault, this.app.metadataCache, null);
 
 		this.debounceRunCount = debounce(
-			(file: TFile, data: string) => this.RunCount(file, data),
+			(file: TFile, data: string) => {
+				this.RunCount(file, data);
+			},
 			250,
 			false
+		);
+
+		this.debounceSave = debounce(
+			() => {
+				this.statsChangedSave();
+			},
+			2000,
+			true
 		);
 		// there has to be a better event to hook onto here, this seems silly
 		this.registerEvent(this.app.workspace.on("quick-preview", this.onQuickPreview.bind(this)));
 		this.registerEvent(this.app.workspace.on("active-leaf-change", this.onLeafChange.bind(this)));
 		this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen.bind(this)));
 
-		this.registerEvent(this.app.workspace.on("editor-paste", this.onPasteEvent.bind(this)));
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, file, source) => {
+				this.onFileMenu(menu, file, source);
+			}));
+
+
+		//this.registerEvent(this.app.workspace.on("editor-paste", this.onPasteEvent.bind(this)));
 
 		this.registerEvent(this.app.vault.on("delete", this.onFileDelete.bind(this)));
 		this.registerEvent(this.app.vault.on("rename", this.onFileRename.bind(this)));
@@ -75,11 +91,11 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.events = new Dispatcher();
 
 		this.statusBar = this.addStatusBarItem();
-		this.sbWidget = new StatusBarWidget({ target: this.statusBar, props: { eventDispatcher: this.events, dataCollector: this.collector, projectManager: this.collector.manager } });
+		this.sbWidget = new StatusBar({ target: this.statusBar, props: { plugin: this } });
 
-		this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
-			return new ProjectManagementView(leaf, this);
-		});
+		// this.registerView(PROJECT_MANAGEMENT_VIEW.type, (leaf) => {
+		// 	return new ProjectManagementView(leaf, this);
+		// });
 
 		this.registerView(STATISTICS_VIEW.type, (leaf) => {
 			return new StatisticsView(leaf, this);
@@ -94,7 +110,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			name: 'Backup statistics to CSV',
 			editorCheckCallback: (checking: boolean) => {
 				if (checking) {
-					return this.collector.stats.periods.length > 0;
+					return this.manager.stats.stats.length > 0;
 				} else {
 					this.saveStatsCSV();
 				}
@@ -102,16 +118,52 @@ export default class WordStatisticsPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'attach-project-manager',
-			name: 'Attach Project Management View',
+			id: 'recording-on',
+			name: 'Set Statistics Recording State for Parent Folder to ON',
 			editorCheckCallback: (checking: boolean) => {
 				if (checking) {
-					return this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length === 0;
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.ON;
 				} else {
-					this.initializeProjectManagementLeaf();
+					this.cmdSetMonitorOn();
 				}
 			}
 		});
+
+		this.addCommand({
+			id: 'recording-off',
+			name: 'Set Statistics Recording State for Parent Folder to OFF',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.OFF;
+				} else {
+					this.cmdSetMonitorOff();
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'recording-inherit',
+			name: 'Set Statistics Recording State for Parent Folder to INHERIT',
+			editorCheckCallback: (checking: boolean) => {
+				if (checking) {
+					return this.focusFile instanceof WSFile && this.focusFile.parent.recording !== RECORDING.INHERIT;
+				} else {
+					this.cmdSetMonitorInherit();
+				}
+			}
+		});
+
+		// this.addCommand({
+		// 	id: 'attach-project-manager',
+		// 	name: 'Attach Project Management View',
+		// 	editorCheckCallback: (checking: boolean) => {
+		// 		if (checking) {
+		// 			return this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length === 0;
+		// 		} else {
+		// 			this.initializeProjectManagementLeaf();
+		// 		}
+		// 	}
+		// });
 
 		this.addCommand({
 			id: 'attach-statistics-view',
@@ -137,21 +189,21 @@ export default class WordStatisticsPlugin extends Plugin {
 			}
 		});
 
-		this.addCommand({
-			id: 'insert-project-table-modal',
-			name: 'Insert Project Table Modal',
-			editorCheckCallback: (checking: boolean) => {
-				if (checking) {
-					return !this.collector.manager.isEmpty;
-				} else {
-					this.insertProjectTableModal();
-				}
-			}
-		});
+		// this.addCommand({
+		// 	id: 'insert-project-table-modal',
+		// 	name: 'Insert Project Table Modal',
+		// 	editorCheckCallback: (checking: boolean) => {
+		// 		if (checking) {
+		// 			return !this.collector.manager.isEmpty;
+		// 		} else {
+		// 			this.insertProjectTableModal();
+		// 		}
+		// 	}
+		// });
 
 		if (this.app.workspace.layoutReady) {
 			this.onStartup();
-			this.initializeProjectManagementLeaf();
+			// this.initializeProjectManagementLeaf();
 			this.initializeStatisticsLeaf();
 			this.initializeProgressLeaf();
 		} else {
@@ -161,10 +213,24 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("Obsidian Word Statistics loaded.");
 	}
 
+	saveStatsCSV() {
+		let csv = StatisticDataToCSV(this);
+		let now = DateTime.utc();
+		let path = now.toFormat('yyyy-LL-dd') + "T" + now.toFormat('HH_mm_ss_SSS') + "Z.csv";
+		// console.log("Saving to ", path);
+		// console.log(csv);
+		this.saveSerialData(path, csv);
+	}
+
 	paranoiaHandler() {
 		// console.log("Checking for paranoia...");
-		// console.log(this.settings.statisticSettings.paranoiaMode, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
-		if (this.settings.statisticSettings.paranoiaMode && this.collector.stats.currentPeriod instanceof WSTimePeriod && Date.now() > this.paranoiaTest + this.settings.statisticSettings.paranoiaInterval * 60000 && this.collector.stats.currentPeriod.timeStart > this.paranoiaTest) {
+		// console.log(this.settings.statisticSettings.paranoiaMode, this.manager.stats.last instanceof WSFileStat, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
+		// First check if paranoia mode is on, then if we have any stats, then if we've exceeded our interval, then if the most recent stat was updated after
+		// the last interval (i.e., we haven't already saved it).
+		if (this.settings.statistics.paranoiaMode &&
+			this.manager.stats.last instanceof WSFileStat &&
+			Date.now() > this.paranoiaTest + this.settings.statistics.paranoiaInterval * 60000 &&
+			this.manager.stats.last.endTime > this.paranoiaTest) {
 			// console.log("Paranoia interval exceeded. Saving stats.")
 			this.saveStatsCSV();
 			// console.log("Done. resetting interval");
@@ -172,12 +238,146 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
+	setMonitorOn(folder: WSFolder) {
+		this.manager.setMonitoringForFolder(folder, RECORDING.ON);
+		new Notice(`Statistics recording set ON for folder: ${folder.path}`);
+	}
+
+	cmdSetMonitorOn() {
+		if (this.focusFile instanceof WSFile) {
+			this.setMonitorOn(this.focusFile.parent);
+		} else {
+			new Notice("No file has focus. Statistics recording not set.");
+		}
+	}
+
+	setMonitorOff(folder: WSFolder) {
+		this.manager.setMonitoringForFolder(folder, RECORDING.OFF);
+		new Notice(`Statistics recording set OFF for folder: ${folder.path}`);
+	}
+
+	cmdSetMonitorOff() {
+		if (this.focusFile instanceof WSFile) {
+			this.setMonitorOff(this.focusFile.parent);
+		} else {
+			new Notice("No file has focus. Statistics recording not set.");
+		}
+	}
+
+	setMonitorInherit(folder: WSFolder) {
+		this.manager.setMonitoringForFolder(folder, RECORDING.INHERIT);
+		new Notice(`Statistics recording set ON for folder: ${folder.path}`);
+	}
+
+	cmdSetMonitorInherit() {
+		if (this.focusFile instanceof WSFile) {
+			this.setMonitorInherit(this.focusFile.parent);
+		} else {
+			new Notice("No file has focus. Statistics recording not set.");
+		}
+	}
+
+	setFolderTitle(folder: WSFolder) {
+		let modal = new TextInputBox(
+			this,
+			"Set Folder Title",
+			"Please provide a title for this folder to be displayed in all Word Statistics views.",
+			folder.getTitle.bind(folder),
+			(text: string) => {
+				console.log(text, folder);
+				if (text != folder.title) {
+					folder.title = text || "";
+					folder.triggerTitleSet(text || "");
+				}
+			},
+			"Save");
+		modal.open();
+	}
+
+	clearFolderTitle(folder: WSFolder) {
+		if (folder.title === "") return;
+		folder.title = "";
+		folder.triggerTitleSet("");
+	}
+
+	setFolderGoals(folder: WSFolder) {
+		let modal = new GoalModal(this, folder);
+		modal.open();
+	}
+
+	clearFolderGoal(folder: WSFolder) {
+		if (folder.wordGoal === 0) return;
+	}
+
+	onFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
+		if (source !== "file-explorer-context-menu") return;
+		if (!file) return;
+		if (file instanceof TFolder) {
+			let ref = this.manager.folderMap.get(file.path);
+			if (!(ref instanceof WSFolder)) return;
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics Monitoring: On`)
+					.setIcon('monitor')
+					.setSection("word-stats")
+					.onClick(() => {
+						this.setMonitorOn(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics Monitoring: Off`)
+					.setIcon('monitor-off')
+					.setSection("word-stats")
+					.onClick(() => {
+						this.setMonitorOff(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics Monitoring: Inherit`)
+					.setIcon('network')
+					.setSection("word-stats")
+					.onClick(() => {
+						this.setMonitorInherit(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics: Set Folder Title`)
+					.setIcon(`text-cursor-input`)
+					.setSection(`word-stats`)
+					.onClick(() => {
+						this.setFolderTitle(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics: Clear Folder Title`)
+					.setIcon(`form-input`)
+					.setSection(`word-stats`)
+					.onClick(() => {
+						this.clearFolderTitle(ref);
+					});
+			});
+			menu.addItem((item) => {
+				item
+					.setTitle(`Word Statistics: Manage Word Goals for Folder`)
+					.setIcon(`target`)
+					.setSection(`word-stats`)
+					.onClick(() => {
+						this.setFolderGoals(ref);
+					});
+			});
+		}
+	}
+
 	onunload() {
 		// this.app.workspace.detachLeavesOfType(PROJECT_MANAGEMENT_VIEW.type);
-		// this.app.workspace.detachLeavesOfType(STATISTICS_VIEW.type);
-		// this.app.workspace.detachLeavesOfType(PROGRESS_VIEW.type);
-		this.collector.manager.cleanup();
-		this.collector.cleanup();
+		this.app.workspace.detachLeavesOfType(STATISTICS_VIEW.type);
+		this.app.workspace.detachLeavesOfType(PROGRESS_VIEW.type);
+		// this.collector.manager.cleanup();
+		this.manager.cleanup();
 		console.log("Obsidian Word Statistics unloaded.");
 	}
 
@@ -187,14 +387,14 @@ export default class WordStatisticsPlugin extends Plugin {
 		// but there is no Obsidian event that can fire when something is copied or cut
 	}
 
-	initializeProjectManagementLeaf() {
-		if (this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length > 0) {
-			return;
-		}
-		this.app.workspace.getRightLeaf(false).setViewState({
-			type: PROJECT_MANAGEMENT_VIEW.type,
-		});
-	}
+	// initializeProjectManagementLeaf() {
+	// 	if (this.app.workspace.getLeavesOfType(PROJECT_MANAGEMENT_VIEW.type).length > 0) {
+	// 		return;
+	// 	}
+	// 	this.app.workspace.getRightLeaf(false).setViewState({
+	// 		type: PROJECT_MANAGEMENT_VIEW.type,
+	// 	});
+	// }
 
 	initializeStatisticsLeaf() {
 		if (this.app.workspace.getLeavesOfType(STATISTICS_VIEW.type).length > 0) {
@@ -247,7 +447,7 @@ export default class WordStatisticsPlugin extends Plugin {
 			let data = await adapter.read(loadPath);
 			// console.log(data);
 			return data;
-		}
+		};
 		return undefined;
 	}
 
@@ -271,8 +471,8 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.wordsPerMS.push(wordsCounted / duration); // words per millisecond
 		}
 
-		if (this.wordsPerMS.length > 0 && this.settings.showWordCountSpeedDebug) {
-			let sum = this.wordsPerMS.reduce((accumulator, a) => accumulator + a, 0);
+		if (this.wordsPerMS.length > 0 && this.settings.debug.showWordCountSpeed) {
+			let sum = this.wordsPerMS.reduce((total, val) => total + val, 0);
 			let avg = sum / this.wordsPerMS.length;
 			console.log(`Running average words counted per millisecond: ${avg}`);
 			// console.log(this.wordsPerMS);
@@ -282,70 +482,46 @@ export default class WordStatisticsPlugin extends Plugin {
 	async onStartup() {
 		if (!this.initialScan) {
 			// console.log("Loading existing file content...");
-			let fileData = await this.loadSerialData(FILE_PATH);
-			let files: WSFile[] = [];
-			if (fileData) {
-				this.noFileData = false;
-				files = WSFormat.LoadFileData(fileData);
-			}
+			let statsData = await this.loadSerialData(DB_PATH);
 
-			await this.collector.scanVault(files);
+			if (statsData && statsData.length > 0) {
+				let [root, folderMap, fileMap, message] = ImportTree(this, statsData);
+				if (message) {
+					console.log("Could not complete initialization of saved data: ", message);
+					return;
+				}
+				this.noFileData = false;
+				await this.manager.loadTree(root, folderMap, fileMap);
+			} else {
+				// file is empty
+				// so we will need to rebuild the entire tree
+				// console.log("Building file tree...");
+				await this.manager.buildTree();
+				// console.log("Done.");
+				// console.log(this.manager.root);
+			}
 			// console.log("Vault scan complete.");
 			this.initialScan = true;
-		}
-		if (!this.projectLoad && this.initialScan) {
-			let statsData = await this.loadSerialData(STATS_PATH);
-			// console.log("Read stats.json: ", statsData? statsData.length : undefined)
-			if (statsData) {
-				let stats = WSFormat.LoadStatisticalData(this.collector, this.collector.stats, statsData);
-				// console.log(stats);
-				if (stats.length > 0) {
-					this.collector.stats.loadStats(stats);
-				}
-			}
-			this.collector.stats.unlock();
-			// console.log(`Loading data from ${PROJECT_PATH}`);\
-			// Load paths first as projects will fill up paths and set children
-			let pathData = await this.loadSerialData(PATH_PATH);
-			if (pathData) {
-				let paths = WSFormat.LoadPathData(pathData);
-				if (paths.length > 0) {
-					// console.log(paths);
-					this.collector.manager.loadPaths(paths);
-				}
-			}
-			let projData = await this.loadSerialData(PROJECT_PATH);
-			if (projData) {
-				let projects = WSFormat.LoadProjectData(this.collector, projData);
-				if (projects.length > 0) {
-					// console.log(projects);
-					this.collector.manager.loadProjects(projects);
-				}
-			}
-			this.projectLoad = true;
-
+			this.sbWidget.updateVault();
 			// console.log("Initiating post-project vault re-scan...");
 			// await this.collector.scanVault();
 			// console.log("Complete.")
 			// We don't want to queue saving of data until it's all loaded.
-			this.events.on(WSEvents.Data.Project, this.saveProjects.bind(this), { filter: null });
-			this.events.on(WSEvents.Data.Path, this.savePaths.bind(this), { filter: null });
-			this.events.on(WSEvents.Data.File, this.saveFiles.bind(this), { filter: null });
-			this.events.on(WSEvents.Data.Stats, this.saveStatistics.bind(this), { filter: null });
-
+			this.events.on(WSEvents.Data.Folder, this.databaseChangedSave.bind(this), { filter: null });
+			this.events.on(WSEvents.Data.File, this.databaseChangedSave.bind(this), { filter: null });
 			this.events.on(WSEvents.File.WordsChanged, this.onFileWordCount.bind(this), { filter: null });
+			this.events.on(WSEvents.Folder.WordsChanged, this.onFolderWordCount.bind(this), { filter: null });
 
 			// this.registerEvent(this.app.metadataCache.on("changed", this.onMDChanged.bind(this)));
 			this.registerEvent(this.app.metadataCache.on("resolve", this.onMDResolve.bind(this)));
 			this.registerEvent(this.app.vault.on("create", this.onFileCreate.bind(this)));
 			this.registerInterval(window.setInterval(this.paranoiaHandler.bind(this), 1000)); // run every 1 second
-			this.initializeProjectManagementLeaf();
+			// this.initializeProjectManagementLeaf();
 			this.initializeStatisticsLeaf();
 		}
-		if (this.collector.fileList && this.noFileData) {
-			this.events.trigger(new WSDataEvent({ type: WSEvents.Data.File }, { filter: null }));
+		if (this.noFileData) {
+			this.databaseChangedSave();
 		}
-
 		this.updateFocusedFile();
 		let fe = this.app.workspace.getLeavesOfType("file-explorer");
 		if (fe.length != 1) {
@@ -354,6 +530,32 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.fileExplorer = fe[0].view as FileExplorer;
 		this.registerEvent(this.app.workspace.on("layout-change", this.onLayoutChange.bind(this)));
 		this.updateFileExplorer();
+	}
+
+	databaseChangedSave(event?: WSDataEvent) {
+		// console.log("Received WSDataEvent");
+		// console.log(this.lastFile);
+		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
+		// console.log("Saving stats");
+		this.saveFiles();
+	}
+
+	async statsChangedSave() {
+		// console.log("<WS>", Date.now());
+		if (!(this.lastFile instanceof WSFile)) return; // if we don't have a last file, no stats have been saved at this point
+		let update = Date.now();
+		// console.log(update, this.lastFile instanceof WSFile);
+		if (this.lastFile.last?.endTime < this.updateTime) return; // if there have been no updates since last update, return
+		// console.log("Saving data.")
+		this.updateTime = update;
+		this.saveFiles();
+	}
+
+	saveFiles() {
+		if (this.manager.fileMap.size === 0 && this.manager.folderMap.size === 0) return;
+		let statsData = BuildRootJSON(this, this.manager.root);
+		// console.log(statsData);
+		this.saveSerialData(DB_PATH, statsData);
 	}
 
 	onLayoutChange() {
@@ -365,82 +567,73 @@ export default class WordStatisticsPlugin extends Plugin {
 		this.updateFileExplorer();
 	}
 
-	insertProjectTableModal() {
-		if (this.collector.manager.projects.size > 0) {
+	// insertProjectTableModal() {
+	// 	if (this.collector.manager.projects.size > 0) {
 
-			let projects = this.collector.manager;
-			let modal = new ProjectTableModal(this.app, this, projects, this.runBuildTable.bind(this));
-			modal.open();
-		} else {
-			new Notice("There are no projects to display.");
-		}
-	}
+	// 		let projects = this.collector.manager;
+	// 		let modal = new ProjectTableModal(this.app, this, projects, this.runBuildTable.bind(this));
+	// 		modal.open();
+	// 	} else {
+	// 		new Notice("There are no projects to display.");
+	// 	}
+	// }
 
-	runBuildTable(project: WSProject) {
-		let tableText = BuildProjectTable(this.collector, this.settings.tableSettings, project);
-		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (view) {
-			let cursor = view.editor.replaceRange(tableText, view.editor.getCursor());
+	// runBuildTable(project: WSProject) {
+	// 	let tableText = BuildProjectTable(this.collector, this.settings.tableSettings, project);
+	// 	let view = this.app.workspace.getActiveViewOfType(MarkdownView);
+	// 	if (view) {
+	// 		let cursor = view.editor.replaceRange(tableText, view.editor.getCursor());
 
-		} else {
-			new Notice("Unable to insert table. Not editing a Markdown file.");
-		}
+	// 	} else {
+	// 		new Notice("Unable to insert table. Not editing a Markdown file.");
+	// 	}
 
-	}
+	// }
 
 	updateFocusedFile() {
 		let file: WSFile = null;
 		let view = this.app.workspace.getActiveViewOfType(MarkdownView);
 
-		if (view != null && view.file != null) {
-			file = this.collector.getFile(view.file.path);
+		if (view != null && view.file instanceof TFile) {
+			file = this.manager.getFile(view.file);
 		}
 		// console.log("[!] Updating focused file:", file instanceof WSFile ? file.serialize() : null);
-		this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file: file }, { filter: file }));
 		this.focusFile = file;
+		this.events.trigger(new WSFocusEvent({ type: WSEvents.Focus.File, file }, { filter: file }));
 	}
 
 	onFileRename(file: TAbstractFile, data: string) {
 		// console.log("'%s' renamed to '%s'", data, file.path);
-		// if (file.path.search(/(.*)(\.md)/) >= 0) {
-		if (file instanceof TFile && file.extension === "md") {
-			this.collector.onRename(file, data);
+		if (file instanceof TFolder || (file instanceof TFile && file.extension === "md")) {
+			this.manager.onRename(file, data);
 			return;
-		}
-		// we may have renamed a folder
-		// if (file.path.search(/^(.*)(?<!\.\w+)$/umig) >= 0) {
-		if (file instanceof TFolder) {
-			// we may be a folder
-			// console.log(`Folder: '${file.path}'`);
-			this.collector.manager.updateProjectsForFolder(file.path);
 		}
 		this.updateFileExplorer();
 	}
 
 	onFileDelete(file: TAbstractFile) {
 		// console.log("'%s' deleted.", file.path);
-		//		if (file.path.search(/(.*)(\.md)/) >= 0) {
-		if (file instanceof TFile && file.extension === "md") {
-			this.collector.onDelete(file);
+		if (file instanceof TFolder || (file instanceof TFile && file.extension === "md")) {
+			this.manager.onDelete(file);
 		}
 		this.updateFileExplorer();
 	}
 
 	onFileCreate(file: TAbstractFile) {
-		if (file instanceof TFile && file.extension === "md") {
-			this.collector.onCreate(file);
+		if (file instanceof TFolder || (file instanceof TFile && file.extension === "md")) {
+			this.manager.onCreate(file);
 		}
 		this.updateFileExplorer();
 	}
 
 	onMDChanged(file: TFile, data: string, cache: CachedMetadata) {
 		// console.log("onMDChanged(%s)", file.path, file);
-		this.collector.updateFile(file);
+		this.manager.updateFileMetadata(file);
 	}
 
 	onMDResolve(file: TFile) {
 		// console.log("onMDResolve(%s)", file.path, file);
-		this.collector.updateFile(file);
+		this.manager.updateFileMetadata(file);
 	}
 
 	onLeafChange(leaf: WorkspaceLeaf) {
@@ -467,9 +660,9 @@ export default class WordStatisticsPlugin extends Plugin {
 		// console.log("onFileOpen()");
 		//console.log(file);
 		if (file instanceof TFile) {
-			let wFile = this.collector.getFile(file.path);
+			let wFile = this.manager.getFile(file);
 			if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
-				this.debounceRunCount(file, await this.app.vault.cachedRead(file));
+				await this.manager.updateFileWordCountOffline(file);
 			}
 		} else {
 			this.updateFocusedFile();
@@ -479,75 +672,50 @@ export default class WordStatisticsPlugin extends Plugin {
 	onQuickPreview(file: TFile, data: string) {
 		//console.log("onQuickPreview()");
 		if (this.app.workspace.getActiveViewOfType(MarkdownView)) {
+			// console.log("RC>>", Date.now());
 			this.debounceRunCount(file, data);
 		}
-	}
-
-	saveProjects(evt: WSDataEvent) {
-		let data = WSFormat.SaveProjectData(this, this.collector.manager.projectList);
-		// console.log(data);
-		this.saveSerialData(PROJECT_PATH, data);
-	}
-
-	saveFiles(event: WSDataEvent) {
-		let data = WSFormat.SaveFileData(this, this.collector.fileList);
-		// console.log(data);
-		this.saveSerialData(FILE_PATH, data);
-	}
-
-	savePaths(event: WSDataEvent) {
-		let data = WSFormat.SavePathData(this, this.collector.manager.getSetPaths());
-		// console.log(data);
-		this.saveSerialData(PATH_PATH, data);
-	}
-
-	saveStatistics(event: WSDataEvent) {
-		let data = WSFormat.SaveStatisticalData(this, this.collector.stats.periods);
-		// console.log(data);
-		this.saveSerialData(STATS_PATH, data);
-	}
-
-	saveStatsCSV() {
-		let csv = WSFormat.StatisticDataToCSV(this, this.collector.stats.periods);
-		let now = DateTime.utc();
-		let path = now.toFormat('yyyy-LL-dd') + "T" + now.toFormat('HH_mm_ss_SSS') + "Z.csv";
-		// console.log("Saving to ", path);
-		// console.log(csv);
-		this.saveSerialData(path, csv);
 	}
 
 	onFileWordCount(evt: WSFileEvent) {
 		// file word count has been updated, what to do?
 		// console.log("onFileWordCount()");
 		this.updateFileExplorer(evt.info.file);
+		// console.log("SV>>", Date.now());
+		this.debounceSave();
 	}
 
-	RunCount(file: TFile, data: string) {
+	onFolderWordCount(evt: WSFolderEvent) {
+		// file word count has been updated, what to do?
+		// console.log("onFileWordCount()");
+		this.updateFileExplorer(evt.info.folder);
+		this.debounceSave();
+	}
+
+	async RunCount(file: TFile, data: string) {
 		// need to have some kind of logging system so people can report the words/ms rate average
-		let startTime = Date.now();
-		let words = WordCountForText(data);
-		let endTime = Date.now();
-		this.logSpeed(words, startTime, endTime);
-		this.collector.logWords(file.path, words);
+		// console.log("<RC>", Date.now());
+		await this.manager.updateFileWordCountOnline(file, data);
+		// this.logSpeed(words, startTime, endTime);
 		//console.log("RunCount() returned %d %s in %d ms", words, words == 1 ? "word" : "words", endTime - startTime);
 	}
 
-	updateFileExplorer(file: WSFile = null) {
+	updateFileExplorer(file: (WSFile | WSFolder) = null) {
 		if (this.fileExplorer instanceof View) {
-			if (this.settings.showWordCountsInFileExplorer) {
+			if (this.settings.view.showWordCountsInFileExplorer) {
 				let container = this.fileExplorer.containerEl;
 				container.toggleClass(FILE_EXP_CLASS, true);
 				let fileList = this.fileExplorer.fileItems;
 				for (let path in fileList) {
 					// console.log(path, file?.path, file instanceof WSFile && file.path.contains(path));
-					if (file === null || (file instanceof WSFile && file.path.includes(path))) {
+					if (file === null || (file !== null && file.path.includes(path))) {
 						// console.log("Updating ", path);
-						let wFile = this.collector.getFile(path);
+						let wFile = this.manager.fileMap.get(path);
 						let item = fileList[path];
 						if (wFile instanceof WSFile) {
-							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.words));
+							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.wordCount));
 						} else {
-							let words = this.collector.getWordCountForFolder(path);
+							let words = path === "/" ? this.manager.root.wordCount : this.manager.folderMap.get(path)?.wordCount;
 							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
 						}
 					}
