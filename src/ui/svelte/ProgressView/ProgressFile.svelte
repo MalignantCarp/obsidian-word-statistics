@@ -8,7 +8,6 @@
 	} from "src/model/events";
 	import { WSFile } from "src/model/file";
 	import { RECORDING, WSFolder } from "src/model/folder";
-	import { StatsPropagate } from "src/model/stats";
 	import {
 		FormatNumber,
 		FormatWords,

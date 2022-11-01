@@ -1,10 +1,15 @@
 ## To-Do for 1.0 release
- - Add stats view to folders in ProgressView
  - Add calendar UI for stats display
  - Create a project overview and reporting system for generating statistics reports.
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-10-31 v0.0.1
+ - Added rounding for WPM, plus correctly indicated WPM/WAPM vs "words" for stats display.
+ - Added net words to stats display.
+ - Added stats display for ProgressFolder, so stats are now shown encompassing the whole folder.
+ - Cleared out old CSS.
+
 ### 2022-10-30
  - BUGFIX: WordStats namespace functions were returning sums for statistics that should be returned as individual values (e.g., StartTime, EndTime).
  - BUGFIX: WordStats namespace functions were returning incorrect values for StartWords and EndWords. In the case of StartWords, the startWords should be the beginning word count from the first stat in the collection (sorted by startTime), while the EndWords needs to be the sum total of each individual WSFile's most recent stats object.

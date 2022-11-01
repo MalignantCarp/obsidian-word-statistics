@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { DateTime } from "luxon";
 	import { StatsPropagate } from "src/model/stats";
-	import { FormatWords, SecondsToHMS } from "src/util";
+	import { FormatWords, MillisecondsToReadableDuration } from "src/util";
 	import { onMount } from "svelte";
 
 	export let updateObject: StatsPropagate;
@@ -47,11 +47,11 @@
 		wordsExported = object.wordsExported;
 		writingTime = object.writingTime;
 
-		WPM = Math.round(netWords / (duration / 60000));
-		WAPM = Math.round(wordsAdded / (duration / 60000));
+		WPM = Math.round(((netWords / (duration / 60000)) + Number.EPSILON) * 100) / 100;
+		WAPM = Math.round(((wordsAdded / (duration / 60000)) + Number.EPSILON) * 100) / 100
 
-		WPMA = Math.round(netWords / (writingTime / 60000));
-		WAPMA = Math.round(wordsAdded / (writingTime / 60000));
+		WPMA = Math.round(((netWords / (writingTime / 60000)) + Number.EPSILON) * 100) / 100;
+		WAPMA = Math.round(((wordsAdded / (writingTime / 60000)) + Number.EPSILON) * 100) / 100
 	}
 
 	$: okay =
@@ -68,10 +68,16 @@
 		<div class="value">
 			{endDate?.toLocaleString(DateTime.DATETIME_SHORT)}
 		</div>
+		<div class="heading">Duration</div>
+		<div class="value">{MillisecondsToReadableDuration(duration)}</div>
+		<div class="heading">Writing Time</div>
+		<div class="value">{MillisecondsToReadableDuration(writingTime)}</div>
 		<div class="heading">Start Words</div>
 		<div class="value">{FormatWords(startWords)}</div>
 		<div class="heading">End Words</div>
 		<div class="value">{FormatWords(endWords)}</div>
+		<div class="heading">Net Words</div>
+		<div class="value">{FormatWords(netWords)}</div>
 		<div class="heading">Words Added</div>
 		<div class="value">{FormatWords(wordsAdded)}</div>
 		<div class="heading">Words Deleted</div>
@@ -80,10 +86,6 @@
 		<div class="value">{FormatWords(wordsImported)}</div>
 		<div class="heading">Words Exported</div>
 		<div class="value">{FormatWords(wordsExported)}</div>
-		<div class="heading">Duration</div>
-		<div class="value">{SecondsToHMS(duration / 1000)}</div>
-		<div class="heading">Writing Time</div>
-		<div class="value">{SecondsToHMS(writingTime / 1000)}</div>
 		<div class="heading">WPM</div>
 		<div class="value">{FormatWords(WPM)}</div>
 		<div class="heading">WAPM</div>

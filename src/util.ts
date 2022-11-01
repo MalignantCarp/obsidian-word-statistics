@@ -1,4 +1,4 @@
-import type { DateTime } from "luxon";
+import { Duration, type DateTime } from "luxon";
 
 export const GetDateStart = (day: DateTime): DateTime => {
     return day.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
@@ -29,6 +29,10 @@ export const RightWordForNumber = (num: number, singular: string, plural: string
 export const SecondsToHMS = (seconds: number) => {
     return new Date(seconds * 1000).toISOString().slice(11, 19);
 };
+
+export const MillisecondsToReadableDuration = (milliseconds: number) => {
+    return milliseconds > 86400000 ? Duration.fromMillis(milliseconds).toFormat("d'd' hh:mm:ss.S") : Duration.fromMillis(milliseconds).toFormat("hh:mm:ss.S");
+}
 
 export const GetProgressGrade = (percent: number): string => {
     if (percent < 25) return "1"; // 0-24
