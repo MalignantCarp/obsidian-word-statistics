@@ -59,7 +59,7 @@
 		liveStat = focus.last;
 		if (statIndex === -1) {
 			focusStat = liveStat;
-			display.Update(focusStat);
+			display?.Update(focusStat);
 		}
 		statIndex = statIndex;
 	}

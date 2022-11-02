@@ -4,6 +4,9 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-11-01 v0.0.3
+ - Bugfix: StatsDebug.svelte was attempting to run Update() on an uninstantiated display object.
+
 ### 2022-11-01 v0.0.2
  - Fixed #6: WSFolders will no longer be included in database.json if they are empty of children (if they are nothing but empty foldersStats exporting will no longer include folders with no children.
  - Fixed #7; WSFileManager.newFolder() was instantiating folders with the folder name as the title, rather than leaving it blank.
