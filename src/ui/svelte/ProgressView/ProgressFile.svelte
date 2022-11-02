@@ -8,11 +8,7 @@
 	} from "src/model/events";
 	import { WSFile } from "src/model/file";
 	import { RECORDING, WSFolder } from "src/model/folder";
-	import {
-		FormatNumber,
-		FormatWords,
-		MoveTheTarget,
-	} from "src/util";
+	import { FormatNumber, FormatWords, MoveTheTarget } from "src/util";
 	import { onDestroy, onMount } from "svelte";
 	import CachedStatsDisplay from "../CachedStatsDisplay.svelte";
 	import ProgressBar from "./ProgressBar.svelte";
@@ -108,11 +104,8 @@
 		updateAll();
 	}
 
-	$: if (
-		showStats &&
-		file instanceof WSFile &&
-		file.hasStats
-	) {
+	$: if (showStats && file instanceof WSFile && file.hasStats) {
+		// console.log("Running update on ", file.path, statsDisplay, file);
 		statsDisplay?.Update(file);
 	}
 
@@ -153,6 +146,6 @@
 	<ProgressBar bind:this={progress} />
 	<div class="ws-progress-label">{label}</div>
 	{#if showStats && file instanceof WSFile && file.hasStats}
-	<CachedStatsDisplay updateObject={file} bind:this={statsDisplay}/>
+		<CachedStatsDisplay updateObject={file} bind:this={statsDisplay} />
 	{/if}
 </div>

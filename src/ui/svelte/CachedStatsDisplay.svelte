@@ -34,6 +34,7 @@
 
 	export function Update(object: StatsPropagate) {
 		updateObject = object;
+		// console.log(object.startTime, object);
 		startDate = DateTime.fromMillis(object.startTime);
 		endDate = DateTime.fromMillis(object.endTime);
 		startWords = object.startWords;
@@ -54,8 +55,11 @@
 		WAPMA = Math.round(((wordsAdded / (writingTime / 60000)) + Number.EPSILON) * 100) / 100
 	}
 
-	$: okay =
-		updateObject instanceof StatsPropagate && startDate instanceof DateTime && updateObject.startTime > 0;
+	$: if (updateObject instanceof StatsPropagate && startDate instanceof DateTime && updateObject.startTime > 0) {
+		okay = true;
+	} else {
+		okay = false;
+	}
 </script>
 
 {#if okay}

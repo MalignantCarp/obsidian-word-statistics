@@ -49,6 +49,16 @@ export class WSFolder extends StatsPropagate {
         }
     }
 
+    isEmpty(): boolean {
+        if (this.children.length > 0) return false;
+        let empty = true;
+        for (let folder of this.childFolders) {
+            if (!empty) break;
+            if (!folder.isEmpty()) empty = false;
+        }
+        return empty;
+    }
+
     get isRecording(): boolean {
         if (this.plugin.settings.statistics.record === Settings.Statistics.RECORD.ALL) return true;
         if (this.recording === RECORDING.OFF) return false;

@@ -58,7 +58,9 @@ function BuildChildFiles(children: WSFile[]): EFile[] {
 function BuildChildFolders(folders: WSFolder[]): EFolder[] {
     let childFolders: EFolder[] = [];
     for (let folder of folders) {
-        childFolders.push({ path: folder.path, name: folder.name, title: folder.title, wordCount: folder.wordCount, wordGoalForFiles: folder.wordGoalForFiles, wordGoalForFolders: folder.wordGoalForFolders, wordGoal: folder.wordGoal, recording: folder.recording, children: BuildChildFiles(folder.children), childFolders: BuildChildFolders(folder.childFolders) });
+        if (!folder.isEmpty()) {
+            childFolders.push({ path: folder.path, name: folder.name, title: folder.title, wordCount: folder.wordCount, wordGoalForFiles: folder.wordGoalForFiles, wordGoalForFolders: folder.wordGoalForFolders, wordGoal: folder.wordGoal, recording: folder.recording, children: BuildChildFiles(folder.children), childFolders: BuildChildFolders(folder.childFolders) });
+        }
     }
     return childFolders;
 }

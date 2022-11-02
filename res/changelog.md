@@ -4,6 +4,11 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-11-01 v0.0.2
+ - Fixed #6: WSFolders will no longer be included in database.json if they are empty of children (if they are nothing but empty foldersStats exporting will no longer include folders with no children.
+ - Fixed #7; WSFileManager.newFolder() was instantiating folders with the folder name as the title, rather than leaving it blank.
+ - Fixed #8; Amended StatsPropagate to propagate start time and start words as they were remaining at 0. Also adjusted net words, as that was being left at 0 as well.
+
 ### 2022-10-31 v0.0.1
  - Added rounding for WPM, plus correctly indicated WPM/WAPM vs "words" for stats display.
  - Added net words to stats display.

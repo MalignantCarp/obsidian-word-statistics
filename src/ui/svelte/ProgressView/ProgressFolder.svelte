@@ -106,6 +106,7 @@
 	}
 
 	$: if (showStats && folder instanceof WSFolder && folder.duration > 0) {
+		// console.log("Running update on ", folder.path, statsDisplay, folder);
 		statsDisplay?.Update(folder);
 	}
 </script>

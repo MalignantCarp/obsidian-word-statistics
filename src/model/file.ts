@@ -222,6 +222,7 @@ export class WSFile extends StatsPropagate{
     newStat(startTime: number, startWords: number) {
         let stat = new WSFileStat(this, startTime, startWords);
         this.stats.push(stat);
+        this.propagateStart(startTime, startWords);
         return stat;
     }
 

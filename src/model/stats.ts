@@ -18,6 +18,14 @@ export class StatsPropagate {
     public writingTime: number = 0;
     public parent: WSFolder;
 
+    propagateStart(startTime: number, startWords: number) {
+        if (this.startTime === 0) {
+            this.startTime = startTime;
+            this.startWords = startWords;
+        }
+        if (this.parent?.isRecording) this.parent.propagateStart(startTime, startWords);
+    }
+
     propagateEndTime(endTime: number) {
         this.endTime = Math.max(endTime, this.endTime);
         if (this.parent?.isRecording) this.parent.propagateEndTime(endTime);
@@ -31,17 +39,20 @@ export class StatsPropagate {
     propagateWordsAdded(words: number) {
         this.wordsAdded += words;
         this.endWords += words;
+        this.netWords += words;
         if (this.parent?.isRecording) this.parent.propagateWordsAdded(words);
     }
 
     propagateWordsDeleted(words: number) {
         this.wordsDeleted += words;
         this.endWords -= words;
+        this.netWords -= words;
         if (this.parent?.isRecording) this.parent.propagateWordsDeleted(words);
     }
 
     propagateWordsImported(words: number) {
         this.wordsImported += words;
+        this.netWords += words;
         this.endWords += words;
         if (this.parent?.isRecording) this.parent.propagateWordsImported(words);
     }
@@ -49,6 +60,7 @@ export class StatsPropagate {
     propagateWordsExported(words: number) {
         this.wordsExported += words;
         this.endWords -= words;
+        this.netWords -= words;
         if (this.parent?.isRecording) this.parent.propagateWordsExported(words);
     }
 

@@ -86,7 +86,7 @@ export class WSFileManager {
     }
 
     onRename(file: TAbstractFile, oldPath: string) {
-        // console.log(`WSFileManager.onRename(${file.path}, ${oldPath}): ${this.fileMap.has(file.path)}/${this.folderMap.has(file.path)}, ${this.fileMap.has(oldPath)}/${this.folderMap.has(oldPath)}`);
+        console.log(`WSFileManager.onRename(${file.path}, ${oldPath}): ${this.fileMap.has(file.path)}/${this.folderMap.has(file.path)}, ${this.fileMap.has(oldPath)}/${this.folderMap.has(oldPath)}`);
         if (file instanceof TFile) {
             if (this.fileMap.has(file.path)) {
                 console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldPath, file.path);
@@ -118,12 +118,14 @@ export class WSFileManager {
                 throw Error("Cannot rename folder reference as new folder path already in use.");
             }
             if (this.folderMap.has(oldPath)) {
+                // console.log(this.folderMap.get(oldPath).path);
                 let fo = this.folderMap.get(oldPath);
                 this.folderMap.delete(oldPath);
                 this.folderMap.set(file.path, fo);
                 let oldName = fo.name;
                 fo.name = file.name;
                 fo.path = file.path;
+                // console.log(oldPath, ">>", fo.path);
                 let destination = this.mapToFolder(file.parent);
                 let source = fo.parent;
                 if (source != destination) {
@@ -140,7 +142,7 @@ export class WSFileManager {
     }
 
     onDelete(file: TAbstractFile) {
-        console.log("onDelete(", file.path, ")");
+        // console.log("onDelete(", file.path, ")");
         if (file instanceof TFile) {
             if (this.fileMap.has(file.path)) {
                 let fi = this.fileMap.get(file.path);
@@ -183,7 +185,7 @@ export class WSFileManager {
     }
 
     newFolder(parent: WSFolder, folder: TFolder): WSFolder {
-        let newFolder = new WSFolder(this.plugin, parent, folder.path, folder.name, folder.name);
+        let newFolder = new WSFolder(this.plugin, parent, folder.path, folder.name);
         this.folderMap.set(folder.path, newFolder);
         newFolder.triggerCreated();
         return newFolder;
