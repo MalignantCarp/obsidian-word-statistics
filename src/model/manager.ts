@@ -39,7 +39,7 @@ export class WSFileManager {
     }
 
     updateGoals(folder: WSFolder, wordGoal: number, wordGoalForFiles: number, wordGoalForFolders: number) {
-        console.log("updatedGoals()");
+        // console.log("updatedGoals()");
         let triggers: [GOAL, number][] = [];
         if (wordGoal != folder.wordGoal) {
             folder.wordGoal = wordGoal;
@@ -62,14 +62,14 @@ export class WSFileManager {
     mapToFolder(folder: TFolder): WSFolder {
         // console.log(`mapToFolder(${folder.path})`);
         if (folder instanceof TFolder && folder === this.vault.getRoot()) {
-            // console.log("Folder is root.")
+            console.log("Folder is root.");
             return this.root;
         }
         if (folder instanceof TFolder && this.folderMap.has(folder.path)) return this.folderMap.get(folder.path) as WSFolder;
-        // console.log("Folder is not mapped. Mapping to parent folder.");
+        console.log("Folder is not mapped. Mapping to parent folder.");
         let parent = this.mapToFolder(folder.parent);
         let mappedFolder = new WSFolder(this.plugin, parent, folder.path, folder.name);
-        // console.log(`Mapped folder ${folder.path} --> ${parent.path} --> ${mappedFolder.path}`);
+        console.log(`Mapped folder ${folder.path} --> ${parent.path} --> ${mappedFolder.path}`);
         return mappedFolder;
     }
 
@@ -78,6 +78,7 @@ export class WSFileManager {
     }
 
     newFile(file: TFile): WSFile {
+        // console.log(`Creating new file ${file.path}`);
         let parent = this.mapToFolder(file.parent);
         let newFile = new WSFile(this.plugin, parent, file.path, file.name, file.basename);
         this.fileMap.set(file.path, newFile);
@@ -86,7 +87,7 @@ export class WSFileManager {
     }
 
     onRename(file: TAbstractFile, oldPath: string) {
-        console.log(`WSFileManager.onRename(${file.path}, ${oldPath}): ${this.fileMap.has(file.path)}/${this.folderMap.has(file.path)}, ${this.fileMap.has(oldPath)}/${this.folderMap.has(oldPath)}`);
+        // console.log(`WSFileManager.onRename(${oldPath} --> ${file.path}): ${this.fileMap.has(oldPath)}/${this.folderMap.has(oldPath)}, ${this.fileMap.has(file.path)}/${this.folderMap.has(file.path)}`);
         if (file instanceof TFile) {
             if (this.fileMap.has(file.path)) {
                 console.log("!!! onRename('%s' to '%s'): New file path already exists!", oldPath, file.path);
@@ -102,10 +103,13 @@ export class WSFileManager {
                 fi.path = file.path;
                 let destination = this.mapToFolder(file.parent);
                 let source = fi.parent;
-                if (source != destination) {
+                if (source !== destination) {
                     destination.moveChildHere(fi);
                     source.recalculateStats();
                     destination.recalculateStats();
+                    source.propagateWordCountChange(fi.wordCount, 0);
+                    destination.propagateWordCountChange(0, fi.wordCount);
+                    this.plugin.updateFileExplorer();
                 }
                 fi.triggerRenamed(oldName, fi.name);
                 this.triggerFileUpdate(fi);
@@ -120,6 +124,7 @@ export class WSFileManager {
             if (this.folderMap.has(oldPath)) {
                 // console.log(this.folderMap.get(oldPath).path);
                 let fo = this.folderMap.get(oldPath);
+                let source = fo.parent;
                 this.folderMap.delete(oldPath);
                 this.folderMap.set(file.path, fo);
                 let oldName = fo.name;
@@ -127,12 +132,17 @@ export class WSFileManager {
                 fo.path = file.path;
                 // console.log(oldPath, ">>", fo.path);
                 let destination = this.mapToFolder(file.parent);
-                let source = fo.parent;
-                if (source != destination) {
+                // console.log(source.name, destination.name, fo.traceLineage());
+                if (source !== destination) {
                     destination.moveFolderHere(fo);
                     source.recalculateStats();
                     destination.recalculateStats();
+                    // console.log(source.path, destination.path, fo.wordCount, 0);
+                    source.propagateWordCountChange(fo.wordCount, 0);
+                    destination.propagateWordCountChange(0, fo.wordCount);
+                    this.plugin.updateFileExplorer();
                 }
+                // console.log(fo.traceLineage());
                 fo.triggerRenamed(oldName, fo.name);
                 this.triggerFolderUpdate(fo);
             } else {
@@ -150,6 +160,7 @@ export class WSFileManager {
                 let parent = fi.parent;
                 fi.parent.deleteChild(fi);
                 parent.recalculateStats();
+                parent.propagateWordCountChange(fi.wordCount, 0);
                 this.triggerFileUpdate(fi);
             } else {
                 console.log("!!! onDelete('%s'): File does not exist. Nothing to delete.", file.path);
@@ -161,6 +172,7 @@ export class WSFileManager {
                 let parent = fo.parent;
                 fo.parent.deleteChildFolder(fo);
                 parent.recalculateStats();
+                parent.propagateWordCountChange(fo.wordCount, 0);
                 this.triggerFolderUpdate(fo);
             } else {
                 console.log("!!! onDelete('%s'): Folder does not exist. Nothing to delete.", file.path);
@@ -228,6 +240,7 @@ export class WSFileManager {
     setMonitoringForFolder(folder: WSFolder, state: RECORDING) {
         folder.recording = state;
         folder.triggerRecordingSet(state, true);
+        this.triggerFolderUpdate(folder);
     }
 
     async updateFileWordCountOffline(file: TFile) {
@@ -283,6 +296,7 @@ export class WSFileManager {
 
     getFileSafe(file: TFile): WSFile {
         if (this.fileMap.has(file.path)) return this.fileMap.get(file.path);
+        console.log(`Attempted to get file '${file.path}', but it does not exist. Creating file.`);
         return this.newFile(file);
     }
 
@@ -296,8 +310,10 @@ export class WSFileManager {
                 }
             } else if (child instanceof TFolder) {
                 // console.log("Building folder for path: ", child.path);
-                let newParent: WSFolder = this.folderMap.get(child.path) || this.newFolder(parent, child);;
-                this.buildTreeChildrenAbstract(newParent, child.children);
+                if (!this.folderMap.has(child.path)) {
+                    this.newFolder(parent, child);
+                }
+                this.buildTreeChildrenAbstract(this.folderMap.get(child.path), child.children);
                 continue;
             }
         }
@@ -334,6 +350,12 @@ export class WSFileManager {
         }
         let endTime = Date.now();
         console.log(`Counted all ${files.length} file(s) in ${endTime - startTime}ms. ${FormatWords(this.root.wordCount)} counted.`);
+        startTime = Date.now();
+        for (let folder of this.folderMap.values()) {
+            folder.recount();
+        }
+        endTime = Date.now();
+        console.log(`Recounted ${files.length} file(s) across ${this.folderMap.size} folder(s) in ${endTime - startTime}ms. Total word count is ${FormatWords(this.root.wordCount)}.`);
     }
 
     async updateTree() {

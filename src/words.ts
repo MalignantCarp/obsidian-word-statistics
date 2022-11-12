@@ -5,7 +5,7 @@ const RE_WORD = /((?:\p{L}\.)+)|(?:\p{N}+(?:[\.,]\p{N}{3})+(?:[\.,]\p{N}+)?)|((?
 
 const RE_WIKILINK = /(?<!\^)(\[{2}[^|\]]*?\|)(.*?)(\]{2})/gmu;
 const RE_MDLINK = /(?<!\^|\[)(\[)(?!\[)(.*?)(\]{1})(\(\S*\))/gmu;
-const RE_YAML_HEADER = /^---\n.*?\n---\n/s;
+const RE_YAML_HEADER = /^---\n.*?\n---(\n|$)/s;
 const RE_HTML_COMMENT = /<!--.*?-->/sg;
 const RE_MD_COMMENT = /%%.*?%%/sg;
 const RE_FOOTNOTE = /\[^[\P{L}\P{N}_]+\]/gum;

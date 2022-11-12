@@ -19,6 +19,12 @@
 		return [wordGoal, wordGoalForFiles, wordGoalForFolders];
 	}
 
+	export function clear() {
+		wordGoal = 0;
+		wordGoalForFiles = 0;
+		wordGoalForFolders = 0;
+	}
+
 </script>
 
 <div class="ws-word-goals">

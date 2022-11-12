@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type WordStatisticsPlugin from "./main";
-import { WSEvents, WSFolderEvent, WSSettingEvent } from "./model/events";
+import { WSEvents, WSSettingEvent } from "./model/events";
 
 export namespace Settings {
 	export namespace Statistics {
@@ -13,17 +13,24 @@ export namespace Settings {
 			MONITORED = "Monitored Folders Only"
 		}
 
+		export enum PARANOIA {
+			OFF = "Off",
+			FILES = "Files Only",
+			FOLDERS = "Folders Only",
+			BOTH = "Both Files and Folders"
+		}
+
 		export interface Structure {
 			record: RECORD,
 			writingTimeout: number,
-			paranoiaMode: boolean,
+			paranoiaMode: PARANOIA,
 			paranoiaInterval: number,
 		}
 
 		export const DEFAULT: Structure = {
 			record: RECORD.MONITORED,
 			writingTimeout: 120,
-			paranoiaMode: false,
+			paranoiaMode: PARANOIA.OFF,
 			paranoiaInterval: 5,
 		};
 	}
@@ -61,11 +68,13 @@ export namespace Settings {
 	export namespace Debug {
 		export interface Structure {
 			showWordCountSpeed: boolean,
+			showFolderExportTime: boolean,
 		}
 
 		export const DEFAULT: Structure = {
 			showWordCountSpeed: false,
-		}
+			showFolderExportTime: false,
+		};
 	}
 
 	export namespace Database {
@@ -119,6 +128,12 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	getParanoiaMode() {
+		if (this.plugin.settings.statistics.paranoiaMode as any === true) return Settings.Statistics.PARANOIA.BOTH;
+		if (this.plugin.settings.statistics.paranoiaMode as any === false) return Settings.Statistics.PARANOIA.OFF;
+		return this.plugin.settings.statistics.paranoiaMode;
+	}
+
 	addStatisticSettings(containerEl: HTMLElement) {
 		containerEl.createEl('h3', { text: "Statistics History Settings" });
 		new Setting(containerEl)
@@ -132,7 +147,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 					if (Settings.Statistics.RECORD.ALL == value) { this.plugin.settings.statistics.record = value; }
 					else if (Settings.Statistics.RECORD.MONITORED == value) { this.plugin.settings.statistics.record = value; }
 					await this.plugin.saveSettings();
-					this.plugin.events.trigger(new WSSettingEvent({type: WSEvents.Setting.Recording, data: [value]}, {filter: null}));
+					this.plugin.events.trigger(new WSSettingEvent({ type: WSEvents.Setting.Recording, data: [value] }, { filter: null }));
 				}));
 		new Setting(containerEl)
 			.setName("Writing Timeout")
@@ -147,11 +162,18 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				}));
 		new Setting(containerEl)
 			.setName('Paranoia Mode')
-			.setDesc('When enabled, statistics will automatically be backed up to CSV every 1-30 minutes (as set by Paranoia Interval).')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.statistics.paranoiaMode)
+			.setDesc('When enabled, statistics will automatically be backed up to CSV every 1-30 minutes (as set by Paranoia Interval). Choose whether to backup file statistics, folder statistics, or both.')
+			.addDropdown(drop => drop
+				.addOption(Settings.Statistics.PARANOIA.OFF, Settings.Statistics.PARANOIA.OFF)
+				.addOption(Settings.Statistics.PARANOIA.FILES, Settings.Statistics.PARANOIA.FILES)
+				.addOption(Settings.Statistics.PARANOIA.FOLDERS, Settings.Statistics.PARANOIA.FOLDERS)
+				.addOption(Settings.Statistics.PARANOIA.BOTH, Settings.Statistics.PARANOIA.BOTH)
+				.setValue(this.getParanoiaMode())
 				.onChange(async (value) => {
-					this.plugin.settings.statistics.paranoiaMode = value;
+					if (Settings.Statistics.PARANOIA.OFF == value) { this.plugin.settings.statistics.paranoiaMode = value; }
+					else if (Settings.Statistics.PARANOIA.FILES == value) { this.plugin.settings.statistics.paranoiaMode = value; }
+					else if (Settings.Statistics.PARANOIA.FOLDERS == value) { this.plugin.settings.statistics.paranoiaMode = value; }
+					else if (Settings.Statistics.PARANOIA.BOTH == value) { this.plugin.settings.statistics.paranoiaMode = value; }
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
@@ -187,7 +209,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.statusbar.showFileCount = value;
 					await this.plugin.saveSettings();
-					this.plugin.events.trigger(new WSSettingEvent({type: WSEvents.Setting.StatusBar, data: [value]}, {filter: null}));
+					this.plugin.events.trigger(new WSSettingEvent({ type: WSEvents.Setting.StatusBar, data: [value] }, { filter: null }));
 				}));
 		new Setting(containerEl)
 			.setName("Show Parent Word Count")
@@ -197,7 +219,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.statusbar.showParentCount = value;
 					await this.plugin.saveSettings();
-					this.plugin.events.trigger(new WSSettingEvent({type: WSEvents.Setting.StatusBar, data: [value]}, {filter: null}));
+					this.plugin.events.trigger(new WSSettingEvent({ type: WSEvents.Setting.StatusBar, data: [value] }, { filter: null }));
 				}));
 		new Setting(containerEl)
 			.setName("Show Vault Word Count")
@@ -207,7 +229,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.statusbar.showVaultCount = value;
 					await this.plugin.saveSettings();
-					this.plugin.events.trigger(new WSSettingEvent({type: WSEvents.Setting.StatusBar, data: [value]}, {filter: null}));
+					this.plugin.events.trigger(new WSSettingEvent({ type: WSEvents.Setting.StatusBar, data: [value] }, { filter: null }));
 				}));
 	}
 
@@ -236,7 +258,7 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.view.movingTarget = value;
 					await this.plugin.saveSettings();
-					this.plugin.events.trigger(new WSSettingEvent({type: WSEvents.Setting.MovingTarget}, {filter: null}));
+					this.plugin.events.trigger(new WSSettingEvent({ type: WSEvents.Setting.MovingTarget }, { filter: null }));
 				}));
 
 		new Setting(containerEl)
@@ -246,6 +268,16 @@ export default class WordStatsSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.debug.showWordCountSpeed)
 				.onChange(async (value) => {
 					this.plugin.settings.debug.showWordCountSpeed = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Show Folder Statistics CSV Speed Messages')
+			.setDesc('When enabled, console will log messages related to how quickly the plugin is exporting folder statistics. Enable this if you are experiencing performance issues to see if they are related to exporting folder CSV statistics.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.debug.showFolderExportTime)
+				.onChange(async (value) => {
+					this.plugin.settings.debug.showFolderExportTime = value;
 					await this.plugin.saveSettings();
 				}));
 

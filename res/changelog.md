@@ -4,6 +4,18 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-11-10 v0.0.4
+ - Bugfix: YAML comments are not parsed as YAML comments if a newline does not appear after the closing dash sequence. Updated the regex to allow $/EOL to work in place of a newline.
+ - BugFix: WSFileManager.countAll() now properly re-calculates folder word counts.
+ - BugFix: WSFileManager.onDelete() now propagates a word count change.
+ - BugFix: WSFileManager.onRename() now propagates a word count change.
+ - BugFix: WSFolder.moveChildHere and moveFolderHere now properly set the child or child folder's parent to the new parent. This possibly fixes #13.
+ - Bugfix: WSFileManager.setMonitoringForFolder() was not calling triggerFolderUpdate(), resulting in the state not being immediately saved to the database.
+ - Fixed #11
+ - Added a clear button to the Word Goal modal.
+ - Added option to export statistics on a folder basis rather than file basis.
+ - Replaced ParanoiaMode setting from on/off to an option to output nothing, file stats, folder stats, or both (these will be in separate CSV files). Note that the option is ignored if you use the "Backup statistics to CSV" command.
+
 ### 2022-11-01 v0.0.3
  - Bugfix: StatsDebug.svelte was attempting to run Update() on an uninstantiated display object.
 

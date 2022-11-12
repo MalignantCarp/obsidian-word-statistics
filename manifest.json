@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-word-statistics",
 	"name": "Word Statistics",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"minAppVersion": "1.0.0",
 	"description": "This is a plugin for Obsidian that tracks word statistics.",
 	"author": "Obsidian",

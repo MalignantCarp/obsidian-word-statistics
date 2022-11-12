@@ -87,26 +87,64 @@ export function StatisticDataToCSV(plugin: WordStatisticsPlugin): string {
     let csv: string[] = [];
     let header = "Timestamp,LocalDate,LocalTime,Duration,EndDate,EndTime,Path,File,WordsStart,WordsEnd,WordsAdded,WordsDeleted,WordsImported,WordsExported,WritingTime";
     csv.push(header);
-    plugin.manager.stats.stats.forEach(info => {
-        let timestamp = info.startTime.toString();
-        let localTime = DateTime.fromMillis(info.startTime);
-        let endTime = DateTime.fromMillis(info.endTime);
+    for (let stat of plugin.manager.stats.stats) {
+        let timestamp = stat.startTime.toString();
+        let localTime = DateTime.fromMillis(stat.startTime);
+        let endTime = DateTime.fromMillis(stat.endTime);
         let localDateStr = localTime.toFormat('yyyy-LL-dd');
         let localTimeStr = localTime.toFormat('HH:mm:ss');
         let endDateStr = endTime.toFormat('yyyy-LL-dd');
         let endTimeStr = endTime.toFormat('HH:mm:ss');
-        let duration = (info.duration).toString();
-        let path = info.file.parent.path;
-        let file = info.file.name;
-        let wordsStart = info.startWords.toString();
-        let wordsEnd = info.endWords.toString();
-        let wordsAdded = info.wordsAdded.toString();
-        let wordsDeleted = info.wordsDeleted.toString();
-        let wordsImported = info.wordsImported.toString();
-        let wordsExported = info.wordsExported.toString();
-        let writingTime = info.writingTime.toString();
+        let duration = (stat.duration).toString();
+        let path = stat.file.parent.path;
+        let file = stat.file.name;
+        let wordsStart = stat.startWords.toString();
+        let wordsEnd = stat.endWords.toString();
+        let wordsAdded = stat.wordsAdded.toString();
+        let wordsDeleted = stat.wordsDeleted.toString();
+        let wordsImported = stat.wordsImported.toString();
+        let wordsExported = stat.wordsExported.toString();
+        let writingTime = stat.writingTime.toString();
         let row = [timestamp, localDateStr, localTimeStr, duration, endDateStr, endTimeStr, path, file, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, writingTime];
         csv.push(row.join(","));
-    });
+    }
+    return csv.join("\n");
+}
+
+export function StatisticsDataToCSVFolder(plugin: WordStatisticsPlugin): string {
+    let csv: string[] = [];
+    let header = "Timestamp,LocalDate,LocalTime,Duration,EndDate,EndTime,Path,Folder,Title,WordsStart,WordsEnd,WordsAdded,WordsDeleted,WordsImported,WordsExported,WritingTime";
+    csv.push(header);
+    let startTime = Date.now();
+    let folders = Array.from(plugin.manager.folderMap.values()).sort((a, b) => a.path.localeCompare(b.path, navigator.languages[0] || navigator.language, { numeric: true }));
+    if (plugin.settings.debug.showFolderExportTime) console.log(`Collected folders for stats export in ${Date.now() - startTime} ms.`);
+    for (let folder of folders) {
+        let localStart = Date.now();
+        let stats = plugin.manager.stats.getStatsForFolderMerged(folder);
+        for (let stat of stats) {
+            let timestamp = stat.startTime.toString();
+            let localTime = DateTime.fromMillis(stat.startTime);
+            let endTime = DateTime.fromMillis(stat.endTime);
+            let localDateStr = localTime.toFormat('yyyy-LL-dd');
+            let localTimeStr = localTime.toFormat('HH:mm:ss');
+            let endDateStr = endTime.toFormat('yyyy-LL-dd');
+            let endTimeStr = endTime.toFormat('HH:mm:ss');
+            let duration = (stat.duration).toString();
+            let path = folder.path;
+            let name = folder.name;
+            let title = folder.title;
+            let wordsStart = stat.startWords.toString();
+            let wordsEnd = stat.endWords.toString();
+            let wordsAdded = stat.wordsAdded.toString();
+            let wordsDeleted = stat.wordsDeleted.toString();
+            let wordsImported = stat.wordsImported.toString();
+            let wordsExported = stat.wordsExported.toString();
+            let writingTime = stat.writingTime.toString();
+            let row = [timestamp, localDateStr, localTimeStr, duration, endDateStr, endTimeStr, path, name, title, wordsStart, wordsEnd, wordsAdded, wordsDeleted, wordsImported, wordsExported, writingTime];
+            csv.push(row.join(","));
+        }
+        if (plugin.settings.debug.showFolderExportTime) console.log(`Built stats for ${folder.path} in ${Date.now() - localStart}ms`);
+    }
+    if (plugin.settings.debug.showFolderExportTime) console.log(`Built all stats in ${Date.now() - startTime}ms.`);
     return csv.join("\n");
 }

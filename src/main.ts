@@ -1,4 +1,4 @@
-import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView, Menu } from 'obsidian';
+import { debounce, type Debouncer, MarkdownView, Plugin, TFile, WorkspaceLeaf, TAbstractFile, Notice, type CachedMetadata, normalizePath, TFolder, View, FileExplorer, ItemView, Menu, type Stat } from 'obsidian';
 import WordStatsSettingTab, { Settings } from './settings';
 import { WSFile, WSFileStat } from './model/file';
 import { Dispatcher, WSDataEvent, WSEvents, WSFileEvent, WSFocusEvent, WSFolderEvent } from './model/events';
@@ -6,7 +6,7 @@ import { FormatWords } from './util';
 import { WSFileManager } from './model/manager';
 import { ImportTree } from './model/import';
 import { RECORDING, WSFolder } from './model/folder';
-import { BuildRootJSON, StatisticDataToCSV } from './model/export';
+import { BuildRootJSON, StatisticDataToCSV, StatisticsDataToCSVFolder } from './model/export';
 import { DateTime } from 'luxon';
 import StatusBar from './ui/svelte/StatusBar.svelte';
 import { ProgressView, PROGRESS_VIEW } from './ui/obsidian/ProgressView';
@@ -48,6 +48,7 @@ export default class WordStatisticsPlugin extends Plugin {
 	lastFile: WSFile = null;
 	updateTime: number = 0;
 	manager: WSFileManager;
+	databaseCheck: Stat = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -112,7 +113,11 @@ export default class WordStatisticsPlugin extends Plugin {
 				if (checking) {
 					return this.manager.stats.stats.length > 0;
 				} else {
-					this.saveStatsCSV();
+					if (this.manager.stats.last instanceof WSFileStat) {
+						this.saveStatsCSV(true);
+					} else {
+						new Notice("No statistics to back up. Backup aborted.");
+					}
 				}
 			}
 		});
@@ -213,13 +218,17 @@ export default class WordStatisticsPlugin extends Plugin {
 		console.log("Obsidian Word Statistics loaded.");
 	}
 
-	saveStatsCSV() {
-		let csv = StatisticDataToCSV(this);
+	saveStatsCSV(command: boolean = false) {
 		let now = DateTime.utc();
-		let path = now.toFormat('yyyy-LL-dd') + "T" + now.toFormat('HH_mm_ss_SSS') + "Z.csv";
-		// console.log("Saving to ", path);
-		// console.log(csv);
-		this.saveSerialData(path, csv);
+		let path = now.toFormat('yyyy-LL-dd') + "T" + now.toFormat('HH_mm_ss_SSS') + "Z";
+		if (command || this.settings.statistics.paranoiaMode !== Settings.Statistics.PARANOIA.FOLDERS) {
+			let csvFiles = StatisticDataToCSV(this);
+			this.saveSerialData(path + " files.csv", csvFiles);
+		}
+		if (command || this.settings.statistics.paranoiaMode !== Settings.Statistics.PARANOIA.FILES) {
+			let csvFolders = StatisticsDataToCSVFolder(this);
+			this.saveSerialData(path + " folders.csv", csvFolders);
+		}
 	}
 
 	paranoiaHandler() {
@@ -227,7 +236,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		// console.log(this.settings.statisticSettings.paranoiaMode, this.manager.stats.last instanceof WSFileStat, Date.now(), this.paranoiaTest, this.settings.statisticSettings.paranoiaInterval*60000);
 		// First check if paranoia mode is on, then if we have any stats, then if we've exceeded our interval, then if the most recent stat was updated after
 		// the last interval (i.e., we haven't already saved it).
-		if (this.settings.statistics.paranoiaMode &&
+		if (this.settings.statistics.paranoiaMode !== Settings.Statistics.PARANOIA.OFF &&
 			this.manager.stats.last instanceof WSFileStat &&
 			Date.now() > this.paranoiaTest + this.settings.statistics.paranoiaInterval * 60000 &&
 			this.manager.stats.last.endTime > this.paranoiaTest) {
@@ -266,7 +275,7 @@ export default class WordStatisticsPlugin extends Plugin {
 
 	setMonitorInherit(folder: WSFolder) {
 		this.manager.setMonitoringForFolder(folder, RECORDING.INHERIT);
-		new Notice(`Statistics recording set ON for folder: ${folder.path}`);
+		new Notice(`Statistics recording set INHERIT for folder: ${folder.path}`);
 	}
 
 	cmdSetMonitorInherit() {
@@ -288,6 +297,7 @@ export default class WordStatisticsPlugin extends Plugin {
 				if (text != folder.title) {
 					folder.title = text || "";
 					folder.triggerTitleSet(text || "");
+					this.manager.triggerFolderUpdate(folder);
 				}
 			},
 			"Save");
@@ -303,10 +313,6 @@ export default class WordStatisticsPlugin extends Plugin {
 	setFolderGoals(folder: WSFolder) {
 		let modal = new GoalModal(this, folder);
 		modal.open();
-	}
-
-	clearFolderGoal(folder: WSFolder) {
-		if (folder.wordGoal === 0) return;
 	}
 
 	onFileMenu(menu: Menu, file: TAbstractFile, source: string): void {
@@ -463,6 +469,19 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 	}
 
+	async getStat(path: string) {
+		const adapter = this.app.vault.adapter;
+		const dir = this.manifest.dir;
+		const statPath = normalizePath(`${dir}/${path}`);
+		try {
+			let stat = await adapter.stat(statPath);
+			return stat;
+		} catch (error) {
+			new Notice(`Unable to access ${path}.`);
+			console.error(error);
+		}
+	}
+
 	async logSpeed(wordsCounted: number, startTime: number, endTime: number) {
 		let duration = endTime - startTime;
 		// it must take at least 1 ms to be considered for the log
@@ -529,6 +548,7 @@ export default class WordStatisticsPlugin extends Plugin {
 		}
 		this.fileExplorer = fe[0].view as FileExplorer;
 		this.registerEvent(this.app.workspace.on("layout-change", this.onLayoutChange.bind(this)));
+		if (this.lastFile instanceof WSFile) this.databaseCheck = await this.getStat(DB_PATH);
 		this.updateFileExplorer();
 	}
 

@@ -19,10 +19,18 @@ export class GoalModal extends Modal {
         this.close();
     }
 
+    onClear(event?: MouseEvent) {
+        this.panel.clear();
+    }
+
     onOpen() {
         let { contentEl } = this;
-        this.panel = new GoalChooser({target: contentEl, props: {folder: this.folder}});
+        this.panel = new GoalChooser({ target: contentEl, props: { folder: this.folder } });
         new Setting(contentEl)
+            .addButton((button) => {
+                button.setButtonText("Clear");
+                button.onClick(this.onClear.bind(this));
+            })
             .addButton((button) => {
                 button.setButtonText("Save");
                 button.onClick(this.onSave.bind(this));

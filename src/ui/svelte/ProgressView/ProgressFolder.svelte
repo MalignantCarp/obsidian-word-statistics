@@ -78,6 +78,7 @@
 
 	export function updateAll() {
 		if (folder instanceof WSFolder) {
+			if (folder.startTime === 0) folder.recalculateStats();
 			let g: number;
 			title = folder.getTitle();
 			name = folder.name;

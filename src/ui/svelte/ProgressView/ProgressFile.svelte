@@ -112,6 +112,7 @@
 	export function updateAll() {
 		let g: number;
 		if (file instanceof WSFile) {
+			if (file.startTime === 0) file.recalculateStats();
 			count = file.wordCount;
 			g = file.getWordGoal();
 			if (g === 0 && plugin.settings.view.movingTarget) {

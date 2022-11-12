@@ -95,6 +95,7 @@ export class WSFolder extends StatsPropagate {
 
     moveChildHere(child: WSFile) {
         let from = child.parent;
+        child.parent = this;
         from?.children.remove(child);
         this.addChild(child);
     }
@@ -106,6 +107,7 @@ export class WSFolder extends StatsPropagate {
 
     moveFolderHere(childFolder: WSFolder) {
         let from = childFolder.parent;
+        childFolder.parent = this;
         from?.childFolders.remove(childFolder);
         this.addChildFolder(childFolder);
     }
@@ -179,8 +181,17 @@ export class WSFolder extends StatsPropagate {
     }
 
     propagateWordCountChange(oldCount: number, newCount: number) {
+        // console.log(`${this.path}.propagateWordCountChange(${this.wordCount} - ${oldCount} + ${newCount} = ${this.wordCount - oldCount + newCount})`)
         this.wordCount = this.wordCount - oldCount + newCount;
         this.parent?.propagateWordCountChange(oldCount, newCount);
+    }
+
+    traceLineage(ancestry: string[] = []) {
+        ancestry.push(this.name);
+        if (this.parent instanceof WSFolder) {
+            this.parent.traceLineage(ancestry);
+        }
+        return ancestry;
     }
 
     recount() {

@@ -103,8 +103,8 @@ export namespace WordStats {
      * 
      * @return The sum of all endWords for the latest occurance of each file housed within the collection.
      */
-     export function GetEndWords(stats: WSFileStat[]) {
-        let files: WSFile[] = []
+    export function GetEndWords(stats: WSFileStat[]) {
+        let files: WSFile[] = [];
         for (let stat of stats) {
             if (!files.contains(stat.file)) {
                 files.push(stat.file);
@@ -163,6 +163,39 @@ export namespace WordStats {
 
     export function GetWAPMA(stats: WSFileStat[]) {
         return GetWordsAdded(stats) / (GetWritingTime(stats) / 60000);
+    }
+}
+
+export class WSFolderStat {
+    constructor(
+        public startTime: number,
+        public startWords: number,
+        public endTime: number = 0,
+        public endWords: number = 0,
+        public wordsAdded: number = 0,
+        public wordsDeleted: number = 0,
+        public wordsImported: number = 0,
+        public wordsExported: number = 0,
+        public writingTime: number = 0
+    ) {
+        if (endTime === 0) this.endTime = this.startTime;
+        if (endWords === 0) this.endWords = this.startWords;
+    }
+
+    get duration() {
+        return this.endTime - this.startTime;
+    }
+
+    get netWords() {
+        return this.wordsAdded + this.wordsImported - this.wordsDeleted - this.wordsExported;
+    }
+
+    get WPM() {
+        return this.netWords / this.duration;
+    }
+
+    get WPMA() {
+        return this.netWords / this.writingTime;
     }
 }
 
@@ -225,6 +258,41 @@ export class WordStatsManager {
             return folder.isAncestorOf(stat.file);
         });
         return stats;
+    }
+
+    getStatsForFolderMerged(folder: WSFolder): WSFolderStat[] {
+        let stats = this.getStatsForFolder(folder).sort((a, b) => a.startTime - b.startTime);
+        let folderStats: WSFolderStat[] = [];
+        for (let stat of stats) {
+            let startTime = stat.startTime;
+            let endTime = stat.endTime;
+            let wordsAdded = stat.wordsAdded;
+            let wordsDeleted = stat.wordsDeleted;
+            let wordsImported = stat.wordsImported;
+            let wordsExported = stat.wordsExported;
+            let writingTime = stat.writingTime;
+            let currentStat: WSFolderStat;
+            if (folderStats.length > 0) {
+                currentStat = folderStats.last();
+                if (!(startTime >= currentStat.startTime && currentStat.startTime <= (currentStat.startTime % Settings.Statistics.PERIOD_LENGTH) + Settings.Statistics.PERIOD_LENGTH)) {
+                    let lastStat = folderStats.last();
+                    let startWords = lastStat.endWords;
+                    currentStat = new WSFolderStat(startTime, startWords);
+                    folderStats.push(currentStat);
+                }
+            } else {
+                currentStat = new WSFolderStat(stat.startTime, stat.startWords);
+                folderStats.push(currentStat);
+            }
+            currentStat.endTime = endTime;
+            currentStat.wordsAdded += wordsAdded;
+            currentStat.wordsDeleted += wordsDeleted;
+            currentStat.wordsImported += wordsImported;
+            currentStat.wordsExported += wordsExported;
+            currentStat.writingTime += writingTime;
+            currentStat.endWords = currentStat.endWords + wordsAdded - wordsDeleted + wordsImported - wordsExported;
+        }
+        return folderStats;
     }
 
     getStatsForFolderForDate(folder: WSFolder, start: DateTime, end?: DateTime): WSFileStat[] {
