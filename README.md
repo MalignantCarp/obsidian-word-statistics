@@ -3,6 +3,9 @@ __Please be aware that any modification of your files outside of Obsidian could 
 
 __This plugin is BETA software. Please ensure you regularly backup your data. Should you encounter any issues, please file a bug report or contact me in Discord for assistance. This plugin has NOT been extensively tested. Please monitor your statistics for any discrepencies and report any you find.__
 
+# A Note On Sync and Obsidian Git
+Please note that if you use the Obsidian Git Plugin to synchronize your project between multiple devices, you will likely delete statistics data from the database.json file when you pull from the repository. This plugin does not monitor changes made to the file after load, so the stats that are already present on loading the plugin are what will be saved. It is recommended you run a git pull from the command line before opening Obsidian. This is likely also an issue with Obsidian Sync, though I cannot test that. I will be attempting to find a solution to this, such as monitoring the database.json file for changes prior to overwriting it.
+
 # Obsidian Word Statistics
 
 This will be a plugin for [Obsidian](https://obsidian.md) that tracks word count statistics.
