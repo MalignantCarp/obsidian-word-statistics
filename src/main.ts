@@ -732,11 +732,11 @@ export default class WordStatisticsPlugin extends Plugin {
 						// console.log("Updating ", path);
 						let wFile = this.manager.fileMap.get(path);
 						let item = fileList[path];
-						if (wFile instanceof WSFile) {
+						if (wFile instanceof WSFile && wFile?.wordCount) {
 							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.wordCount));
 						} else {
 							let words = path === "/" ? this.manager.root.wordCount : this.manager.folderMap.get(path)?.wordCount;
-							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
+							if (words) item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
 						}
 					}
 				}

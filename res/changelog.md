@@ -4,6 +4,11 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2022-12-02
+ - Potential fix for #14. Could not reproduce on development platform, but new code should prevent NaN from showing up. In this event, no update will be made, so if it was already 0 words, it will stay as 0 words until the next update.
+ - Fixed unhandled exception error in StatsDebug.update.
+ - Fixed some accessibility issues with Stats view interfaces (onClick without onKeypress).
+
 ### 2022-11-10 v0.0.4
  - Bugfix: YAML comments are not parsed as YAML comments if a newline does not appear after the closing dash sequence. Updated the regex to allow $/EOL to work in place of a newline.
  - BugFix: WSFileManager.countAll() now properly re-calculates folder word counts.

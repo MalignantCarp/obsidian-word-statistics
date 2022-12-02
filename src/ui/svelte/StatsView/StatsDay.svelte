@@ -107,10 +107,10 @@
 <div class="ws-sv-date">
 	<div class="nav-header">
 		<div class="nav-buttons-container">
-			<div class="nav-action-button" aria-label="Previous Day" bind:this={navPrevious} on:click={prevDay} />
-			<div class="nav-action-button" aria-label="Yesterday" bind:this={navYesterday} on:click={yesterday} />
-			<div class="nav-action-button" aria-label="Today" bind:this={navToday} on:click={today} />
-			<div class="nav-action-button" aria-label="Next Day" bind:this={navNext} on:click={nextDay} />
+			<div class="nav-action-button" aria-label="Previous Day" bind:this={navPrevious} on:click={prevDay} on:keypress={prevDay} />
+			<div class="nav-action-button" aria-label="Yesterday" bind:this={navYesterday} on:click={yesterday} on:keypress={yesterday}/>
+			<div class="nav-action-button" aria-label="Today" bind:this={navToday} on:click={today} on:keypress={today}/>
+			<div class="nav-action-button" aria-label="Next Day" bind:this={navNext} on:click={nextDay} on:keypress={today} />
 		</div>
 	</div>
 

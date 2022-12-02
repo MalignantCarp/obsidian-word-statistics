@@ -38,6 +38,7 @@ export class WSFileStat {
     }
 
     updateStat(updateTime: number, oldCount: number, newCount: number, writingTime: number, first: boolean = false) {
+        // console.log(`${updateTime}, ${this.endWords} <> ${oldCount}-->${newCount}, ${writingTime}, ${first}`);
         this.writingTime += writingTime;
 
         let duration = updateTime - this.endTime;

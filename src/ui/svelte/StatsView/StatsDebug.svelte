@@ -30,12 +30,12 @@
 
 	export function update(newFocus: WSFile) {
 		focus = newFocus;
-		focusStat = focus.last;
+		focusStat = focus?.last;
 		liveStat = focusStat;
 		statIndex = -1;
 	}
 
-	function nextStat(evt: MouseEvent) {
+	function nextStat(evt: MouseEvent | KeyboardEvent) {
 		let oldIndex = statIndex;
 		statIndex = Math.min(-1, statIndex + 1);
 		if (statIndex !== oldIndex) {
@@ -45,7 +45,7 @@
 		// console.log(statObj);
 	}
 
-	function prevStat(evt: MouseEvent) {
+	function prevStat(evt: MouseEvent | KeyboardEvent) {
 		let oldIndex = statIndex;
 		statIndex = Math.max(statIndex - 1, -focus.stats.length);
 		if (statIndex !== oldIndex) {
@@ -80,11 +80,11 @@
 {#if focusStat instanceof WSFileStat}
 	<div class="ws-debug-buttons">
 		<div class="ws-stat-button">
-			<button on:click={prevStat} disabled={disabledPrev}>Previous</button
+			<button on:click={prevStat} on:keypress={prevStat} disabled={disabledPrev}>Previous</button
 			>
 		</div>
 		<div class="ws-stat-button">
-			<button on:click={nextStat} disabled={disabledNext}>Next</button>
+			<button on:click={nextStat} on:keypress={nextStat} disabled={disabledNext}>Next</button>
 		</div>
 	</div>
 	<hr />

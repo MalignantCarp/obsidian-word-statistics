@@ -39,13 +39,13 @@
 		}
 	}
 
-	function onDebugClick(evt: MouseEvent) {
+	function onDebugPress(evt: MouseEvent | KeyboardEvent) {
 		viewMode = Settings.View.StatisticsPanel.VIEW_MODE.DEBUG;
 		plugin.settings.view.statistics.mode = viewMode;
 		plugin.saveSettings();
 	}
 
-	function onDayClick(evt: MouseEvent) {
+	function onDayPress(evt: MouseEvent | KeyboardEvent) {
 		viewMode = Settings.View.StatisticsPanel.VIEW_MODE.DAY;
 		plugin.settings.view.statistics.mode = viewMode;
 		plugin.saveSettings();
@@ -62,7 +62,8 @@
 					Settings.View.StatisticsPanel.VIEW_MODE.DEBUG}
 				aria-label="Debug View"
 				bind:this={debugButton}
-				on:click={onDebugClick}
+				on:click={onDebugPress}
+				on:keypress={onDebugPress}
 			/>
 			<div
 				class="nav-action-button"
@@ -70,7 +71,8 @@
 					Settings.View.StatisticsPanel.VIEW_MODE.DAY}
 				aria-label="Day View"
 				bind:this={dayButton}
-				on:click={onDayClick}
+				on:click={onDayPress}
+				on:keypress={onDayPress}
 			/>
 		</div>
 	</div>
