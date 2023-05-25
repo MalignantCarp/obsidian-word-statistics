@@ -4,6 +4,12 @@
  - Cleanup any outstanding bugs.
 
 ## Changelog
+### 2023-05-24 v0.0.5
+ - Fixed #14
+ - Updated titleEl to selfEl for FileItem view definition.
+ - Removed a couple of errant debug statements.
+ - No longer caching the file explorer.
+
 ### 2022-12-02
  - Potential fix for #14. Could not reproduce on development platform, but new code should prevent NaN from showing up. In this event, no update will be made, so if it was already 0 words, it will stay as 0 words until the next update.
  - Fixed unhandled exception error in StatsDebug.update.

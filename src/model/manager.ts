@@ -66,10 +66,10 @@ export class WSFileManager {
             return this.root;
         }
         if (folder instanceof TFolder && this.folderMap.has(folder.path)) return this.folderMap.get(folder.path) as WSFolder;
-        console.log("Folder is not mapped. Mapping to parent folder.");
+        // console.log("Folder is not mapped. Mapping to parent folder.");
         let parent = this.mapToFolder(folder.parent);
         let mappedFolder = new WSFolder(this.plugin, parent, folder.path, folder.name);
-        console.log(`Mapped folder ${folder.path} --> ${parent.path} --> ${mappedFolder.path}`);
+        // console.log(`Mapped folder ${folder.path} --> ${parent.path} --> ${mappedFolder.path}`);
         return mappedFolder;
     }
 

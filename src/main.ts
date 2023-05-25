@@ -27,7 +27,7 @@ declare module "obsidian" {
 	}
 
 	export interface FileItem {
-		titleEl: HTMLDivElement;
+		selfEl: HTMLDivElement;
 	}
 }
 
@@ -43,7 +43,6 @@ export default class WordStatisticsPlugin extends Plugin {
 	projectLoad: boolean = false;
 	focusFile: WSFile = null;
 	noFileData: boolean = true;
-	fileExplorer: FileExplorer;
 	paranoiaTest: number = 0;
 	lastFile: WSFile = null;
 	updateTime: number = 0;
@@ -542,11 +541,6 @@ export default class WordStatisticsPlugin extends Plugin {
 			this.databaseChangedSave();
 		}
 		this.updateFocusedFile();
-		let fe = this.app.workspace.getLeavesOfType("file-explorer");
-		if (fe.length != 1) {
-			console.log(`Found ${fe.length} file-explorer ${fe.length === 1 ? "leaf" : "leaves"}`);
-		}
-		this.fileExplorer = fe[0].view as FileExplorer;
 		this.registerEvent(this.app.workspace.on("layout-change", this.onLayoutChange.bind(this)));
 		if (this.lastFile instanceof WSFile) this.databaseCheck = await this.getStat(DB_PATH);
 		this.updateFileExplorer();
@@ -579,11 +573,6 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	onLayoutChange() {
-		let fe = this.app.workspace.getLeavesOfType("file-explorer");
-		if (fe.length != 1) {
-			console.log(`Found ${fe.length} file-explorer ${fe.length === 1 ? "leaf" : "leaves"}`);
-		}
-		this.fileExplorer = fe[0].view as FileExplorer;
 		this.updateFileExplorer();
 	}
 
@@ -721,11 +710,18 @@ export default class WordStatisticsPlugin extends Plugin {
 	}
 
 	updateFileExplorer(file: (WSFile | WSFolder) = null) {
-		if (this.fileExplorer instanceof View) {
+		let fe = this.app.workspace.getLeavesOfType("file-explorer");
+		if (fe.length != 1) {
+			console.log(`Found ${fe.length} file-explorer ${fe.length === 1 ? "leaf" : "leaves"}`);
+			return;
+		}
+		let fileExplorer = fe[0].view as FileExplorer;
+
+		if (fileExplorer instanceof View) {
 			if (this.settings.view.showWordCountsInFileExplorer) {
-				let container = this.fileExplorer.containerEl;
+				let container = fileExplorer.containerEl;
 				container.toggleClass(FILE_EXP_CLASS, true);
-				let fileList = this.fileExplorer.fileItems;
+				let fileList = fileExplorer.fileItems;
 				for (let path in fileList) {
 					// console.log(path, file?.path, file instanceof WSFile && file.path.contains(path));
 					if (file === null || (file !== null && file.path.includes(path))) {
@@ -733,20 +729,21 @@ export default class WordStatisticsPlugin extends Plugin {
 						let wFile = this.manager.fileMap.get(path);
 						let item = fileList[path];
 						if (wFile instanceof WSFile && wFile?.wordCount) {
-							item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.wordCount));
+							item.selfEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(wFile.wordCount));
 						} else {
-							let words = path === "/" ? this.manager.root.wordCount : this.manager.folderMap.get(path)?.wordCount;
-							if (words) item.titleEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
+							let words = path === "/" ? this.manager.root.wordCount : this.manager.folderMap.get(path)?.wordCount || 0;
+							// if (this.manager.folderMap.get(path) === undefined) console.log(`Attempted to update folder word count for ${path}, but could not retrieve WSFolder.`);
+							item.selfEl.setAttribute(FILE_EXP_DATA_ATTRIBUTE, FormatWords(words));
 						}
 					}
 				}
 			} else {
-				let container = this.fileExplorer.containerEl;
+				let container = fileExplorer.containerEl;
 				container.toggleClass(FILE_EXP_CLASS, false);
-				let fileList = this.fileExplorer.fileItems;
+				let fileList = fileExplorer.fileItems;
 				for (let path in fileList) {
 					let item = fileList[path];
-					item.titleEl.removeAttribute(FILE_EXP_DATA_ATTRIBUTE);
+					item.selfEl.removeAttribute(FILE_EXP_DATA_ATTRIBUTE);
 				}
 			}
 		} else {

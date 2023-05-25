@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-word-statistics",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "This is a plugin for Obsidian (https://obsidian.md) that tracks word count statistics.",
 	"main": "main.js",
 	"scripts": {
